@@ -200,7 +200,7 @@ Este é o insumo principal da etapa 3. Níveis conforme `01-core-conceitual.md` 
 | **D3** | A lista do MVP (5.2) está certa? Algo indispensável faltando ou algo sobrando? | Ex.: NF-e é obrigatória para seu público desde o início? |
 | **D4** | Provedor de pagamento do comprador | Recomendação: um provedor brasileiro com Pix + cartão e boa API (ex.: Mercado Pago, Pagar.me, Asaas, Stripe BR). Escolha concreta na etapa 4. |
 | **D5** | A Foxy cobra o lojista desde o primeiro cliente? | **a)** Cobrança manual no início (Plans/Subscription/Billing em N0) — **recomendado** para validar rápido. **b)** Assinatura automatizada desde o dia 1. |
-| **D6** | Sistema antigo da Foxy | O que ele faz? Há clientes que precisariam migrar para o Commerce? |
+| **D6** | Sistema antigo da Foxy | ✔ **Decidido (2026-10-13):** o sistema atual segue separado e independente, sem migração para o Commerce. Daqui para frente: um Core e vários produtos separados sobre ele. |
 | **D7** | Primeira funcionalidade de IA | Recomendação: **gerar descrição de produto a partir de nome + foto**. Útil, barata, sem risco (não executa ações), valida o boundary da Foxy AI e a medição de uso. |
 | **D8** | Comprador com login (Q2 do Core) | Recomendação: **não no MVP** — checkout como convidado. |
 | **D9** | Equipe e habilidades | Quem vai desenvolver? Quais linguagens/frameworks você domina? (Insumo para a stack na etapa 4.) |
