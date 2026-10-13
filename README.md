@@ -1,6 +1,6 @@
 # Foxy Technology
 
-Nova base da Foxy: ecossistema multi-tenant (Platform + Produtos + Foxy AI), começando pelo **Foxy Commerce**.
+Nova base da Foxy: ecossistema multi-tenant com um Core e vários produtos separados, começando pela **Foxy AI** (consumida por API por todos os sistemas, inclusive o atual) e depois o **Foxy Commerce**.
 
 Projeto separado do sistema atual (`../tarologa`, legado), que continua funcionando sem alterações.
 
@@ -12,7 +12,8 @@ Em definição — **ainda não há código**. Implementação só após aprova�
 |---|---|---|
 | 0. Contexto estratégico | [docs/00-contexto-estrategico.md](docs/00-contexto-estrategico.md) | v0.1 |
 | 1. Core conceitual | [docs/01-core-conceitual.md](docs/01-core-conceitual.md) | v0.1 aprovado |
-| 2. Foxy Commerce | [docs/02-foxy-commerce.md](docs/02-foxy-commerce.md) | rascunho — D6 decidida; D1–D5, D7–D9 pendentes |
+| 2. Foxy AI (primeiro produto) | [docs/02-foxy-ai.md](docs/02-foxy-ai.md) | rascunho — decisões A1–A6 pendentes |
+| — Foxy Commerce (segundo produto) | [docs/03-foxy-commerce.md](docs/03-foxy-commerce.md) | rascunho pausado — D6 decidida |
 | 3. Recorte da Platform | — | aguardando etapa 2 |
 | 4. Arquitetura concreta | — | aguardando etapa 3 |
 | 5. Implementação | — | aguardando aprovação da etapa 4 |

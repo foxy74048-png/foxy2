@@ -1,7 +1,7 @@
 # Foxy Commerce — Definição de Produto e Domínio
 
 > **Status:** Rascunho v0.1 — **hipóteses para validação**
-> **Etapa:** 2 de 5 (Core conceitual ✔ → **Commerce** → Recorte da Platform → Arquitetura concreta → Implementação)
+> **Ordem:** segundo produto, depois da Foxy AI (`02-foxy-ai.md`). Rascunho mantido; retomado após a Foxy AI.
 > **Atenção:** este documento foi escrito com hipóteses razoáveis para dar algo concreto para revisar. Tudo marcado com **[H]** é hipótese e precisa ser confirmado ou corrigido. As decisões pendentes estão na seção 9.
 
 ---

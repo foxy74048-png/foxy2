@@ -22,8 +22,8 @@ Leia `docs/00-contexto-estrategico.md` antes de decisões de arquitetura. Resumo
 ## Processo de definição (em andamento)
 
 1. Core conceitual — `docs/01-core-conceitual.md`
-2. Foxy Commerce (produto, MVP, domínio) e quais capacidades do Core ele usa
-3. Recorte mínimo da Platform a implementar junto com o Commerce
+2. Foxy AI — primeiro produto (`docs/02-foxy-ai.md`), consumida só por API por todos os sistemas; o Foxy Commerce (`docs/03-foxy-commerce.md`) vem em seguida
+3. Recorte mínimo da Platform a implementar junto com a Foxy AI
 4. Arquitetura concreta (módulos, tenancy, banco, APIs, eventos, auth, infra, stack)
 5. Implementação — **somente após aprovação explícita da etapa 4**
 
