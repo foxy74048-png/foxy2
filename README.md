@@ -1,6 +1,6 @@
 # Foxy Technology
 
-Nova base da Foxy: ecossistema multi-tenant com um Core e vários produtos separados, começando pela **Foxy AI** (consumida por API por todos os sistemas, inclusive o atual) e depois o **Foxy Commerce**.
+Nova base da Foxy: ecossistema multi-tenant com um Core e vários produtos separados, começando pela **Foxy AI** (consumida por API por todos os sistemas) e depois o **Foxy Commerce**.
 
 Projeto separado do sistema atual (`../tarologa`, legado), que continua funcionando sem alterações.
 

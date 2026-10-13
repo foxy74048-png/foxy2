@@ -8,11 +8,11 @@
 
 ## 1. Por que começar pela IA
 
-- Todo produto da Foxy (o sistema atual, o Commerce, os futuros) pode usar IA.
-- Já existe um consumidor real: o sistema atual (`../tarologa`), com profissionais usando-o hoje.
+- Todo produto da Foxy pode usar IA.
+- **Decisão (2026-10-13):** a IA é desenvolvida primeiro e por conta própria. Se o sistema atual vai usá-la, ou se o caminho é seguir só com a nova Foxy, fica para **depois** — não entra no desenho agora.
 - Começar por ela obriga a construir **a fatia certa do Core**: Organization, Execution Context, credencial de API, medição de uso, limites e auditoria. Tudo isso será reaproveitado pelo Commerce.
 
-**Risco que este documento evita:** uma IA "genérica" sem uso concreto vira uma Platform maior que os produtos (contexto, seção 9). Por isso a Foxy AI nasce com **um consumidor real e uma capacidade concreta**, e cresce só quando surgir outro uso.
+**Risco que este documento evita:** uma IA "genérica" sem uso concreto vira uma Platform maior que os produtos (contexto, seção 9). Por isso a Foxy AI nasce com **uma capacidade concreta** (seção 3), validada por um console de testes da equipe Foxy até existir o primeiro sistema consumidor, e cresce só quando surgir outro uso.
 
 ## 2. Como a Foxy AI é "separada"
 
@@ -20,12 +20,12 @@
 |---|---|
 | Quem consome? | Todos os sistemas, **somente pela API** da Foxy AI. Nenhum sistema fala direto com um provedor de modelo. |
 | É um serviço/deploy separado? | **Não no início.** É um módulo do monolito modular da nova Foxy, junto do Core. Fica separada por contrato: tem a própria API e os próprios dados, e ninguém lê as tabelas dela. Ganha deploy próprio só se houver motivo real (contexto, seção 17). |
-| E o sistema atual? | Consome a **API pública** da Foxy AI, como qualquer cliente externo. Não ganha acesso a nada interno. |
-| E os produtos novos (Commerce)? | Usam a mesma capacidade pela interface do módulo (ou pela API, se forem apps separados). O contrato é o mesmo. |
+| E os produtos (Commerce, futuros)? | Usam a mesma capacidade pela interface do módulo (ou pela API, se forem apps separados). O contrato é o mesmo. |
+| E sistemas externos? | Se houver, consomem a **API pública**, como qualquer cliente. Não ganham acesso a nada interno. |
 
 ```text
-  Sistema atual (tarologa)        Commerce (futuro)        Produto X (futuro)
-            │ API pública               │                         │
+  Console de testes Foxy          Commerce (futuro)        Produto X (futuro)
+            │ API                       │                         │
             └───────────────┬───────────┴─────────────────────────┘
                             ▼
                 ┌────────── FOXY AI ──────────┐
@@ -46,7 +46,7 @@
 **Capacidade:** gerar sugestões de texto prontas para revisar, a partir de poucos dados estruturados.
 
 **Por que essa:**
-- útil para o sistema atual hoje e para o Commerce amanhã (descrição de produto = D7 do Commerce);
+- útil para qualquer negócio pequeno e para o Commerce (descrição de produto = D7 do Commerce);
 - **não precisa de dados sensíveis** (saúde, documentos, valores);
 - a IA só **responde**: não executa ações, e uma pessoa sempre revisa antes de enviar;
 - custo por uso baixo e previsível.
@@ -55,9 +55,9 @@
 
 | Tarefa | Consumidor | Entrada (exemplo) |
 |---|---|---|
-| `message.whatsapp` | Sistema atual | ocasião (lembrete, aniversário, retorno, divulgação), nome do negócio, serviço, tom |
-| `text.service_description` | Sistema atual | nome do serviço, duração, público, tom |
-| `text.public_page_bio` | Sistema atual | segmento, especialidades, tom |
+| `message.whatsapp` | Qualquer produto | ocasião (lembrete, aniversário, retorno, divulgação), nome do negócio, serviço, tom |
+| `text.service_description` | Qualquer produto | nome do serviço, duração, público, tom |
+| `text.public_page_bio` | Qualquer produto | segmento, especialidades, tom |
 | `text.product_description` | Commerce (futuro) | nome, características, foto (futuro) |
 
 ## 4. Contrato: tarefas, não prompt livre
@@ -99,7 +99,7 @@ AiTask (global, versionada)
 ```
 
 - `AiTask` é **global** (definida pela Foxy); uso, auditoria e credenciais pertencem a uma Organization.
-- `account_ref` é um identificador opaco do consumidor (ex.: a conta do profissional no sistema atual), usado só para limitar e medir por conta — a Foxy AI não sabe quem é a pessoa.
+- `account_ref` é um identificador opaco do consumidor (ex.: a conta do cliente dentro daquele sistema), usado só para limitar e medir por conta — a Foxy AI não sabe quem é a pessoa.
 
 ## 6. Fluxo de uma chamada
 
@@ -125,13 +125,13 @@ UsageRecord + AuditEntry → resposta com sugestões
 
 | Capacidade | Nível | Observação |
 |---|---|---|
-| **Organization** | N1 | Uma por consumidor. Começa com uma: o sistema atual. |
-| **API Clients / API pública** | **N1** | Antes previsto em N0 (Core, Q7: "só quando houver cliente pedindo"). Agora há cliente: o sistema atual. Versionada (`/v1`). |
+| **Organization** | N1 | Uma por consumidor. No início, só a da equipe Foxy (console de testes). |
+| **API Clients / API pública** | **N1** | É o próprio produto: todos consomem a IA por API. Versionada (`/v1`). Exposição a clientes externos só quando houver demanda (Core, Q7). |
 | **Execution Context** | N1 | Com `source = api` e `account_ref`. |
 | **Entitlements** | N1 (só uso medido) | Medidor `ai.requests.monthly` (ou tokens) por organização e por `account_ref`. Sem planos. |
 | **Audit** | N1 | Somente-inclusão. |
 | **Identity / Membership / Authorization** | N0 | Sem tela de login no início: credenciais criadas pela equipe Foxy por comando. Entram de verdade com o Commerce. |
-| **Plans / Subscription / Billing** | Fora | Quem cobra o cliente final é o consumidor (ex.: o plano do sistema atual inclui X usos/mês). |
+| **Plans / Subscription / Billing** | Fora | Quem cobra o cliente final é o consumidor (ex.: o plano de um produto inclui X usos/mês). |
 | **Events / Files / Notifications** | Fora | Sem necessidade nesta capacidade. |
 | **Backoffice** | Mínimo | Comando ou relatório simples de uso e custo por organização/conta. |
 
@@ -150,22 +150,19 @@ Entram quando um produto tiver caso concreto (contexto, seções 20–21). O cam
 - Credenciais de API com hash, escopo por tarefa, rotação e revogação.
 - Chave do provedor de IA só no servidor, fora do repositório.
 
-## 10. O que muda no sistema atual (futuro, aprovação separada)
+## 10. Como validar sem um sistema consumidor
 
-Quando a API existir, o sistema atual ganha, **como funcionalidade nova dele e seguindo as regras do repositório dele**:
-- um serviço em `app/Services` que chama a API da Foxy AI (com o `account_ref` = id da conta);
-- um botão "Escrever com IA" nas telas escolhidas (ex.: montar mensagem de WhatsApp, cadastro de serviço, página pública);
-- limite de uso por plano, se aplicável.
+Até existir o primeiro sistema que use a IA, a validação é feita por um **console de testes interno** da equipe Foxy: uma tela simples que chama a mesma API, escolhe a tarefa, preenche os campos e mostra as sugestões, o uso e o custo. Não é produto para cliente.
 
-Nada disso é feito agora.
+Qual sistema será o primeiro consumidor (o atual, o Commerce ou outro) é decisão **posterior**, fora deste documento.
 
 ## 11. Decisões pendentes
 
 | # | Decisão | Recomendação |
 |---|---|---|
 | **A1** | Quais tarefas começam? | `message.whatsapp` primeiro (maior frequência de uso); `text.service_description` em seguida. |
-| **A2** | Quem paga o custo da IA e qual o limite? | Incluído nos planos do sistema atual com limite mensal por conta (ex.: menor no trial). Valores após medir o custo real. |
-| **A3** | Sistema atual como **uma** organização com `account_ref` por conta, ou uma organização por conta? | **Uma organização + `account_ref`** — simples e sem acoplar os cadastros dos dois sistemas. |
+| **A2** | Quem paga o custo da IA e qual o limite? | A IA mede uso e custo e aplica limite mensal por organização (e por `account_ref`). Quem paga e quanto é decidido por cada produto consumidor, depois de medir o custo real no console. |
+| **A3** | Como um sistema externo se encaixa (uma organização + `account_ref`, ou uma por conta)? | **Adiada** — só quando houver um sistema externo consumidor. |
 | **A4** | Provedor de modelo | Etapa 4. Critérios: qualidade em português, custo, latência, política de não treino com os dados, termos LGPD. |
 | **A5** | A sugestão sempre passa por revisão humana antes de enviar? | **Sim.** A IA nunca envia nada sozinha nesta fase. |
 | **A6** | Guardar conteúdo de prompts/respostas para avaliar qualidade? | Não no início; se necessário, amostragem por tempo limitado e sem dados pessoais. |

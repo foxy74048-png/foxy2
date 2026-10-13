@@ -1,6 +1,6 @@
 # Insumos do sistema legado (`../tarologa`)
 
-> **Atualização 2026-10-13:** o sistema atual será o **primeiro consumidor da API da Foxy AI** (ver `02-foxy-ai.md`, seção 10).
+> **Atualização 2026-10-13:** primeiro será desenvolvida a Foxy AI; se o sistema atual vai usá-la ou se o caminho é seguir só com a nova Foxy fica para depois.
 >
 > **Status:** levantamento somente leitura, 2026-10-13. **Não é decisão** — é insumo para D4, D5, D6, D9 (etapa 2) e para as etapas 3 e 4.
 > **Regra:** o legado não define a nova arquitetura (contexto, seções 32–33). Aqui só se registra o que ele já aprendeu e o que pode ser copiado/adaptado.
