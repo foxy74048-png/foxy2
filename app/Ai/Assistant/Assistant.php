@@ -35,7 +35,7 @@ class Assistant
     /**
      * @param  list<string>  $allowedTools  tools do catálogo que este usuário pode usar (o anfitrião filtra pelas permissões dele)
      */
-    public function open(HostProfile $profile, string $userRef, array $allowedTools = []): Conversation
+    public function open(HostProfile $profile, string $userRef, array $allowedTools = [], ?string $model = null): Conversation
     {
         $knowledge = $profile->currentKnowledge() ?? throw AssistantException::knowledgeMissing();
         $catalog = $profile->currentTools();
@@ -49,7 +49,7 @@ class Assistant
         $conversation = Conversation::create([
             'host_profile_id' => $profile->getKey(),
             'user_ref' => $userRef,
-            'model' => config('foxy.ai.model'),
+            'model' => $model ?? config('foxy.ai.model'),
             'effort' => config('foxy.ai.effort'),
             'system_prompt' => SystemPrompt::render($profile, $knowledge),
             'tools' => [...($catalog?->definitionsFor($allowedTools) ?? []), ...InternalTools::definitions()],

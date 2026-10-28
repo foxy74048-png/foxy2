@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withCommands([__DIR__.'/../app/Platform/Console'])
+    ->withCommands([__DIR__.'/../app/Platform/Console', __DIR__.'/../app/Demo/Console'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'api.client' => AuthenticateApiClient::class,
@@ -27,6 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Situações esperadas (limite, conversa expirada...) viram resposta da API, não erro no log.
+        $exceptions->dontReport(AssistantException::class);
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

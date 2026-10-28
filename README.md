@@ -29,4 +29,13 @@ php artisan foxy:api-client:revoke <api-client-id>                # revoga chave
 ```
 
 Conferir uma chave: `GET /api/v1/me` com `Authorization: Bearer <chave>`.
+
+### Console de testes (`/console`)
+
+```bash
+php artisan foxy:demo:setup                         # negócio fictício (Clínica Bem Viver) pronto para conversar
+php artisan foxy:console-user:create voce@email.com # acesso da equipe (senha aparece uma vez só)
+```
+
+Sem chave da Anthropic, use `FOXY_AI_PROVIDER=fake` no `.env` (respostas de teste). Com a chave, `FOXY_AI_PROVIDER=anthropic` e `ANTHROPIC_API_KEY=...`.
 Limites padrão de uso em `config/foxy.php` (cada organização pode ter os seus em `organizations.limits`).

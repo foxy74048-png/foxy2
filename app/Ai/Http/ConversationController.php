@@ -7,6 +7,7 @@ use App\Ai\Conversations\Conversation;
 use App\Ai\HostProfiles\HostProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ConversationController
 {
@@ -19,10 +20,11 @@ class ConversationController
             'user_ref' => ['required', 'string', 'max:120'],
             'allowed_tools' => ['nullable', 'array', 'max:30'],
             'allowed_tools.*' => ['string'],
+            'model' => ['nullable', Rule::in(config('foxy.ai.allowed_models'))],
         ]);
 
         $profile = HostProfile::where('slug', $data['host_profile'])->firstOrFail();
-        $conversation = $this->assistant->open($profile, $data['user_ref'], $data['allowed_tools'] ?? []);
+        $conversation = $this->assistant->open($profile, $data['user_ref'], $data['allowed_tools'] ?? [], $data['model'] ?? null);
 
         return response()->json([
             'conversation_id' => $conversation->getKey(),

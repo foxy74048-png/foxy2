@@ -45,6 +45,7 @@ POST /api/v1/conversations
 
 - `user_ref`: identificador do usuário **no seu sistema** (opaco; não mande nome nem e-mail).
 - `allowed_tools`: só as tools que **esse usuário** pode usar. A IA nem vê as outras.
+- `model` (opcional): um de `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`. Sem informar, vale o padrão da Foxy. Fica fixo na conversa.
 
 ```http
 POST /api/v1/conversations/{id}/messages

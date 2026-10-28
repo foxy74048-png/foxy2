@@ -22,6 +22,8 @@ return [
 
         // Modelo e esforço padrão; cada conversa fica com os valores da abertura.
         'model' => env('FOXY_AI_MODEL', 'claude-opus-5-5'),
+        // Modelos que o anfitrião pode escolher ao abrir a conversa (ex.: console comparando custo e qualidade).
+        'allowed_models' => ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'],
         'effort' => env('FOXY_AI_EFFORT', 'low'),
         'max_tokens' => (int) env('FOXY_AI_MAX_TOKENS', 8000),
         'timeout_seconds' => (float) env('FOXY_AI_TIMEOUT', 90),
