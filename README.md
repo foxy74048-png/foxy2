@@ -19,3 +19,14 @@ Etapas 1–4 aprovadas; implementação da Foxy AI em andamento (Laravel 13, PHP
 | 5. Implementação | [docs/05-arquitetura.md](docs/05-arquitetura.md), seção 10 | em andamento |
 
 Insumo de apoio: [docs/legado-insumos.md](docs/legado-insumos.md) — o que o sistema atual já resolve e o que pode ser aproveitado.
+
+## Operação (comandos)
+
+```bash
+php artisan foxy:organization:create "Nome"                       # cria organização (mostra o ID)
+php artisan foxy:api-client:create <org-id> "Nome" --scope=...    # cria chave de API (aparece uma vez só)
+php artisan foxy:api-client:revoke <api-client-id>                # revoga chave
+```
+
+Conferir uma chave: `GET /api/v1/me` com `Authorization: Bearer <chave>`.
+Limites padrão de uso em `config/foxy.php` (cada organização pode ter os seus em `organizations.limits`).

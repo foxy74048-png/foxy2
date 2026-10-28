@@ -150,8 +150,8 @@ O que garante isso desde o primeiro dia: app sem estado local, IDs ULID, `organi
 
 Cada fatia é entregue com testes e commit próprio:
 
-1. **Esqueleto:** Laravel 13, PostgreSQL/SQLite, estrutura de módulos, CI de testes.
-2. **Platform mínima:** Organization, ApiClient (+ comando para criar), ExecutionContext, Entitlements (uso), Audit.
+1. ✔ **Esqueleto:** Laravel 13, PostgreSQL/SQLite, estrutura de módulos, CI de testes.
+2. ✔ **Platform mínima:** Organization, ApiClient (+ comando para criar), ExecutionContext, Entitlements (uso), Audit.
 3. **Foxy AI — suporte de uso:** HostProfile + KnowledgePack, conversa, `AnthropicProvider` com cache, `FakeProvider`, uso e custo.
 4. **Ajuda com erros:** campo `error`, sinal `escalate`.
 5. **Perguntas sobre dados:** ToolCatalog, `tool_requested` / `tool-results`, validações e limite de rodadas.
