@@ -72,13 +72,15 @@ A mesma Foxy AI serve qualquer sistema: o que muda de um para outro é o **perfi
 
   | Tool | Entrada | Devolve |
   |---|---|---|
-  | `financeiro.saldos_em_aberto` | período, ordenação, limite | clientes com valor em aberto |
-  | `agenda.atendimentos` | período, status | lista resumida de atendimentos |
-  | `clientes.buscar` | termo | clientes encontrados |
+  | `financeiro_saldos_em_aberto` | período, ordenação, limite | clientes com valor em aberto |
+  | `agenda_atendimentos` | período, status | lista resumida de atendimentos |
+  | `clientes_buscar` | termo | clientes encontrados |
 
-- "Quem mais me deve este mês?" → a IA pede `financeiro.saldos_em_aberto(período = mês atual, ordenação = maior valor, limite = 5)` → o anfitrião executa **com as permissões do usuário** → a IA responde em texto.
+  Nomes de tools: letras minúsculas, números e `_` (a Anthropic não aceita ponto).
+
+- "Quem mais me deve este mês?" → a IA pede `financeiro_saldos_em_aberto(período = mês atual, ordenação = maior valor, limite = 5)` → o anfitrião executa **com as permissões do usuário** → a IA responde em texto.
 - **Nesta fase, só tools de leitura.** Nenhuma tool cria, altera, apaga ou envia nada (ver seção 9).
-- O catálogo enviado em cada conversa já vem **filtrado pelo anfitrião**: o usuário sem acesso ao Financeiro nem tem a tool `financeiro.*` disponível. E o anfitrião checa de novo ao executar.
+- O catálogo enviado em cada conversa já vem **filtrado pelo anfitrião**: o usuário sem acesso ao Financeiro nem tem a tool `financeiro_*` disponível. E o anfitrião checa de novo ao executar.
 
 ## 4. Perfil do anfitrião (como a IA "entende" um sistema)
 
@@ -102,7 +104,7 @@ A IA **não executa** as tools: ela pede, o anfitrião executa e devolve o resul
 ```text
 POST /v1/conversations
 { "host_profile": "agenda-demo", "user_ref": "u-123",
-  "allowed_tools": ["financeiro.saldos_em_aberto", "agenda.atendimentos"] }
+  "allowed_tools": ["financeiro_saldos_em_aberto", "agenda_atendimentos"] }
 → { "conversation_id": "c-1" }
 
 POST /v1/conversations/c-1/messages
@@ -110,7 +112,7 @@ POST /v1/conversations/c-1/messages
   "page": "Financeiro › Recebimentos",
   "error": null }
 → { "status": "tool_requested",
-    "tool_calls": [{ "id": "t-1", "name": "financeiro.saldos_em_aberto",
+    "tool_calls": [{ "id": "t-1", "name": "financeiro_saldos_em_aberto",
                      "input": { "period": "2026-10", "order": "amount_desc", "limit": 5 } }] }
 
 POST /v1/conversations/c-1/tool-results

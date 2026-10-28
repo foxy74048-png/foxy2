@@ -1,8 +1,10 @@
 <?php
 
+use App\Ai\Assistant\AssistantException;
 use App\Platform\ApiClients\AuthenticateApiClient;
 use App\Platform\ApiClients\RequireScope;
 use App\Platform\Http\ApiError;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -33,6 +35,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (Throwable $e, Request $request) {
             if (! $request->is('api/*')) {
                 return null;
+            }
+
+            if ($e instanceof AssistantException) {
+                return ApiError::response($e->errorCode, $e->getMessage(), $e->status);
+            }
+
+            if ($e instanceof ModelNotFoundException) {
+                return ApiError::response('not_found', 'Não encontrado.', 404);
             }
 
             if ($e instanceof ValidationException) {

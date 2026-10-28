@@ -51,7 +51,7 @@ Regras:
 | `host_profiles` | organization_id, slug, name, tone, current_knowledge_version, current_tools_version | |
 | `knowledge_packs` | host_profile_id, version, content (texto), tokens_estimated | Versões antigas ficam guardadas. |
 | `tool_catalogs` | host_profile_id, version, tools (json: nome, descrição, schema, permissão, risco) | Só `risco = leitura` é aceito nesta fase. |
-| `conversations` | organization_id, host_profile_id, user_ref, allowed_tools, expires_at | Apagada após 30 dias (job diário). |
+| `conversations` | organization_id, host_profile_id, user_ref, model, effort, system_prompt, tools, allowed_tools, versões, status, expires_at | Regras, tools e modelo fixados na abertura. Apagada após 30 dias (job diário). |
 | `conversation_messages` | conversation_id, role, content (json), created_at | Guarda o histórico no formato do provedor para o cache funcionar. |
 | `usage_records` | organization_id, user_ref, conversation_id, model, tokens (entrada, cache, saída), cost_usd, request_id | Não guarda texto. |
 | `usage_counters` | organization_id, user_ref (nullable), month, requests, cost_usd | Base do limite mensal; atualização atômica. |
@@ -63,6 +63,7 @@ Todas com `organization_id` indexado (exceto `organizations`). IDs ULID, que pod
 
 | Método | Rota | Para quê |
 |---|---|---|
+| PUT / GET | `/host-profiles/{slug}` | Cria/atualiza o perfil (nome, descrição, tom) / consulta versões |
 | PUT | `/host-profiles/{slug}/knowledge` | Anfitrião publica nova versão do conhecimento |
 | PUT | `/host-profiles/{slug}/tools` | Anfitrião publica nova versão do catálogo de tools |
 | POST | `/conversations` | Abre conversa (`host_profile`, `user_ref`, `allowed_tools`) |
@@ -80,7 +81,8 @@ Todas com `organization_id` indexado (exceto `organizations`). IDs ULID, que pod
 1. Middleware autentica a chave → monta o `ExecutionContext` → rate limit.
 2. `Entitlements::canUse(org, user_ref)` → senão, `429`.
 3. Monta a requisição ao modelo **sempre na mesma ordem**, para o cache funcionar:
-   `tools` (catálogo permitido, ordem fixa, `strict: true`) → `system` (regras Foxy + perfil + conhecimento, **ponto de cache aqui**) → histórico → mensagem nova com tela/erro.
+   `tools` (catálogo permitido, ordem fixa; entrada validada pela Foxy) → `system` (regras Foxy + perfil + conhecimento, **ponto de cache aqui**) → histórico → mensagem nova com data, tela e erro.
+   Regras, tools e modelo ficam **fixos na abertura da conversa** e o histórico **só cresce**: o modelo guarda o próprio raciocínio no histórico e recusa histórico editado (e o cache se perderia). Por isso a data de hoje vai na mensagem, não nas regras.
 4. Chama o `ModelProvider` (timeout de 60 s, até 2 novas tentativas automáticas do SDK).
 5. Se o modelo pediu tool: confere se ela está em `allowed_tools` e se a entrada valida no schema → grava e devolve `tool_requested`. Tool fora da lista = erro registrado na auditoria, nunca repassado.
 6. Se respondeu: grava a mensagem e devolve `answered` (com `escalate`, se houver).
@@ -110,7 +112,7 @@ Perguntas sobre dados fazem ~2 chamadas (pedido de tool + resposta), ou seja, ce
 **O que mantém o custo baixo desde o início:**
 - **Cache de prompt:** regras + conhecimento + tools ficam num prefixo fixo. Releituras custam de 5% a 10% do preço normal; o cache dura 5 minutos e se renova a cada uso.
 - **Esforço baixo** (`effort: low`): é suporte e consulta, não raciocínio pesado.
-- **Histórico curto:** só as últimas mensagens da conversa vão ao modelo.
+- **Conversa com limite de mensagens** (padrão 20): o histórico vai inteiro e fica em cache; ao atingir o limite, o anfitrião abre outra conversa. Cortar mensagens antigas não é possível (ver seção 5).
 - **O modelo é configuração** (`FOXY_AI_MODEL`, `FOXY_AI_EFFORT`) e pode ser diferente por perfil de anfitrião, sem mudar código.
 
 **Escolha do modelo (C2):** começar pelo Opus 5.5 com esforço `low` como referência de qualidade e, no console, rodar as mesmas perguntas no Sonnet 5.5 e no Haiku 5.5. Você escolhe o modelo padrão vendo qualidade e custo lado a lado.
@@ -152,7 +154,7 @@ Cada fatia é entregue com testes e commit próprio:
 
 1. ✔ **Esqueleto:** Laravel 13, PostgreSQL/SQLite, estrutura de módulos, CI de testes.
 2. ✔ **Platform mínima:** Organization, ApiClient (+ comando para criar), ExecutionContext, Entitlements (uso), Audit.
-3. **Foxy AI — suporte de uso:** HostProfile + KnowledgePack, conversa, `AnthropicProvider` com cache, `FakeProvider`, uso e custo.
+3. ✔ **Foxy AI — suporte de uso:** HostProfile + KnowledgePack, conversa, `AnthropicProvider` com cache, `FakeProvider`, uso e custo.
 4. **Ajuda com erros:** campo `error`, sinal `escalate`.
 5. **Perguntas sobre dados:** ToolCatalog, `tool_requested` / `tool-results`, validações e limite de rodadas.
 6. **Host de demonstração + console de testes:** negócio fictício, tools de leitura, tela que mostra resposta, tools pedidas, tokens e custo, com comparação entre modelos.
