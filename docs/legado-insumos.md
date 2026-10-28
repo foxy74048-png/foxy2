@@ -1,4 +1,4 @@
-# Insumos do sistema legado (`../tarologa`)
+# Insumos do sistema legado (`C:\Users\mdona\OneDrive\Desktop\Tarot\tarologa`)
 
 > **Atualização 2026-10-13:** primeiro será desenvolvida a Foxy AI; se o sistema atual vai usá-la ou se o caminho é seguir só com a nova Foxy fica para depois.
 >

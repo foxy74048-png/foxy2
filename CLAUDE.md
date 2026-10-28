@@ -12,7 +12,7 @@ Leia `docs/00-contexto-estrategico.md` antes de decisões de arquitetura. Resumo
 - **Segurança/LGPD:** segredos fora do repositório, coletar só o necessário, auditar ações relevantes.
 - **Legado:** o sistema antigo não define a nova arquitetura.
 
-## Relação com o sistema legado (`../tarologa`)
+## Relação com o sistema legado (`C:\Users\mdona\OneDrive\Desktop\Tarot\tarologa`)
 
 - O legado **não é alterado** por este projeto. Repositórios, bancos e deploys separados.
 - Este projeto **nunca** lê o banco nem importa código do legado em tempo de execução.
@@ -22,7 +22,7 @@ Leia `docs/00-contexto-estrategico.md` antes de decisões de arquitetura. Resumo
 ## Processo de definição (em andamento)
 
 1. Core conceitual — `docs/01-core-conceitual.md`
-2. Foxy AI — primeiro produto (`docs/02-foxy-ai.md`), consumida só por API por todos os sistemas; o Foxy Commerce (`docs/03-foxy-commerce.md`) vem em seguida
+2. Foxy AI — primeiro produto (`docs/02-foxy-ai.md`): assistente que entende o sistema onde é colocado (suporte de uso, erros e perguntas sobre os dados via tools de leitura), consumida só por API; o Foxy Commerce (`docs/03-foxy-commerce.md`) vem em seguida
 3. Recorte mínimo da Platform a implementar junto com a Foxy AI
 4. Arquitetura concreta (módulos, tenancy, banco, APIs, eventos, auth, infra, stack)
 5. Implementação — **somente após aprovação explícita da etapa 4**
