@@ -3,9 +3,11 @@
 namespace App\Ai\Http;
 
 use App\Ai\HostProfiles\HostProfile;
+use App\Ai\HostProfiles\ToolSchema;
 use App\Platform\Audit\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class HostProfileController
 {
@@ -48,6 +50,31 @@ class HostProfileController
         return response()->json([
             'version' => $pack->version,
             'changed' => $pack->version !== $before,
+        ]);
+    }
+
+    public function putTools(Request $request, string $slug): JsonResponse
+    {
+        $profile = $this->find($slug);
+        $request->validate(['tools' => ['present', 'array']]);
+
+        [$tools, $errors] = ToolSchema::normalizeCatalog($request->input('tools'));
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages(['tools' => $errors]);
+        }
+
+        $before = $profile->current_tools_version;
+        $catalog = $profile->publishTools($tools);
+
+        if ($catalog->version !== $before) {
+            Audit::record('ai.tools_published', 'ok', $profile, ['version' => $catalog->version, 'tools' => $catalog->names()]);
+        }
+
+        return response()->json([
+            'version' => $catalog->version,
+            'changed' => $catalog->version !== $before,
+            'tools' => $catalog->names(),
         ]);
     }
 

@@ -16,7 +16,7 @@ Etapas 1–4 aprovadas; implementação da Foxy AI em andamento (Laravel 13, PHP
 | — Foxy Commerce (segundo produto) | [docs/03-foxy-commerce.md](docs/03-foxy-commerce.md) | rascunho pausado — D6 decidida |
 | 3. Recorte da Platform | [docs/04-recorte-platform.md](docs/04-recorte-platform.md) | v1.0 — aprovado |
 | 4. Arquitetura concreta | [docs/05-arquitetura.md](docs/05-arquitetura.md) | v1.0 — C1–C4 aprovadas |
-| 5. Implementação | [docs/05-arquitetura.md](docs/05-arquitetura.md), seção 10 | em andamento |
+| 5. Implementação | [docs/05-arquitetura.md](docs/05-arquitetura.md), seção 10 | em andamento — guia da API: [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md) |
 
 Insumo de apoio: [docs/legado-insumos.md](docs/legado-insumos.md) — o que o sistema atual já resolve e o que pode ser aproveitado.
 

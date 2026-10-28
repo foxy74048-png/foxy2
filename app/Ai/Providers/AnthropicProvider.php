@@ -40,11 +40,11 @@ class AnthropicProvider implements ModelProvider
             'system' => [['type' => 'text', 'text' => $request->system, 'cache_control' => ['type' => 'ephemeral']]],
             'cacheControl' => ['type' => 'ephemeral'],
             'outputConfig' => ['effort' => $request->effort],
-            'messages' => $request->messages,
+            'messages' => array_map(self::restoreEmptyToolInputs(...), $request->messages),
         ];
 
         if ($request->tools !== []) {
-            $params['tools'] = $request->tools;
+            $params['tools'] = array_map(self::restoreEmptyProperties(...), $request->tools);
 
             if (! $request->allowTools) {
                 $params['toolChoice'] = ['type' => 'none'];
@@ -73,5 +73,32 @@ class AnthropicProvider implements ModelProvider
             cacheReadTokens: (int) ($message->usage->cacheReadInputTokens ?? 0),
             cacheWriteTokens: (int) ($message->usage->cacheCreationInputTokens ?? 0),
         );
+    }
+
+    /**
+     * O histórico volta do banco como array PHP, onde {} vira []; a API exige objeto em tool_use.input.
+     */
+    private static function restoreEmptyToolInputs(array $message): array
+    {
+        if (! is_array($message['content'])) {
+            return $message;
+        }
+
+        foreach ($message['content'] as $i => $block) {
+            if (($block['type'] ?? null) === 'tool_use' && ($block['input'] ?? []) === []) {
+                $message['content'][$i]['input'] = new \stdClass;
+            }
+        }
+
+        return $message;
+    }
+
+    private static function restoreEmptyProperties(array $tool): array
+    {
+        if (($tool['input_schema']['properties'] ?? []) === []) {
+            $tool['input_schema']['properties'] = new \stdClass;
+        }
+
+        return $tool;
     }
 }

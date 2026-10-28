@@ -22,10 +22,12 @@ Route::prefix('v1')->middleware(['api.client', 'throttle:api-client'])->group(fu
         Route::put('/host-profiles/{slug}', [HostProfileController::class, 'upsert']);
         Route::get('/host-profiles/{slug}', [HostProfileController::class, 'show']);
         Route::put('/host-profiles/{slug}/knowledge', [HostProfileController::class, 'putKnowledge']);
+        Route::put('/host-profiles/{slug}/tools', [HostProfileController::class, 'putTools']);
     });
 
     Route::middleware('api.scope:ai.conversations')->group(function () {
         Route::post('/conversations', [ConversationController::class, 'store']);
         Route::post('/conversations/{id}/messages', [ConversationController::class, 'message']);
+        Route::post('/conversations/{id}/tool-results', [ConversationController::class, 'toolResults']);
     });
 });

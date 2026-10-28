@@ -23,6 +23,39 @@ class HostProfile extends Model
         return $this->hasMany(KnowledgePack::class);
     }
 
+    public function toolCatalogs(): HasMany
+    {
+        return $this->hasMany(ToolCatalog::class);
+    }
+
+    public function currentTools(): ?ToolCatalog
+    {
+        return $this->toolCatalogs()->where('version', $this->current_tools_version)->first();
+    }
+
+    /**
+     * Publica nova versão do catálogo (já normalizado por ToolSchema); catálogo igual não gera versão.
+     */
+    public function publishTools(array $tools): ToolCatalog
+    {
+        $hash = hash('sha256', json_encode($tools));
+        $current = $this->currentTools();
+
+        if ($current && $current->content_hash === $hash) {
+            return $current;
+        }
+
+        $catalog = $this->toolCatalogs()->create([
+            'version' => $this->current_tools_version + 1,
+            'tools' => $tools,
+            'content_hash' => $hash,
+        ]);
+
+        $this->forceFill(['current_tools_version' => $catalog->version])->save();
+
+        return $catalog;
+    }
+
     public function currentKnowledge(): ?KnowledgePack
     {
         return $this->knowledgePacks()->where('version', $this->current_knowledge_version)->first();
