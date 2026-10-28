@@ -23,8 +23,8 @@ Leia `docs/00-contexto-estrategico.md` antes de decisões de arquitetura. Resumo
 
 1. Core conceitual — `docs/01-core-conceitual.md`
 2. Foxy AI — primeiro produto (`docs/02-foxy-ai.md`): assistente que entende o sistema onde é colocado (suporte de uso, erros e perguntas sobre os dados via tools de leitura), consumida só por API; o Foxy Commerce (`docs/03-foxy-commerce.md`) vem em seguida
-3. Recorte mínimo da Platform a implementar junto com a Foxy AI
-4. Arquitetura concreta (módulos, tenancy, banco, APIs, eventos, auth, infra, stack)
+3. Recorte mínimo da Platform a implementar junto com a Foxy AI — `docs/04-recorte-platform.md`
+4. Arquitetura concreta (módulos, tenancy, banco, APIs, eventos, auth, infra, stack) — `docs/05-arquitetura.md`
 5. Implementação — **somente após aprovação explícita da etapa 4**
 
 Princípio: definir o Core conceitualmente, implementar só o Core necessário para o primeiro produto, boundaries preparados para evolução.

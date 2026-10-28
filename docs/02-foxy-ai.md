@@ -1,6 +1,6 @@
 # Foxy AI — Primeiro produto do ecossistema
 
-> **Status:** Rascunho v0.2 — decisões pendentes na seção 12
+> **Status:** v1.0 — decisões B1–B8 aprovadas em 2026-10-28 (seção 13)
 > **Etapa:** 2 de 5 (Core conceitual ✔ → **Foxy AI** → Recorte da Platform → Arquitetura concreta → Implementação)
 > **Decisão de ordem (2026-10-13):** a Foxy AI vem antes do Commerce, por ser útil a todos os produtos.
 > **Mudança de direção (2026-10-28):** a primeira capacidade deixa de ser "escrita assistida" e passa a ser o **assistente do sistema** (seção 3). A escrita assistida da v0.1 vira segunda capacidade (seção 10).
@@ -194,14 +194,16 @@ Um **console de testes interno** com um **anfitrião de demonstração**: um neg
 
 Assim a Foxy AI é provada de ponta a ponta sem depender de nenhum sistema existente. Qual será o primeiro anfitrião real é decisão posterior (B7).
 
-## 13. Decisões pendentes
+## 13. Decisões (aprovadas em 2026-10-28)
 
-| # | Decisão | Recomendação |
+Critério dado pelo responsável: **o melhor em desempenho e o menor custo no início, com tudo preparado para crescer em grande escala.**
+
+| # | Decisão | Decidido |
 |---|---|---|
 | **B1** | Os três usos entram juntos? | **Sim, na ordem** suporte de uso → erros → perguntas sobre dados (só leitura). Os dois primeiros não precisam de tools e validam a base rápido. |
 | **B2** | Quem executa as tools? | **O anfitrião**, no fluxo pede → executa → devolve (seção 5). A Foxy AI não guarda credenciais do anfitrião nem precisa alcançar a rede dele, e a permissão fica com quem já a conhece. Alternativa descartada por ora: a Foxy AI chamar um endpoint do anfitrião. |
 | **B3** | Como a IA usa o conhecimento? | **Pacote inteiro no contexto**, com cache do provedor, enquanto o manual for pequeno. Busca por embeddings só quando o pacote não couber ou ficar caro. |
-| **B4** | Provedor de modelo | Etapa 4. Critérios: qualidade em português, uso de tools confiável, custo, latência, política de não treino, termos LGPD. |
+| **B4** | Provedor de modelo | Anthropic (Claude) — detalhado na etapa 4 (`docs/05-arquitetura.md`, seção 6). O modelo é configuração: trocar não muda código. |
 | **B5** | Guardar conversas? | Sim, **por 30 dias**, para continuidade e para melhorar o conhecimento; apagáveis por `user_ref`. Nunca usadas para treino. |
 | **B6** | Para onde vai o "falar com o suporte"? | A Foxy AI só devolve `escalate` com um resumo; o **anfitrião** decide o canal (WhatsApp, e-mail, chamado). |
 | **B7** | Primeiro anfitrião real | **Depois** da validação no console. Candidatos: o sistema atual (consumindo a API, como melhoria dele) ou o Commerce. |
@@ -211,4 +213,4 @@ Decisões da v0.1 que continuam valendo: A3 (sistema externo — adiada) e A5 (a
 
 ## 14. Próxima etapa
 
-Com B1–B8 respondidas, este documento vira v1.0 e passamos à **etapa 3 — Recorte da Platform** (a tabela da seção 8 vira escopo fechado), depois **etapa 4 — Arquitetura concreta**. Código só após aprovação da etapa 4.
+Documento fechado. Seguem **etapa 3 — Recorte da Platform** (a tabela da seção 8 vira escopo fechado), depois **etapa 4 — Arquitetura concreta**. Código só após aprovação da etapa 4.
