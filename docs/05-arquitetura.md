@@ -158,7 +158,7 @@ Cada fatia é entregue com testes e commit próprio:
 4. ✔ **Ajuda com erros:** campo `error`, sinal `escalate` (tool interna `foxy_encaminhar_suporte`).
 5. ✔ **Perguntas sobre dados:** ToolCatalog, `tool_requested` / `tool-results`, validações e limite de rodadas. Guia de integração: `06-api-foxy-ai.md`.
 6. ✔ **Host de demonstração + console de testes** (`app/Demo`, `/console`): negócio fictício, tools de leitura, tela que mostra resposta, tools pedidas, tokens e custo, com comparação entre modelos.
-7. **Operação:** retenção de 30 dias, relatório de uso, exclusão por `user_ref`.
+7. ✔ **Operação:** retenção de 30 dias (`foxy:ai:purge-conversations`, diário às 03:00), relatório de uso (`foxy:ai:usage` e `GET /usage`), exclusão por `user_ref` (`DELETE /conversations`).
 
 **Ações que só você pode fazer** (ficam para o fim, conforme combinado): criar o repositório privado no GitHub, criar a conta/chave na Anthropic (com o limite de gasto mensal definido no painel deles), apontar o subdomínio e liberar o deploy no servidor.
 

@@ -2,6 +2,7 @@
 
 use App\Ai\Http\ConversationController;
 use App\Ai\Http\HostProfileController;
+use App\Ai\Http\UsageController;
 use App\Platform\Context\ExecutionContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -29,5 +30,7 @@ Route::prefix('v1')->middleware(['api.client', 'throttle:api-client'])->group(fu
         Route::post('/conversations', [ConversationController::class, 'store']);
         Route::post('/conversations/{id}/messages', [ConversationController::class, 'message']);
         Route::post('/conversations/{id}/tool-results', [ConversationController::class, 'toolResults']);
+        Route::delete('/conversations', [ConversationController::class, 'destroyForUser']);
+        Route::get('/usage', [UsageController::class, 'show']);
     });
 });

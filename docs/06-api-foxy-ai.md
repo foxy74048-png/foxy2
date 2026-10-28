@@ -79,7 +79,17 @@ POST /api/v1/conversations/{id}/tool-results
 
 **Encaminhar ao suporte:** quando `escalate` vier preenchido (`{ "reason": "defeito" | "sem_resposta" | "pedido_da_pessoa", "summary": "..." }`), abra o chamado no seu canal (WhatsApp, e-mail...) com o resumo.
 
-## 4. Erros que o sistema deve tratar
+## 4. Privacidade e uso
+
+```http
+DELETE /api/v1/conversations?user_ref=u-123   → { "deleted": 2 }
+GET    /api/v1/usage?month=2026-10            → { "month", "messages", "cost_usd", "by_model": [...] }
+```
+
+- Conversas (com os resultados de tools que passaram por elas) ficam **30 dias** e são apagadas automaticamente. Use o `DELETE` quando um usuário pedir exclusão dos dados (LGPD).
+- Os registros de uso (tokens e custo, sem texto) ficam para cobrança e relatório.
+
+## 5. Erros que o sistema deve tratar
 
 | HTTP | `code` | O que fazer |
 |---|---|---|

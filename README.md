@@ -38,4 +38,13 @@ php artisan foxy:console-user:create voce@email.com # acesso da equipe (senha ap
 ```
 
 Sem chave da Anthropic, use `FOXY_AI_PROVIDER=fake` no `.env` (respostas de teste). Com a chave, `FOXY_AI_PROVIDER=anthropic` e `ANTHROPIC_API_KEY=...`.
+
+### Rotina e relatórios
+
+```bash
+php artisan foxy:ai:usage --month=2026-10   # uso e custo por organização e modelo
+php artisan foxy:ai:purge-conversations     # apaga conversas vencidas (agendado todo dia às 03:00)
+```
+
+O agendamento depende do cron do Laravel no servidor: `* * * * * php /caminho/artisan schedule:run`.
 Limites padrão de uso em `config/foxy.php` (cada organização pode ter os seus em `organizations.limits`).

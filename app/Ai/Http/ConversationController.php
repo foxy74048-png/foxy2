@@ -5,6 +5,7 @@ namespace App\Ai\Http;
 use App\Ai\Assistant\Assistant;
 use App\Ai\Conversations\Conversation;
 use App\Ai\HostProfiles\HostProfile;
+use App\Platform\Audit\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -50,6 +51,24 @@ class ConversationController
         $result = $this->assistant->reply(Conversation::findOrFail($id), $data['text'], $data['page'] ?? null, $data['error'] ?? null);
 
         return response()->json($result->toArray());
+    }
+
+    /**
+     * LGPD: apaga todas as conversas (e mensagens) de um usuário do anfitrião.
+     */
+    public function destroyForUser(Request $request): JsonResponse
+    {
+        $data = $request->validate(['user_ref' => ['required', 'string', 'max:120']]);
+
+        $deleted = 0;
+        Conversation::where('user_ref', $data['user_ref'])->each(function (Conversation $conversation) use (&$deleted) {
+            $conversation->delete();
+            $deleted++;
+        });
+
+        Audit::record('ai.conversations_deleted', 'ok', null, ['count' => $deleted]);
+
+        return response()->json(['deleted' => $deleted]);
     }
 
     public function toolResults(Request $request, string $id): JsonResponse
