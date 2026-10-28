@@ -1,6 +1,6 @@
 # Etapa 4 — Arquitetura concreta (Foxy AI + Platform mínima)
 
-> **Status:** Proposta v0.1 — **aguardando aprovação** (seção 11). Código só depois dela.
+> **Status:** v1.0 — C1–C4 aprovadas em 2026-10-28 (seção 11). Implementação em andamento (seção 10).
 > **Critério do responsável (2026-10-28):** melhor desempenho e menor custo no início, com tudo preparado para crescer em grande escala.
 > **Base:** `02-foxy-ai.md` v1.0 e `04-recorte-platform.md` v1.0.
 
@@ -160,7 +160,7 @@ Cada fatia é entregue com testes e commit próprio:
 
 **Ações que só você pode fazer** (ficam para o fim, conforme combinado): criar o repositório privado no GitHub, criar a conta/chave na Anthropic (com o limite de gasto mensal definido no painel deles), apontar o subdomínio e liberar o deploy no servidor.
 
-## 11. Decisões para aprovar
+## 11. Decisões (aprovadas em 2026-10-28)
 
 | # | Decisão | Recomendação |
 |---|---|---|
@@ -169,4 +169,4 @@ Cada fatia é entregue com testes e commit próprio:
 | **C3** | Onde roda no início | No EC2 atual, com pasta, banco, usuário de banco e pool PHP-FPM próprios (limite de processos para não afetar o legado). Instância própria quando o uso pedir. |
 | **C4** | Streaming | Não na v1 (respostas de suporte são curtas); entra depois como rota adicional. |
 
-Aprovadas C1–C4, a etapa 4 vira v1.0 e começa a implementação pela fatia 1.
+Todas aprovadas como recomendado.

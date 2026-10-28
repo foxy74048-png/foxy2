@@ -28,4 +28,4 @@
 
 - [x] Cada capacidade com nível definido e motivo (tabela acima).
 - [x] Nada da lista "fora" é necessário para a seção 6 de `02-foxy-ai.md` funcionar.
-- [ ] Aprovação junto com a etapa 4.
+- [x] Aprovado junto com a etapa 4 (2026-10-28).

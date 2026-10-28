@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        db: [sqlite, pgsql]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: foxy2_test
+          POSTGRES_USER: foxy2
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, pdo_pgsql
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      - name: Testes (${{ matrix.db }})
+        run: php artisan test
+        env:
+          DB_CONNECTION: ${{ matrix.db }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: ${{ matrix.db == 'pgsql' && 'foxy2_test' || ':memory:' }}
+          DB_USERNAME: foxy2
+          DB_PASSWORD: secret
