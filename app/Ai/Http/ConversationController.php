@@ -35,9 +35,13 @@ class ConversationController
         $data = $request->validate([
             'text' => ['required', 'string', 'max:4000'],
             'page' => ['nullable', 'string', 'max:200'],
+            'error' => ['nullable', 'array:message,code,action'],
+            'error.message' => ['required_with:error', 'string', 'max:500'],
+            'error.code' => ['nullable', 'string', 'max:60'],
+            'error.action' => ['nullable', 'string', 'max:200'],
         ]);
 
-        $result = $this->assistant->reply(Conversation::findOrFail($id), $data['text'], $data['page'] ?? null);
+        $result = $this->assistant->reply(Conversation::findOrFail($id), $data['text'], $data['page'] ?? null, $data['error'] ?? null);
 
         return response()->json($result->toArray());
     }

@@ -64,7 +64,8 @@ A mesma Foxy AI serve qualquer sistema: o que muda de um para outro é o **perfi
 
 - O anfitrião envia o **contexto do erro**: código/mensagem, tela, ação que o usuário tentava fazer. Sem stack trace, sem dados pessoais.
 - A IA explica em linguagem simples e sugere o próximo passo.
-- Se parecer defeito do sistema (e não uso), a IA monta um **resumo para o suporte** e devolve um sinal de `escalate`; quem abre o chamado é o anfitrião (ver B6).
+- Se parecer defeito do sistema (e não uso), ou se a pessoa pedir atendimento humano, a IA monta um **resumo para o suporte** e a resposta volta com `escalate: { "reason": "defeito" | "sem_resposta" | "pedido_da_pessoa", "summary": "..." }`; quem abre o chamado é o anfitrião (ver B6). Internamente isso é a tool `foxy_encaminhar_suporte`, resolvida pela própria Foxy (o prefixo `foxy_` é reservado).
+- Formato do erro na mensagem: `"error": { "message": "Horário indisponível", "code": "AG-409", "action": "Salvar atendimento às 14h" }` (só `message` é obrigatório).
 
 ### 3.3 Perguntas sobre os dados
 

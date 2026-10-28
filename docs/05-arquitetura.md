@@ -155,7 +155,7 @@ Cada fatia é entregue com testes e commit próprio:
 1. ✔ **Esqueleto:** Laravel 13, PostgreSQL/SQLite, estrutura de módulos, CI de testes.
 2. ✔ **Platform mínima:** Organization, ApiClient (+ comando para criar), ExecutionContext, Entitlements (uso), Audit.
 3. ✔ **Foxy AI — suporte de uso:** HostProfile + KnowledgePack, conversa, `AnthropicProvider` com cache, `FakeProvider`, uso e custo.
-4. **Ajuda com erros:** campo `error`, sinal `escalate`.
+4. ✔ **Ajuda com erros:** campo `error`, sinal `escalate` (tool interna `foxy_encaminhar_suporte`).
 5. **Perguntas sobre dados:** ToolCatalog, `tool_requested` / `tool-results`, validações e limite de rodadas.
 6. **Host de demonstração + console de testes:** negócio fictício, tools de leitura, tela que mostra resposta, tools pedidas, tokens e custo, com comparação entre modelos.
 7. **Operação:** retenção de 30 dias, relatório de uso, exclusão por `user_ref`.
