@@ -2,11 +2,16 @@
 
 namespace App\Platform\Context;
 
+use App\Platform\Integrations\Integration;
 use App\Platform\Organizations\Organization;
 use Illuminate\Support\Str;
 
 /**
- * Quem está agindo, em nome de qual organização e de quem — ver docs/01-core-conceitual.md, seção 4.
+ * Quem está agindo, por qual sistema (integração), em nome de qual cliente (organização) e de quem —
+ * ver docs/01-core-conceitual.md (seção 4) e docs/07 (seção 1).
+ *
+ * A organização é nula só em ações do próprio sistema (configurar manual, criar clientes); dados de
+ * cliente exigem organização (BelongsToOrganization).
  */
 final readonly class ExecutionContext
 {
@@ -19,7 +24,8 @@ final readonly class ExecutionContext
     public const PRINCIPAL_SYSTEM = 'system';
 
     public function __construct(
-        public Organization $organization,
+        public Integration $integration,
+        public ?Organization $organization,
         public string $principalType,
         public ?string $principalId,
         public string $source,
@@ -27,14 +33,19 @@ final readonly class ExecutionContext
         public ?string $onBehalfOf = null,
     ) {}
 
-    public static function forApiClient(Organization $organization, string $apiClientId): self
+    public static function forApiClient(Integration $integration, string $apiClientId, ?Organization $organization = null): self
     {
-        return new self($organization, self::PRINCIPAL_API_CLIENT, $apiClientId, 'api', (string) Str::ulid());
+        return new self($integration, $organization, self::PRINCIPAL_API_CLIENT, $apiClientId, 'api', (string) Str::ulid());
     }
 
     public static function forSystem(Organization $organization, string $source = 'job'): self
     {
-        return new self($organization, self::PRINCIPAL_SYSTEM, null, $source, (string) Str::ulid());
+        return new self($organization->integration, $organization, self::PRINCIPAL_SYSTEM, null, $source, (string) Str::ulid());
+    }
+
+    public function withOrganization(Organization $organization): self
+    {
+        return new self($this->integration, $organization, $this->principalType, $this->principalId, $this->source, $this->correlationId, $this->onBehalfOf);
     }
 
     /**
@@ -42,7 +53,7 @@ final readonly class ExecutionContext
      */
     public function asAiAgentFor(string $userRef): self
     {
-        return new self($this->organization, self::PRINCIPAL_AI_AGENT, $this->principalId, $this->source, $this->correlationId, $userRef);
+        return new self($this->integration, $this->organization, self::PRINCIPAL_AI_AGENT, $this->principalId, $this->source, $this->correlationId, $userRef);
     }
 
     public static function current(): self

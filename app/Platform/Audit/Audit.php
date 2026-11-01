@@ -8,14 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class Audit
 {
     /**
-     * Registra uma ação com quem, em nome de quem e o correlation_id do contexto atual.
+     * Registra uma ação com sistema, cliente (se houver), quem, em nome de quem e o correlation_id do contexto.
      */
     public static function record(string $action, string $result = 'ok', ?Model $subject = null, array $metadata = []): AuditEntry
     {
         $context = ExecutionContext::current();
 
         return AuditEntry::create([
-            'organization_id' => $context->organization->getKey(),
+            'integration_id' => $context->integration->getKey(),
+            'organization_id' => $context->organization?->getKey(),
             'principal_type' => $context->principalType,
             'principal_id' => $context->principalId,
             'on_behalf_of' => $context->onBehalfOf,

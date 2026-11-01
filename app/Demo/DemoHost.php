@@ -3,6 +3,7 @@
 namespace App\Demo;
 
 use App\Platform\ApiClients\ApiClient;
+use App\Platform\Integrations\Integration;
 use App\Platform\Organizations\Organization;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
@@ -21,22 +22,23 @@ class DemoHost
     public function __construct(private DemoBusiness $business = new DemoBusiness) {}
 
     /**
-     * Cria (ou reaproveita) a organização de demonstração, gera uma chave nova e publica perfil, manual e tools.
+     * Cria (ou reaproveita) o sistema de demonstração, gera uma chave nova do sistema e, pela API,
+     * publica perfil, manual e tools e cria o cliente de demonstração.
      */
     public static function setup(): Organization
     {
-        $organization = Organization::firstOrCreate(['name' => 'Foxy — Demonstração']);
-        ApiClient::where('organization_id', $organization->id)->where('name', 'Console de testes')->whereNull('revoked_at')
+        $integration = Integration::firstOrCreate(['name' => 'Foxy — Demonstração']);
+        ApiClient::where('integration_id', $integration->id)->where('name', 'Console de testes')->whereNull('revoked_at')
             ->get()->each->revoke();
 
-        [, $key] = ApiClient::issue($organization, 'Console de testes', ['ai.host_profiles', 'ai.conversations']);
-        Storage::put(self::KEY_FILE, Crypt::encryptString($key));
-
+        [, $key] = ApiClient::issue($integration, 'Console de testes', ['ai.host_profiles', 'ai.conversations', 'organizations']);
         $api = new InternalApi($key);
+
         foreach ([
             ['PUT', '/host-profiles/'.DemoBusiness::SLUG, DemoBusiness::profile()],
             ['PUT', '/host-profiles/'.DemoBusiness::SLUG.'/knowledge', ['content' => DemoBusiness::knowledge()]],
             ['PUT', '/host-profiles/'.DemoBusiness::SLUG.'/tools', ['tools' => DemoBusiness::tools()]],
+            ['POST', '/organizations', ['name' => DemoBusiness::profile()['name'], 'external_ref' => 'demo-clinica']],
         ] as [$method, $uri, $body]) {
             $response = $api->call($method, $uri, $body);
 
@@ -45,21 +47,39 @@ class DemoHost
             }
         }
 
-        return $organization;
+        Storage::put(self::KEY_FILE, Crypt::encryptString(json_encode(['key' => $key, 'organization' => $response['body']['id']])));
+
+        return Organization::findOrFail($response['body']['id']);
     }
 
     public static function isReady(): bool
     {
-        return Storage::exists(self::KEY_FILE);
+        return self::credentials() !== null;
+    }
+
+    /**
+     * @return array{key: string, organization: string}|null
+     */
+    private static function credentials(): ?array
+    {
+        if (! Storage::exists(self::KEY_FILE)) {
+            return null;
+        }
+
+        try {
+            $data = json_decode(Crypt::decryptString(Storage::get(self::KEY_FILE)), true);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return isset($data['key'], $data['organization']) ? $data : null;
     }
 
     private function api(): InternalApi
     {
-        if (! self::isReady()) {
-            throw new RuntimeException('Demonstração não configurada. Rode: php artisan foxy:demo:setup');
-        }
+        $credentials = self::credentials() ?? throw new RuntimeException('Demonstração não configurada. Rode: php artisan foxy:demo:setup');
 
-        return new InternalApi(Crypt::decryptString(Storage::get(self::KEY_FILE)));
+        return new InternalApi($credentials['key'], $credentials['organization']);
     }
 
     public function openConversation(string $userRef, string $role, ?string $model): array

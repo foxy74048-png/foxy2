@@ -5,7 +5,23 @@
 ## 1. Acesso
 
 - Base: `/api/v1`. Toda chamada leva `Authorization: Bearer <chave>`.
-- A chave é criada pela equipe Foxy (`php artisan foxy:api-client:create`) e define a organização. Escopos: `ai.host_profiles` (configurar) e `ai.conversations` (conversar).
+- Cada sistema Foxy é uma **integração**; cada cliente dele é uma **organização** (ver `07-planos-permissoes-mascotes.md`, seção 1).
+- A chave é criada pela equipe Foxy (`php artisan foxy:api-client:create`) e pode ser:
+  - **do sistema** (recomendado): atende todos os clientes; nas rotas de cliente, informe qual com o cabeçalho `X-Foxy-Organization: <id do cliente>`;
+  - **presa a um cliente** (`--organization=`): sempre age nesse cliente, sem cabeçalho.
+- Escopos: `organizations` (criar/atualizar clientes), `ai.host_profiles` (manual e consultas), `ai.conversations` (conversar e ver uso).
+
+### Clientes (organizações)
+
+```http
+POST  /api/v1/organizations        { "name": "Clínica Bem Viver", "external_ref": "id-no-seu-sistema" }  → 201 { "id", ... }
+GET   /api/v1/organizations?external_ref=id-no-seu-sistema
+PATCH /api/v1/organizations/{id}   { "status": "suspended" }   (ou "active")
+```
+
+- Com `external_ref`, o `POST` pode ser chamado sempre (cria na primeira vez, atualiza o nome depois) — não duplica.
+- Cliente suspenso → as rotas de cliente respondem `403 organization_suspended`.
+- O manual e as consultas (seção 2) são do **sistema** e valem para todos os clientes; conversas, uso e limites são **de cada cliente**.
 - Toda resposta traz `request_id` (no corpo e no cabeçalho `X-Request-Id`). Informe-o ao suporte em caso de problema.
 - Erros sempre no formato `{ "error": { "code": "...", "message": "...", "request_id": "..." } }`.
 
@@ -94,8 +110,10 @@ GET    /api/v1/usage?month=2026-10            → { "month", "messages", "cost_u
 | HTTP | `code` | O que fazer |
 |---|---|---|
 | 401 | `unauthenticated` | Chave ausente, errada ou revogada. |
-| 403 | `forbidden` | Chave sem o escopo da rota. |
-| 404 | `not_found` | Perfil ou conversa não existe (ou é de outra organização). |
+| 400 | `organization_required` | Rota de cliente chamada com chave do sistema sem o cabeçalho `X-Foxy-Organization`. |
+| 403 | `forbidden` | Chave sem o escopo da rota, ou chave presa a outro cliente. |
+| 403 | `organization_suspended` | Cliente suspenso pelo sistema. |
+| 404 | `not_found` / `organization_not_found` | Perfil, conversa ou cliente não existe neste sistema. |
 | 409 | `tool_results_pending` | A IA espera resultados: envie em `/tool-results` antes de nova mensagem. |
 | 409 | `conversation_full` | Limite de mensagens da conversa (padrão 20): abra outra conversa. |
 | 409 | `conversation_busy` | Outra mensagem está sendo processada nesta conversa. |

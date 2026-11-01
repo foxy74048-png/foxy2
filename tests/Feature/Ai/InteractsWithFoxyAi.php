@@ -5,6 +5,7 @@ namespace Tests\Feature\Ai;
 use App\Ai\Providers\FakeProvider;
 use App\Ai\Providers\ModelProvider;
 use App\Platform\ApiClients\ApiClient;
+use App\Platform\Integrations\Integration;
 use App\Platform\Organizations\Organization;
 
 trait InteractsWithFoxyAi
@@ -20,12 +21,31 @@ trait InteractsWithFoxyAi
     /**
      * @return array{0: Organization, 1: string}
      */
+    /**
+     * Um sistema novo com um cliente e uma chave presa a esse cliente.
+     *
+     * @return array{0: Organization, 1: string}
+     */
     protected function organizationWithKey(string $name = 'Clínica Demo', array $scopes = ['*'], array $attributes = []): array
     {
-        $organization = Organization::create(['name' => $name] + $attributes);
-        [, $key] = ApiClient::issue($organization, 'Teste', $scopes);
+        $integration = Integration::create(['name' => "Sistema de {$name}"]);
+        $organization = Organization::create(['name' => $name, 'integration_id' => $integration->id] + $attributes);
+        [, $key] = ApiClient::issue($integration, 'Teste', $scopes, $organization);
 
         return [$organization, $key];
+    }
+
+    /**
+     * Um sistema novo com uma chave do sistema (atende todos os clientes).
+     *
+     * @return array{0: Integration, 1: string}
+     */
+    protected function integrationWithKey(string $name = 'Foxy Agenda', array $scopes = ['*']): array
+    {
+        $integration = Integration::create(['name' => $name]);
+        [, $key] = ApiClient::issue($integration, 'Sistema', $scopes);
+
+        return [$integration, $key];
     }
 
     protected function createProfile(string $key, string $slug = 'agenda-demo', string $knowledge = "## Remarcar atendimento\nAgenda › clique no atendimento › Remarcar."): void

@@ -5,6 +5,7 @@ namespace Tests\Feature\Platform;
 use App\Platform\Context\ContextStore;
 use App\Platform\Context\ExecutionContext;
 use App\Platform\Entitlements\Entitlements;
+use App\Platform\Integrations\Integration;
 use App\Platform\Organizations\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -12,6 +13,11 @@ use Tests\TestCase;
 class EntitlementsTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function org(array $attributes): Organization
+    {
+        return Organization::create($attributes + ['integration_id' => Integration::create(['name' => 'Sistema'])->id]);
+    }
 
     private function as(Organization $organization): Entitlements
     {
@@ -22,7 +28,7 @@ class EntitlementsTest extends TestCase
 
     public function test_records_usage_per_organization_and_per_subject(): void
     {
-        $entitlements = $this->as(Organization::create(['name' => 'A']));
+        $entitlements = $this->as($this->org(['name' => 'A']));
 
         $entitlements->recordUsage('ai.messages', 'user-1', 1, 0.0125);
         $entitlements->recordUsage('ai.messages', 'user-1', 1, 0.0100);
@@ -35,7 +41,7 @@ class EntitlementsTest extends TestCase
 
     public function test_organization_monthly_limit_blocks_usage(): void
     {
-        $entitlements = $this->as(Organization::create(['name' => 'A', 'limits' => ['ai.messages.monthly' => 2]]));
+        $entitlements = $this->as($this->org(['name' => 'A', 'limits' => ['ai.messages.monthly' => 2]]));
 
         $entitlements->recordUsage('ai.messages', 'user-1');
         $this->assertTrue($entitlements->canUse('ai.messages', 'user-2'));
@@ -46,7 +52,7 @@ class EntitlementsTest extends TestCase
 
     public function test_per_subject_limit_blocks_only_that_subject(): void
     {
-        $entitlements = $this->as(Organization::create(['name' => 'A', 'limits' => ['ai.messages.monthly_per_subject' => 1]]));
+        $entitlements = $this->as($this->org(['name' => 'A', 'limits' => ['ai.messages.monthly_per_subject' => 1]]));
 
         $entitlements->recordUsage('ai.messages', 'user-1');
 
@@ -57,7 +63,7 @@ class EntitlementsTest extends TestCase
     public function test_limits_reset_in_a_new_month(): void
     {
         $this->travelTo(now()->setDate(2026, 10, 31));
-        $entitlements = $this->as(Organization::create(['name' => 'A', 'limits' => ['ai.messages.monthly' => 1]]));
+        $entitlements = $this->as($this->org(['name' => 'A', 'limits' => ['ai.messages.monthly' => 1]]));
         $entitlements->recordUsage('ai.messages');
         $this->assertFalse($entitlements->canUse('ai.messages'));
 
@@ -67,8 +73,8 @@ class EntitlementsTest extends TestCase
 
     public function test_usage_is_isolated_between_organizations(): void
     {
-        $orgA = Organization::create(['name' => 'A']);
-        $orgB = Organization::create(['name' => 'B']);
+        $orgA = $this->org(['name' => 'A']);
+        $orgB = $this->org(['name' => 'B']);
 
         $this->as($orgA)->recordUsage('ai.messages', null, 5);
 
@@ -78,18 +84,18 @@ class EntitlementsTest extends TestCase
     public function test_default_limits_come_from_config(): void
     {
         config(['foxy.limits' => ['ai.messages.monthly' => 1, 'ai.messages.monthly_per_subject' => null]]);
-        $org = Organization::create(['name' => 'A']);
+        $org = $this->org(['name' => 'A']);
 
         $this->assertSame(1, $org->limit('ai.messages.monthly'));
         $this->assertNull($org->limit('ai.messages.monthly_per_subject'));
 
-        $custom = Organization::create(['name' => 'B', 'limits' => ['ai.messages.monthly' => 9]]);
+        $custom = $this->org(['name' => 'B', 'limits' => ['ai.messages.monthly' => 9]]);
         $this->assertSame(9, $custom->limit('ai.messages.monthly'));
     }
 
     public function test_shipped_config_defines_default_ai_limits(): void
     {
-        $org = Organization::create(['name' => 'A']);
+        $org = $this->org(['name' => 'A']);
 
         $this->assertSame(2000, $org->limit('ai.messages.monthly'));
         $this->assertSame(200, $org->limit('ai.messages.monthly_per_subject'));

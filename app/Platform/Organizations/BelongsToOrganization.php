@@ -21,12 +21,13 @@ trait BelongsToOrganization
             }
 
             $store = app(ContextStore::class);
+            $organization = $store->has() ? $store->get()->organization : null;
 
-            if (! $store->has()) {
-                throw new LogicException('Dado de organização criado sem ExecutionContext.');
+            if (! $organization) {
+                throw new LogicException('Dado de organização criado sem organização no ExecutionContext.');
             }
 
-            $model->organization_id = $store->get()->organization->getKey();
+            $model->organization_id = $organization->getKey();
         });
     }
 

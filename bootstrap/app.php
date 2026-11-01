@@ -2,6 +2,7 @@
 
 use App\Ai\Assistant\AssistantException;
 use App\Platform\ApiClients\AuthenticateApiClient;
+use App\Platform\ApiClients\RequireOrganization;
 use App\Platform\ApiClients\RequireScope;
 use App\Platform\Http\ApiError;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'api.client' => AuthenticateApiClient::class,
             'api.scope' => RequireScope::class,
+            'api.organization' => RequireOrganization::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -2,6 +2,7 @@
 
 namespace App\Platform\ApiClients;
 
+use App\Platform\Integrations\Integration;
 use App\Platform\Organizations\Organization;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -9,8 +10,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 /**
- * Credencial de um sistema que consome a API. Não usa o escopo de organização:
- * é a partir dela que a organização da requisição é descoberta.
+ * Credencial de um sistema (integração). Pode ser:
+ * - do sistema (organization_id nulo): atende todos os clientes; cada chamada informa o cliente em X-Foxy-Organization;
+ * - presa a um cliente (organization_id preenchido): sempre age nesse cliente.
+ * Não usa escopo global: é a partir dela que integração e organização da requisição são descobertas.
  */
 class ApiClient extends Model
 {
@@ -18,7 +21,7 @@ class ApiClient extends Model
 
     public const KEY_PREFIX = 'fxy_';
 
-    protected $fillable = ['organization_id', 'name', 'scopes'];
+    protected $fillable = ['integration_id', 'organization_id', 'name', 'scopes'];
 
     protected $hidden = ['key_hash'];
 
@@ -36,11 +39,20 @@ class ApiClient extends Model
      *
      * @return array{0: self, 1: string}
      */
-    public static function issue(Organization $organization, string $name, array $scopes): array
+    public static function issue(Integration $integration, string $name, array $scopes, ?Organization $organization = null): array
     {
+        if ($organization && $organization->integration_id !== $integration->getKey()) {
+            throw new \InvalidArgumentException('A organização não pertence a esta integração.');
+        }
+
         $key = self::KEY_PREFIX.Str::random(40);
 
-        $client = new self(['organization_id' => $organization->getKey(), 'name' => $name, 'scopes' => array_values($scopes)]);
+        $client = new self([
+            'integration_id' => $integration->getKey(),
+            'organization_id' => $organization?->getKey(),
+            'name' => $name,
+            'scopes' => array_values($scopes),
+        ]);
         $client->key_prefix = substr($key, 0, 12);
         $client->key_hash = self::hash($key);
         $client->save();
@@ -59,6 +71,11 @@ class ApiClient extends Model
     public static function hash(string $key): string
     {
         return hash('sha256', $key);
+    }
+
+    public function integration(): BelongsTo
+    {
+        return $this->belongsTo(Integration::class);
     }
 
     public function organization(): BelongsTo

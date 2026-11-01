@@ -24,8 +24,9 @@ Insumo de apoio: [docs/legado-insumos.md](docs/legado-insumos.md) — o que o si
 ## Operação (comandos)
 
 ```bash
-php artisan foxy:organization:create "Nome"                       # cria organização (mostra o ID)
-php artisan foxy:api-client:create <org-id> "Nome" --scope=...    # cria chave de API (aparece uma vez só)
+php artisan foxy:integration:create "Foxy Agenda"                          # cadastra um sistema (mostra o ID)
+php artisan foxy:api-client:create <integration-id> "Nome" --scope=...     # chave do sistema (aparece uma vez só)
+php artisan foxy:api-client:create <integration-id> "Nome" --organization=<id>   # chave presa a um cliente
 php artisan foxy:api-client:revoke <api-client-id>                # revoga chave
 ```
 

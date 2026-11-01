@@ -2,17 +2,18 @@
 
 namespace App\Ai\HostProfiles;
 
-use App\Platform\Organizations\BelongsToOrganization;
+use App\Platform\Integrations\BelongsToIntegration;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Como a IA "entende" um sistema anfitrião: conhecimento e (depois) catálogo de tools, versionados.
+ * Como a IA "entende" um sistema: manual e catálogo de tools, versionados. Pertence à integração
+ * (o mesmo para todos os clientes daquele sistema).
  */
 class HostProfile extends Model
 {
-    use BelongsToOrganization, HasUlids;
+    use BelongsToIntegration, HasUlids;
 
     protected $fillable = ['slug', 'name', 'description', 'tone'];
 

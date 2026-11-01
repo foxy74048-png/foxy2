@@ -2,17 +2,17 @@
 
 namespace App\Platform\Audit;
 
-use App\Platform\Organizations\BelongsToOrganization;
+use App\Platform\Integrations\BelongsToIntegration;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 
 /**
- * Registro só-inclusão: não pode ser alterado nem apagado.
+ * Registro só-inclusão: não pode ser alterado nem apagado. Visível pela integração (e filtrável por organização).
  */
 class AuditEntry extends Model
 {
-    use BelongsToOrganization, HasUlids;
+    use BelongsToIntegration, HasUlids;
 
     public const UPDATED_AT = null;
 
