@@ -111,6 +111,20 @@ POST /api/v1/conversations/{id}/tool-results
 
 **Encaminhar ao suporte:** quando `escalate` vier preenchido (`{ "reason": "defeito" | "sem_resposta" | "pedido_da_pessoa", "summary": "..." }`), abra o chamado no seu canal (WhatsApp, e-mail...) com o resumo.
 
+## 3.1 A raposa ("a sua IA")
+
+```http
+GET    /api/v1/assistants?user_ref=u-123        → as 4 raposas (nome, jeito, exemplo, avatar_url) + a que vale para a pessoa
+PUT    /api/v1/assistant-preferences            { "assistant": "ayla" }                                  (padrão da conta)
+PUT    /api/v1/assistant-preferences            { "user_ref": "u-123", "assistant": "chico", "custom_name": "Chicão" }
+DELETE /api/v1/assistant-preferences?user_ref=u-123                                                       (volta ao padrão da conta)
+```
+
+- Raposas: `chico` (objetivo), `lud` (acolhedora — padrão da Foxy), `lobinho` (animado), `ayla` (formal).
+- `custom_name` (opcional, até 40 caracteres): o nome que a pessoa deu. Disponível em todos os planos.
+- Vale para **conversas novas**; a conversa aberta continua com a raposa com que começou. A resposta de `POST /conversations` traz `assistant: { id, name, avatar_url }` para o sistema mostrar.
+- Avatares em `/core/assistants/{id}.svg`.
+
 ## 4. Privacidade e uso
 
 ```http

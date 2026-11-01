@@ -34,7 +34,8 @@ class ConsoleTest extends TestCase
         return $this->postJson('/console/chat', $overrides + [
             'question' => 'Quem mais me deve este mês?',
             'role' => 'dono',
-            'model' => 'claude-opus-5-5',
+            'model' => 'claude-haiku-5-5',
+            'assistant' => 'lud',
         ]);
     }
 
@@ -93,6 +94,28 @@ class ConsoleTest extends TestCase
         $this->chat(['question' => 'E o segundo?'])->assertOk()->assertJsonPath('new_conversation', false);
     }
 
+    public function test_choosing_a_fox_and_a_name_opens_a_conversation_with_it(): void
+    {
+        $this->setupDemo();
+
+        $this->loggedIn()->chat(['assistant' => 'chico', 'assistant_name' => 'Chicão'])
+            ->assertOk()
+            ->assertJsonPath('assistant.id', 'chico')
+            ->assertJsonPath('assistant.name', 'Chicão')
+            ->assertJsonPath('new_conversation', true);
+        $this->assertStringContainsString('Você é Chicão', $this->ai->lastRequest()->system);
+
+        $this->chat(['assistant' => 'chico', 'assistant_name' => 'Chicão'])->assertJsonPath('new_conversation', false);
+        $this->chat(['assistant' => 'ayla'])->assertJsonPath('new_conversation', true)->assertJsonPath('assistant.name', 'Ayla');
+    }
+
+    public function test_page_shows_the_four_foxes(): void
+    {
+        $this->loggedIn()->get('/console')->assertOk()
+            ->assertSee('Chico')->assertSee('Lud')->assertSee('Lobinho')->assertSee('Ayla')
+            ->assertSee('/core/assistants/lobinho.svg');
+    }
+
     public function test_reception_role_does_not_get_financial_tools(): void
     {
         $this->setupDemo();
@@ -109,8 +132,10 @@ class ConsoleTest extends TestCase
         $this->setupDemo();
         $this->loggedIn()->chat()->assertOk();
 
-        $this->chat(['model' => 'claude-haiku-5-5'])->assertOk()->assertJsonPath('new_conversation', true);
         $this->assertSame('claude-haiku-5-5', $this->ai->lastRequest()->model);
+
+        $this->chat(['model' => 'claude-opus-5-5'])->assertOk()->assertJsonPath('new_conversation', true);
+        $this->assertSame('claude-opus-5-5', $this->ai->lastRequest()->model);
     }
 
     public function test_compare_asks_the_same_question_to_each_model(): void

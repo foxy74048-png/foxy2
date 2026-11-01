@@ -92,6 +92,15 @@ class DemoHost
         return new InternalApi($credentials['key'], $credentials['organization']);
     }
 
+    public function chooseFox(string $userRef, string $assistant, ?string $customName): array
+    {
+        return $this->api()->call('PUT', '/assistant-preferences', array_filter([
+            'user_ref' => $userRef,
+            'assistant' => $assistant,
+            'custom_name' => $customName,
+        ]));
+    }
+
     public function openConversation(string $userRef, string $role, ?string $model): array
     {
         return $this->api()->call('POST', '/conversations', array_filter([

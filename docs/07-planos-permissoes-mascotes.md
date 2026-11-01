@@ -107,7 +107,8 @@ Estilo visual: ilustração plana, traço limpo, adulta e profissional (nada inf
 ### 4.2 Quem escolhe
 
 - A **conta** escolhe a raposa padrão de todos.
-- Cada **usuário** pode escolher a sua — e ela vale **em todos os sistemas Foxy** que ele usar, porque a escolha fica guardada na Foxy AI (`user_ref` + organização).
+- Cada **usuário** pode escolher a sua. A escolha fica guardada na Foxy AI (organização + `user_ref`) e vale em toda conversa daquela pessoa naquele cliente.
+- **Valer em todos os sistemas** exige saber que a pessoa é a mesma em sistemas diferentes — isso depende do login único (Identity) do Core, que entra com o Commerce. Até lá, cada sistema guarda a escolha da pessoa no seu cliente (a API já é a mesma).
 - Qualquer plano permite **dar outro nome** à raposa (ex.: "Lud" vira "Lulu da Recepção").
 - API: `GET /v1/assistants` (catálogo com avatares), `PUT /v1/assistant-preferences` (conta ou usuário).
 - Na conversa, a raposa entra nas regras fixas ("Você é a Lud, assistente da Foxy…"), escolhida na abertura.
@@ -182,7 +183,7 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
 1. Integração + organização por cliente (provisionar contas pela API, cabeçalho `X-Foxy-Organization`).
 2. Planos, créditos, faixas de modelo e assinatura por API.
 3. ✔ Permissões por usuário (`allowed_capabilities`) e capacidade por consulta.
-4. Raposas: catálogo, preferências (conta e usuário), regras por raposa, avatares SVG.
+4. ✔ Raposas: catálogo, preferências (conta e usuário), regras por raposa, avatares SVG.
 5. Sugestão de mensagens (cartões `drafts`).
 6. Widget + cliente PHP; console de testes usando o widget.
 

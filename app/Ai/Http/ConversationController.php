@@ -3,6 +3,7 @@
 namespace App\Ai\Http;
 
 use App\Ai\Assistant\Assistant;
+use App\Ai\Assistants\FoxCatalog;
 use App\Ai\Conversations\Conversation;
 use App\Ai\HostProfiles\HostProfile;
 use App\Ai\Plans\AiPlan;
@@ -35,6 +36,11 @@ class ConversationController
 
         return response()->json([
             'conversation_id' => $conversation->getKey(),
+            'assistant' => [
+                'id' => $conversation->assistant,
+                'name' => $conversation->assistant_name,
+                'avatar_url' => FoxCatalog::get($conversation->assistant)['avatar_url'],
+            ],
             'capabilities' => $conversation->capabilities,
             'tier' => $conversation->tier,
             'model' => $conversation->model,

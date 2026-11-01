@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Foxy AI — Console de testes</title>
     <style>
-        :root { --fg:#1f2328; --muted:#656d76; --line:#d0d7de; --bg:#f6f8fa; --accent:#e8590c; --ok:#1a7f37; --err:#cf222e; }
+        :root { --fg:#221a33; --muted:#656d76; --line:#d0d7de; --bg:#f5f5f8; --accent:#5b3fd1; --ok:#1a7f37; --err:#cf222e; }
         * { box-sizing: border-box; }
         body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--fg); background:var(--bg); }
         header { display:flex; justify-content:space-between; align-items:center; padding:12px 24px; background:#fff; border-bottom:1px solid var(--line); }
@@ -29,6 +29,11 @@
         pre { background:var(--bg); padding:8px; border-radius:6px; overflow:auto; font-size:12px; white-space:pre-wrap; }
         .chips button { margin:0 6px 6px 0; font-size:13px; }
         .grid3 { display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); }
+        .foxes { display:grid; gap:10px; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); margin:6px 0 12px; }
+        .fox { display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; padding:12px; border:1px solid var(--line); border-radius:8px; cursor:pointer; color:var(--fg); font-size:14px; margin:0; }
+        .fox input { width:auto; }
+        .fox:has(input:checked) { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset; }
+        .who { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
         .badge { display:inline-block; padding:1px 8px; border-radius:10px; background:var(--bg); border:1px solid var(--line); font-size:12px; }
     </style>
 </head>

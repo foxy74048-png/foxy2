@@ -14,6 +14,25 @@
     <div class="card">
         <p class="muted" style="margin-top:0">Você está usando a <strong>Clínica Bem Viver</strong>, um negócio fictício. A IA conversa pela mesma API que um sistema real usaria; as consultas rodam sobre dados inventados do mês atual.</p>
 
+        <label>Escolha a sua raposa</label>
+        <div class="foxes" role="radiogroup" aria-label="Raposa">
+            @foreach ($foxes as $fox)
+                <label class="fox">
+                    <input type="radio" name="assistant" value="{{ $fox['id'] }}" @checked($loop->index === 1)>
+                    <img src="{{ $fox['avatar_url'] }}" alt="" width="56" height="56">
+                    <strong>{{ $fox['name'] }}</strong>
+                    <span class="muted">{{ $fox['style'] }}</span>
+                    <em class="muted">“{{ $fox['sample'] }}”</em>
+                </label>
+            @endforeach
+        </div>
+        <div class="row">
+            <div>
+                <label for="assistant_name">Dar outro nome à raposa (opcional)</label>
+                <input id="assistant_name" maxlength="40" placeholder="Ex.: Lulu da Recepção">
+            </div>
+        </div>
+
         <div class="row">
             <div>
                 <label for="model">Modelo</label>
@@ -90,6 +109,8 @@
         question: $('question').value.trim(),
         role: $('role').value,
         model: $('model').value,
+        assistant: document.querySelector('input[name=assistant]:checked').value,
+        assistant_name: $('assistant_name').value.trim() || null,
         page: $('page').value.trim() || null,
         error_message: $('error_message').value.trim() || null,
         error_code: $('error_code').value.trim() || null,
@@ -110,7 +131,15 @@
             container.append(el('div', 'msg ai error', (data.error.code ? '[' + data.error.code + '] ' : '') + data.error.message));
             return;
         }
-        container.append(el('div', 'msg ai', data.reply));
+        const msg = el('div', 'msg ai');
+        if (data.assistant) {
+            const who = el('div', 'who');
+            const img = el('img'); img.src = data.assistant.avatar_url; img.alt = ''; img.width = 28; img.height = 28;
+            who.append(img, el('strong', null, data.assistant.name));
+            msg.append(who);
+        }
+        msg.append(el('div', null, data.reply));
+        container.append(msg);
         if (data.escalate) container.append(el('div', 'msg ai', '→ Encaminhado ao suporte (' + data.escalate.reason + '): ' + data.escalate.summary));
         const u = data.usage || {};
         container.append(el('div', 'muted', (data.model || '') + ' · entrada ' + (u.input_tokens || 0) + ' · cache ' + (u.cache_read_tokens || 0) + ' · saída ' + (u.output_tokens || 0) + ' tokens · ' + money(u.cost_usd)));

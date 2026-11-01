@@ -3,6 +3,7 @@
 namespace App\Ai\Assistant;
 
 use App\Ai\HostProfiles\HostProfile;
+use App\Ai\Assistants\FoxCatalog;
 use App\Ai\HostProfiles\KnowledgePack;
 use App\Ai\Plans\AiPlan;
 
@@ -12,19 +13,24 @@ use App\Ai\Plans\AiPlan;
  */
 class SystemPrompt
 {
-    public const RULES_VERSION = 3;
+    public const RULES_VERSION = 4;
 
     /**
      * @param  list<string>  $capabilities  capacidades efetivas da conversa (plano ∩ permissão do usuário)
+     * @param  array|null  $fox  raposa da conversa (FoxCatalog/AssistantPreference); null = padrão da Foxy
      */
-    public static function render(HostProfile $profile, KnowledgePack $knowledge, array $capabilities = AiPlan::CAPABILITIES): string
+    public static function render(HostProfile $profile, KnowledgePack $knowledge, array $capabilities = AiPlan::CAPABILITIES, ?array $fox = null): string
     {
+        $fox ??= FoxCatalog::get(FoxCatalog::DEFAULT);
         $tone = trim((string) $profile->tone) ?: 'Cordial e direto, tratando a pessoa por "você".';
         $description = trim((string) $profile->description);
         $limits = self::limits($capabilities);
 
         return <<<PROMPT
-        Você é o assistente da Foxy dentro do sistema "{$profile->name}". Você ajuda quem usa esse sistema com:
+        Você é {$fox['name']}, {$fox['article']} assistente da Foxy (representad{$fox['article']} por uma raposa) dentro do sistema "{$profile->name}". Se perguntarem quem você é, diga seu nome e que é {$fox['article']} assistente da Foxy neste sistema.
+        Seu jeito de falar: {$fox['style']} Esse jeito muda só o estilo — nunca as regras abaixo nem a precisão das respostas.
+
+        Você ajuda quem usa esse sistema com:
         1. dúvidas de uso (como fazer algo, onde fica cada coisa);
         2. erros que apareceram na tela (o que significam e o que fazer);
         3. perguntas sobre os próprios dados, quando houver ferramentas de consulta disponíveis.

@@ -1,6 +1,7 @@
 <?php
 
 use App\Ai\Http\AiBillingController;
+use App\Ai\Http\AssistantController;
 use App\Ai\Http\ConversationController;
 use App\Ai\Http\HostProfileController;
 use App\Ai\Http\UsageController;
@@ -51,5 +52,10 @@ Route::prefix('v1')->middleware(['api.client', 'throttle:api-client'])->group(fu
         Route::post('/conversations/{id}/tool-results', [ConversationController::class, 'toolResults']);
         Route::delete('/conversations', [ConversationController::class, 'destroyForUser']);
         Route::get('/usage', [UsageController::class, 'show']);
+
+        // As raposas: catálogo e escolha (da conta ou de cada usuário).
+        Route::get('/assistants', [AssistantController::class, 'index']);
+        Route::put('/assistant-preferences', [AssistantController::class, 'putPreference']);
+        Route::delete('/assistant-preferences', [AssistantController::class, 'deletePreference']);
     });
 });

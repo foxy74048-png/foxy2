@@ -2,6 +2,7 @@
 
 namespace App\Ai\Assistant;
 
+use App\Ai\Assistants\AssistantPreference;
 use App\Ai\Conversations\Conversation;
 use App\Ai\HostProfiles\HostProfile;
 use App\Ai\HostProfiles\ToolSchema;
@@ -75,8 +76,10 @@ class Assistant
             'tier' => $tier,
             'model' => AiPlan::modelFor($tier),
             'effort' => config('foxy.ai.effort'),
-            'system_prompt' => SystemPrompt::render($profile, $knowledge, $capabilities),
+            'system_prompt' => SystemPrompt::render($profile, $knowledge, $capabilities, $fox = AssistantPreference::resolveFor($userRef)),
             'capabilities' => $capabilities,
+            'assistant' => $fox['id'],
+            'assistant_name' => $fox['name'],
             'tools' => [...($catalog?->definitionsFor($allowedTools) ?? []), ...InternalTools::definitions()],
             'allowed_tools' => $allowedTools,
             'knowledge_version' => $knowledge->version,

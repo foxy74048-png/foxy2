@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Chico, raposo ruivo de óculos">
+  <title>Chico, raposo ruivo de óculos</title>
+  <defs><clipPath id="c-chico"><circle cx="64" cy="64" r="62"/></clipPath></defs>
+  <circle cx="64" cy="64" r="62" fill="#f5f5f8"/>
+  <g clip-path="url(#c-chico)" stroke="#a8441a" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M28 54 L36 14 L58 38 Z" fill="#d9622b"/>
+    <path d="M100 54 L92 14 L70 38 Z" fill="#d9622b"/>
+    <path d="M34 46 L38 24 L51 39 Z" fill="#a8441a" stroke="none"/>
+    <path d="M94 46 L90 24 L77 39 Z" fill="#a8441a" stroke="none"/>
+    <path d="M22 58 Q22 32 64 32 Q106 32 106 58 Q106 80 64 106 Q22 80 22 58 Z" fill="#d9622b"/>
+    <path d="M28 66 Q46 62 64 82 Q82 62 100 66 Q92 88 64 106 Q36 88 28 66 Z" fill="#ffffff"/>
+    <g fill="none" stroke="#221a33" stroke-width="3"><circle cx="49" cy="62" r="10"/><circle cx="79" cy="62" r="10"/><path d="M59 62 Q64 58 69 62"/></g>
+  </g>
+  <circle cx="49" cy="62" r="4.5" fill="#221a33"/>
+  <circle cx="79" cy="62" r="4.5" fill="#221a33"/>
+  <circle cx="50.5" cy="60.5" r="1.4" fill="#ffffff"/>
+  <circle cx="80.5" cy="60.5" r="1.4" fill="#ffffff"/>
+  <ellipse cx="64" cy="98" rx="5.5" ry="4" fill="#221a33"/>
+  <circle cx="64" cy="64" r="62" fill="none" stroke="#5b3fd1" stroke-width="3"/>
+</svg>

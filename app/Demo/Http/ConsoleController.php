@@ -2,6 +2,7 @@
 
 namespace App\Demo\Http;
 
+use App\Ai\Assistants\FoxCatalog;
 use App\Demo\DemoBusiness;
 use App\Demo\DemoHost;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ class ConsoleController
             'roles' => array_keys(DemoBusiness::ROLES),
             'questions' => DemoBusiness::evaluationQuestions(),
             'provider' => config('foxy.ai.provider'),
+            'foxes' => FoxCatalog::all(),
         ]);
     }
 
@@ -32,19 +34,28 @@ class ConsoleController
     {
         $data = $this->validated($request, [
             'model' => ['required', Rule::in(array_values(config('foxy.ai.tiers')))],
+            'assistant' => ['required', Rule::in(FoxCatalog::ids())],
+            'assistant_name' => ['nullable', 'string', 'max:40'],
         ]);
 
+        $fox = [$data['assistant'], trim((string) ($data['assistant_name'] ?? ''))];
         $chat = $request->session()->get('console.chat');
-        $isNew = ! $chat || $chat['model'] !== $data['model'] || $chat['role'] !== $data['role'];
+        $isNew = ! $chat || $chat['model'] !== $data['model'] || $chat['role'] !== $data['role'] || ($chat['fox'] ?? null) !== $fox;
 
         if ($isNew) {
+            // Como um sistema real: grava a raposa escolhida pela pessoa e abre conversa nova com ela.
+            $chosen = $this->host->chooseFox($this->userRef($request, $data['role']), $fox[0], $fox[1] ?: null);
+            if ($chosen['status'] !== 200) {
+                return response()->json(['error' => $chosen['body']['error'] ?? ['message' => 'Nome de raposa inválido.']], 422);
+            }
+
             $opened = $this->host->openConversation($this->userRef($request, $data['role']), $data['role'], $data['model']);
 
             if ($opened['status'] !== 201) {
                 return response()->json(['error' => $opened['body']['error'] ?? ['message' => 'Erro ao abrir conversa']], 422);
             }
 
-            $chat = ['id' => $opened['body']['conversation_id'], 'model' => $data['model'], 'role' => $data['role']];
+            $chat = ['id' => $opened['body']['conversation_id'], 'model' => $data['model'], 'role' => $data['role'], 'fox' => $fox, 'assistant' => $opened['body']['assistant']];
             $request->session()->put('console.chat', $chat);
         }
 
@@ -54,7 +65,7 @@ class ConsoleController
             $request->session()->forget('console.chat');
         }
 
-        return response()->json($answer + ['conversation_id' => $chat['id'], 'new_conversation' => $isNew]);
+        return response()->json($answer + ['conversation_id' => $chat['id'], 'new_conversation' => $isNew, 'assistant' => $chat['assistant'] ?? null]);
     }
 
     public function reset(Request $request): JsonResponse
