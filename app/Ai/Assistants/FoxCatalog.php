@@ -54,7 +54,8 @@ class FoxCatalog
         $fox = self::FOXES[$id] ?? self::FOXES[self::DEFAULT];
         $id = isset(self::FOXES[$id]) ? $id : self::DEFAULT;
 
-        return ['id' => $id] + $fox + ['avatar_url' => url("/core/assistants/{$id}.svg")];
+        // Endereço absoluto pelo APP_URL: os sistemas mostram a imagem servida pela Foxy AI.
+        return ['id' => $id] + $fox + ['avatar_url' => rtrim((string) config('app.url'), '/')."/core/assistants/{$id}.svg"];
     }
 
     /**

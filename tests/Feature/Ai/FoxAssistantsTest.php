@@ -45,6 +45,14 @@ class FoxAssistantsTest extends TestCase
         }
     }
 
+    public function test_avatar_url_always_uses_the_public_address_of_foxy_ai(): void
+    {
+        config(['app.url' => 'https://ai.foxy.test/']);
+
+        $this->withToken($this->key)->getJson('/api/v1/assistants')
+            ->assertJsonPath('data.0.avatar_url', 'https://ai.foxy.test/core/assistants/chico.svg');
+    }
+
     public function test_without_choice_the_default_fox_answers(): void
     {
         $this->openFor('u-1')->assertCreated()

@@ -39,7 +39,7 @@ class InternalApi implements Transport
             $server['HTTP_X_FOXY_ORGANIZATION'] = $organization;
         }
 
-        $request = Request::create('/api/v1'.$uri, $method, server: $server, content: $body === [] ? null : json_encode($body));
+        $request = Request::create(rtrim((string) config('app.url'), '/').'/api/v1'.$uri, $method, server: $server, content: $body === [] ? null : json_encode($body));
 
         try {
             $response = $app->make(Kernel::class)->handle($request);
