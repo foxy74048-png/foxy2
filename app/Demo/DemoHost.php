@@ -19,6 +19,8 @@ class DemoHost
 
     private const MAX_STEPS = 6;
 
+    public const PLAN = 'ia-50000';
+
     public function __construct(private DemoBusiness $business = new DemoBusiness) {}
 
     /**
@@ -47,9 +49,17 @@ class DemoHost
             }
         }
 
-        Storage::put(self::KEY_FILE, Crypt::encryptString(json_encode(['key' => $key, 'organization' => $response['body']['id']])));
+        $organizationId = $response['body']['id'];
 
-        return Organization::findOrFail($response['body']['id']);
+        // O console testa todos os recursos: o cliente de demonstração fica no maior plano.
+        $plan = $api->call('PUT', "/organizations/{$organizationId}/ai-subscription", ['plan' => self::PLAN]);
+        if ($plan['status'] >= 300) {
+            throw new RuntimeException('Falha ao definir o plano da demonstração: '.json_encode($plan['body'], JSON_UNESCAPED_UNICODE));
+        }
+
+        Storage::put(self::KEY_FILE, Crypt::encryptString(json_encode(['key' => $key, 'organization' => $organizationId])));
+
+        return Organization::findOrFail($organizationId);
     }
 
     public static function isReady(): bool

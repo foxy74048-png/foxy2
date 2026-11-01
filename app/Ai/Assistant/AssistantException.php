@@ -2,6 +2,7 @@
 
 namespace App\Ai\Assistant;
 
+use App\Ai\Plans\AiPlan;
 use RuntimeException;
 
 /**
@@ -34,9 +35,19 @@ class AssistantException extends RuntimeException
         return new self('conversation_expired', 'Esta conversa expirou. Abra uma nova conversa.', 410);
     }
 
-    public static function usageLimit(): self
+    public static function noAiPlan(): self
     {
-        return new self('usage_limit', 'O limite de uso do mês foi atingido.', 429);
+        return new self('no_ai_plan', 'Este cliente não tem plano de IA ativo. O sistema precisa definir o plano.', 403);
+    }
+
+    public static function tierNotInPlan(string $tier, AiPlan $plan): self
+    {
+        return new self('tier_not_in_plan', "A faixa \"{$tier}\" não faz parte do plano {$plan->name}. Faixas do plano: ".implode(', ', $plan->tiers).'.', 403);
+    }
+
+    public static function creditLimit(): self
+    {
+        return new self('credit_limit', 'Os créditos de IA deste mês acabaram. É possível comprar créditos extras.', 429);
     }
 
     public static function userRateLimited(): self

@@ -20,8 +20,8 @@ class ConsoleController
     {
         return view('console.index', [
             'ready' => DemoHost::isReady(),
-            'models' => config('foxy.ai.allowed_models'),
-            'defaultModel' => config('foxy.ai.model'),
+            'models' => array_values(config('foxy.ai.tiers')),
+            'defaultModel' => config('foxy.ai.tiers.rapida'),
             'roles' => array_keys(DemoBusiness::ROLES),
             'questions' => DemoBusiness::evaluationQuestions(),
             'provider' => config('foxy.ai.provider'),
@@ -31,7 +31,7 @@ class ConsoleController
     public function chat(Request $request): JsonResponse
     {
         $data = $this->validated($request, [
-            'model' => ['required', Rule::in(config('foxy.ai.allowed_models'))],
+            'model' => ['required', Rule::in(array_values(config('foxy.ai.tiers')))],
         ]);
 
         $chat = $request->session()->get('console.chat');
@@ -71,7 +71,7 @@ class ConsoleController
     {
         $data = $this->validated($request, [
             'models' => ['required', 'array', 'min:1', 'max:3'],
-            'models.*' => [Rule::in(config('foxy.ai.allowed_models'))],
+            'models.*' => [Rule::in(array_values(config('foxy.ai.tiers')))],
         ]);
 
         $results = [];

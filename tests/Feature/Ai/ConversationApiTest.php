@@ -56,7 +56,7 @@ class ConversationApiTest extends TestCase
             ->assertJsonStructure(['request_id', 'usage' => ['cost_usd']]);
 
         $request = $this->ai->lastRequest();
-        $this->assertSame('claude-opus-5-5', $request->model);
+        $this->assertSame('claude-haiku-5-5', $request->model, 'Padrão do plano: faixa rápida.');
         $this->assertSame('low', $request->effort);
         $this->assertStringContainsString('Agenda › clique no atendimento › Remarcar.', $request->system);
         $this->assertStringContainsString('Agenda Demo', $request->system);
@@ -136,19 +136,6 @@ class ConversationApiTest extends TestCase
         $auditText = \DB::table('audit_entries')->pluck('metadata')->implode(' ');
         $this->assertStringNotContainsString('remarco', $auditText);    }
 
-    public function test_monthly_usage_limit_per_user(): void
-    {
-        [, $key] = $this->organizationWithKey('Limitada', ['*'], ['limits' => ['ai.messages.monthly_per_subject' => 1]]);
-        $this->key = $key;
-        $this->createProfile($key);
-        $id = $this->openConversation($key, 'u-1');
-
-        $this->send($id)->assertOk();
-        $this->send($id)->assertStatus(429)->assertJsonPath('error.code', 'usage_limit');
-
-        $other = $this->openConversation($key, 'u-2');
-        $this->send($other)->assertOk();
-    }
 
     public function test_per_user_rate_limit(): void
     {

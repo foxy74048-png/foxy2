@@ -5,6 +5,8 @@ namespace App\Ai\Assistant;
 use App\Ai\Conversations\Conversation;
 use App\Ai\HostProfiles\HostProfile;
 use App\Ai\HostProfiles\ToolSchema;
+use App\Ai\Plans\AiAccount;
+use App\Ai\Plans\AiPlan;
 use App\Ai\Providers\ModelProvider;
 use App\Ai\Providers\ModelRequest;
 use App\Ai\Providers\ModelResponse;
@@ -30,13 +32,22 @@ class Assistant
         private ModelProvider $provider,
         private Entitlements $entitlements,
         private ContextStore $contexts,
+        private AiAccount $account,
     ) {}
 
     /**
      * @param  list<string>  $allowedTools  tools do catálogo que este usuário pode usar (o anfitrião filtra pelas permissões dele)
+     * @param  string|null  $tier  faixa de modelo pedida (padrão: a do plano)
      */
-    public function open(HostProfile $profile, string $userRef, array $allowedTools = [], ?string $model = null): Conversation
+    public function open(HostProfile $profile, string $userRef, array $allowedTools = [], ?string $tier = null): Conversation
     {
+        $plan = $this->account->plan() ?? throw AssistantException::noAiPlan();
+        $tier ??= $plan->defaultTier;
+
+        if (! $plan->allowsTier($tier)) {
+            throw AssistantException::tierNotInPlan($tier, $plan);
+        }
+
         $knowledge = $profile->currentKnowledge() ?? throw AssistantException::knowledgeMissing();
         $catalog = $profile->currentTools();
         $allowedTools = array_values(array_unique($allowedTools));
@@ -46,10 +57,16 @@ class Assistant
             throw AssistantException::unknownTools($unknown);
         }
 
+        // Plano sem "dados": nenhuma consulta do sistema é oferecida (a menor permissão vence).
+        if (! $plan->allows('dados')) {
+            $allowedTools = [];
+        }
+
         $conversation = Conversation::create([
             'host_profile_id' => $profile->getKey(),
             'user_ref' => $userRef,
-            'model' => $model ?? config('foxy.ai.model'),
+            'tier' => $tier,
+            'model' => AiPlan::modelFor($tier),
             'effort' => config('foxy.ai.effort'),
             'system_prompt' => SystemPrompt::render($profile, $knowledge),
             'tools' => [...($catalog?->definitionsFor($allowedTools) ?? []), ...InternalTools::definitions()],
@@ -63,6 +80,8 @@ class Assistant
         $this->asAgent($conversation, fn () => Audit::record('ai.conversation_opened', 'ok', $conversation, [
             'host_profile' => $profile->slug,
             'knowledge_version' => $knowledge->version,
+            'plan' => $plan->code,
+            'tier' => $tier,
             'model' => $conversation->model,
         ]));
 
@@ -177,6 +196,7 @@ class Assistant
                 $response = $this->send($conversation, [...$conversation->history(), ...$newMessages], $conversation->tool_rounds < $maxRounds);
                 $usage[] = $record = UsageRecord::fromResponse($response, $conversation->getKey());
                 $this->entitlements->recordUsage(self::METER, $conversation->user_ref, 0, $record->cost_usd);
+                $this->account->spend($record->cost_usd);
 
                 $newMessages[] = ['role' => 'assistant', 'content' => $this->assistantContent($response)];
                 $calls = $response->stopReason === 'tool_use' ? $response->toolUses() : [];
@@ -299,8 +319,12 @@ class Assistant
         }
         RateLimiter::hit($key, 60);
 
-        if (! $this->entitlements->canUse(self::METER, $conversation->user_ref)) {
-            throw AssistantException::usageLimit();
+        if (! $this->account->plan()) {
+            throw AssistantException::noAiPlan();
+        }
+
+        if (! $this->account->hasCredits()) {
+            throw AssistantException::creditLimit();
         }
     }
 

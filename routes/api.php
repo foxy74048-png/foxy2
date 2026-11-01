@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Http\AiBillingController;
 use App\Ai\Http\ConversationController;
 use App\Ai\Http\HostProfileController;
 use App\Ai\Http\UsageController;
@@ -35,6 +36,12 @@ Route::prefix('v1')->middleware(['api.client', 'throttle:api-client'])->group(fu
         Route::get('/organizations', [OrganizationController::class, 'index']);
         Route::get('/organizations/{id}', [OrganizationController::class, 'show']);
         Route::patch('/organizations/{id}', [OrganizationController::class, 'update']);
+
+        // Plano de IA e créditos extras de cada cliente (quem cobra o cliente é o sistema).
+        Route::get('/ai/plans', [AiBillingController::class, 'plans']);
+        Route::get('/organizations/{id}/ai-subscription', [AiBillingController::class, 'showForClient']);
+        Route::put('/organizations/{id}/ai-subscription', [AiBillingController::class, 'putSubscription']);
+        Route::post('/organizations/{id}/ai-credits', [AiBillingController::class, 'addCredits']);
     });
 
     // Nível do cliente: exige saber de qual cliente é a chamada (chave presa ou X-Foxy-Organization).

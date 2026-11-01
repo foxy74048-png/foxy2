@@ -1,15 +1,23 @@
 <?php
 
+$plan = fn (int $credits, array $capabilities, array $tiers) => [
+    'name' => 'IA '.number_format($credits, 0, ',', '.'),
+    'credits' => $credits,
+    'capabilities' => $capabilities,
+    'tiers' => $tiers,
+    'default_tier' => 'rapida',
+];
+
+$basic = ['suporte', 'erros'];
+$full = ['suporte', 'erros', 'dados', 'escrita'];
+
 return [
 
     /*
-    | Limites padrão por organização (cada organização pode ter os seus em organizations.limits).
-    | null = sem limite.
+    | Limites genéricos por organização (organizations.limits ou aqui). null = sem limite.
+    | A IA não usa mais limite de mensagens: usa créditos do plano (abaixo).
     */
-    'limits' => [
-        'ai.messages.monthly' => env('FOXY_LIMIT_AI_MESSAGES_MONTHLY', 2000),
-        'ai.messages.monthly_per_subject' => env('FOXY_LIMIT_AI_MESSAGES_PER_USER_MONTHLY', 200),
-    ],
+    'limits' => [],
 
     /*
     | Requisições por minuto por chave de API.
@@ -22,10 +30,33 @@ return [
         // Só para chaves sem workspace fixo (ex.: wrkspc_...). Chave criada dentro de um workspace não precisa.
         'anthropic_workspace_id' => env('ANTHROPIC_WORKSPACE_ID'),
 
-        // Modelo e esforço padrão; cada conversa fica com os valores da abertura.
-        'model' => env('FOXY_AI_MODEL', 'claude-opus-5-5'),
-        // Modelos que o anfitrião pode escolher ao abrir a conversa (ex.: console comparando custo e qualidade).
-        'allowed_models' => ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'],
+        /*
+        | Faixas de modelo (docs/07, seção 2.2). Os planos citam faixas, nunca modelos: trocar o modelo
+        | de uma faixa vale para todos os planos, sem migração.
+        */
+        'tiers' => [
+            'rapida' => env('FOXY_AI_MODEL_RAPIDA', 'claude-haiku-5-5'),
+            'equilibrada' => env('FOXY_AI_MODEL_EQUILIBRADA', 'claude-sonnet-5-5'),
+            'avancada' => env('FOXY_AI_MODEL_AVANCADA', 'claude-opus-5-5'),
+        ],
+
+        /*
+        | Planos (docs/07, seção 2.3, aprovados em 2026-11-01). Créditos por mês; 1 crédito = US$ 0,001 de custo de IA.
+        | Créditos extras: pacotes de 1.000 em todos os planos.
+        */
+        'credit_usd' => 0.001,
+        'extra_credits_step' => 1000,
+        'plans' => [
+            'ia-1000' => $plan(1000, $basic, ['rapida']),
+            'ia-3000' => $plan(3000, $basic, ['rapida']),
+            'ia-5000' => $plan(5000, $full, ['rapida', 'equilibrada']),
+            'ia-10000' => $plan(10000, $full, ['rapida', 'equilibrada']),
+            'ia-25000' => $plan(25000, $full, ['rapida', 'equilibrada', 'avancada']),
+            'ia-50000' => $plan(50000, $full, ['rapida', 'equilibrada', 'avancada']),
+        ],
+        // Plano usado quando o cliente ainda não tem assinatura (null = sem IA até o sistema definir o plano).
+        'default_plan' => env('FOXY_AI_DEFAULT_PLAN'),
+
         'effort' => env('FOXY_AI_EFFORT', 'low'),
         'max_tokens' => (int) env('FOXY_AI_MAX_TOKENS', 8000),
         'timeout_seconds' => (float) env('FOXY_AI_TIMEOUT', 90),

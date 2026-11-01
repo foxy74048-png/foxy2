@@ -22,6 +22,21 @@ PATCH /api/v1/organizations/{id}   { "status": "suspended" }   (ou "active")
 - Com `external_ref`, o `POST` pode ser chamado sempre (cria na primeira vez, atualiza o nome depois) — não duplica.
 - Cliente suspenso → as rotas de cliente respondem `403 organization_suspended`.
 - O manual e as consultas (seção 2) são do **sistema** e valem para todos os clientes; conversas, uso e limites são **de cada cliente**.
+
+### Plano de IA e créditos de cada cliente
+
+```http
+GET  /api/v1/ai/plans                                   → os seis planos (créditos, capacidades, faixas)
+PUT  /api/v1/organizations/{id}/ai-subscription         { "plan": "ia-5000" }   (opcional: "status": "suspended")
+GET  /api/v1/organizations/{id}/ai-subscription         → plano, créditos incluídos, extras, usados, disponíveis, % usado
+POST /api/v1/organizations/{id}/ai-credits              { "credits": 2000, "reference": "pedido-77" }   (múltiplos de 1.000)
+```
+
+- **Créditos:** 1 crédito = US$ 0,001 de custo de IA. Cada resposta consome conforme o custo real (Haiku ~0,5 crédito por pergunta simples).
+- **Planos:** `ia-1000`, `ia-3000` (dúvidas de uso e erros, faixa rápida); `ia-5000`, `ia-10000` (+ dados e mensagens, faixas rápida e equilibrada); `ia-25000`, `ia-50000` (tudo, todas as faixas).
+- **Créditos extras** valem no mês da compra e se somam à franquia. Créditos acabaram → `429 credit_limit`.
+- Cliente sem plano → `403 no_ai_plan`. **Quem cobra o cliente é o sistema**; a Foxy AI só mede e limita.
+- Ao abrir a conversa, peça a faixa com `"tier": "rapida" | "equilibrada" | "avancada"` (padrão: a do plano). Faixa fora do plano → `403 tier_not_in_plan`. Planos sem "dados" não oferecem as consultas do sistema (a resposta mostra `allowed_tools` efetivo).
 - Toda resposta traz `request_id` (no corpo e no cabeçalho `X-Request-Id`). Informe-o ao suporte em caso de problema.
 - Erros sempre no formato `{ "error": { "code": "...", "message": "...", "request_id": "..." } }`.
 
@@ -120,5 +135,6 @@ GET    /api/v1/usage?month=2026-10            → { "month", "messages", "cost_u
 | 409 | `no_pending_tools` | Resultados enviados sem pedido pendente. |
 | 410 | `conversation_expired` | Conversa com mais de 30 dias: abra outra. |
 | 422 | `validation_failed`, `knowledge_missing`, `unknown_tools`, `tool_results_mismatch`, `tool_result_too_large` | Corrija a requisição (detalhes em `message`/`details`). |
-| 429 | `usage_limit` / `rate_limited` | Limite do mês ou excesso de mensagens por minuto. |
+| 403 | `no_ai_plan` / `tier_not_in_plan` | Cliente sem plano de IA ativo, ou faixa de modelo fora do plano. |
+| 429 | `credit_limit` / `rate_limited` | Créditos do mês acabaram (compre extras) ou excesso de mensagens por minuto. |
 | 503 | `ai_unavailable` | IA fora do ar: tente de novo. Nada foi gravado; reenviar é seguro. |

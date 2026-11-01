@@ -5,6 +5,7 @@ namespace App\Ai\Http;
 use App\Ai\Assistant\Assistant;
 use App\Ai\Conversations\Conversation;
 use App\Ai\HostProfiles\HostProfile;
+use App\Ai\Plans\AiPlan;
 use App\Platform\Audit\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,14 +22,18 @@ class ConversationController
             'user_ref' => ['required', 'string', 'max:120'],
             'allowed_tools' => ['nullable', 'array', 'max:30'],
             'allowed_tools.*' => ['string'],
-            'model' => ['nullable', Rule::in(config('foxy.ai.allowed_models'))],
+            'tier' => ['nullable', Rule::in(array_keys(config('foxy.ai.tiers')))],
+            // Compatibilidade: pedir pelo nome do modelo equivale a pedir a faixa dele.
+            'model' => ['nullable', Rule::in(array_values(config('foxy.ai.tiers')))],
         ]);
 
+        $tier = $data['tier'] ?? (isset($data['model']) ? AiPlan::tierOfModel($data['model']) : null);
         $profile = HostProfile::where('slug', $data['host_profile'])->firstOrFail();
-        $conversation = $this->assistant->open($profile, $data['user_ref'], $data['allowed_tools'] ?? [], $data['model'] ?? null);
+        $conversation = $this->assistant->open($profile, $data['user_ref'], $data['allowed_tools'] ?? [], $tier);
 
         return response()->json([
             'conversation_id' => $conversation->getKey(),
+            'tier' => $conversation->tier,
             'model' => $conversation->model,
             'knowledge_version' => $conversation->knowledge_version,
             'tools_version' => $conversation->tools_version,

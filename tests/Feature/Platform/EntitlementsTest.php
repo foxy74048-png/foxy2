@@ -93,11 +93,12 @@ class EntitlementsTest extends TestCase
         $this->assertSame(9, $custom->limit('ai.messages.monthly'));
     }
 
-    public function test_shipped_config_defines_default_ai_limits(): void
+    public function test_without_configured_limit_there_is_no_limit(): void
     {
-        $org = $this->org(['name' => 'A']);
+        $entitlements = $this->as($this->org(['name' => 'A']));
+        $entitlements->recordUsage('qualquer.medidor', 'u-1', 1_000_000);
 
-        $this->assertSame(2000, $org->limit('ai.messages.monthly'));
-        $this->assertSame(200, $org->limit('ai.messages.monthly_per_subject'));
+        $this->assertNull($this->org(['name' => 'B'])->limit('qualquer.medidor.monthly'));
+        $this->assertTrue($entitlements->canUse('qualquer.medidor', 'u-1'));
     }
 }
