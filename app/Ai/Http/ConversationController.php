@@ -22,6 +22,8 @@ class ConversationController
             'user_ref' => ['required', 'string', 'max:120'],
             'allowed_tools' => ['nullable', 'array', 'max:30'],
             'allowed_tools.*' => ['string'],
+            'allowed_capabilities' => ['nullable', 'array'],
+            'allowed_capabilities.*' => [Rule::in(AiPlan::CAPABILITIES)],
             'tier' => ['nullable', Rule::in(array_keys(config('foxy.ai.tiers')))],
             // Compatibilidade: pedir pelo nome do modelo equivale a pedir a faixa dele.
             'model' => ['nullable', Rule::in(array_values(config('foxy.ai.tiers')))],
@@ -29,10 +31,11 @@ class ConversationController
 
         $tier = $data['tier'] ?? (isset($data['model']) ? AiPlan::tierOfModel($data['model']) : null);
         $profile = HostProfile::where('slug', $data['host_profile'])->firstOrFail();
-        $conversation = $this->assistant->open($profile, $data['user_ref'], $data['allowed_tools'] ?? [], $tier);
+        $conversation = $this->assistant->open($profile, $data['user_ref'], $data['allowed_tools'] ?? [], $tier, $data['allowed_capabilities'] ?? null);
 
         return response()->json([
             'conversation_id' => $conversation->getKey(),
+            'capabilities' => $conversation->capabilities,
             'tier' => $conversation->tier,
             'model' => $conversation->model,
             'knowledge_version' => $conversation->knowledge_version,

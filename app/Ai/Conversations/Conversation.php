@@ -30,6 +30,7 @@ class Conversation extends Model
         return [
             'tools' => 'array',
             'allowed_tools' => 'array',
+            'capabilities' => 'array',
             'pending_tool_calls' => 'array',
             'processing_started_at' => 'datetime',
             'expires_at' => 'datetime',

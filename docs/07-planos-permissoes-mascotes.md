@@ -181,7 +181,7 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
 
 1. Integração + organização por cliente (provisionar contas pela API, cabeçalho `X-Foxy-Organization`).
 2. Planos, créditos, faixas de modelo e assinatura por API.
-3. Permissões por usuário (`allowed_capabilities`) e capacidade por consulta.
+3. ✔ Permissões por usuário (`allowed_capabilities`) e capacidade por consulta.
 4. Raposas: catálogo, preferências (conta e usuário), regras por raposa, avatares SVG.
 5. Sugestão de mensagens (cartões `drafts`).
 6. Widget + cliente PHP; console de testes usando o widget.

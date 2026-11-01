@@ -45,6 +45,11 @@ class AssistantException extends RuntimeException
         return new self('tier_not_in_plan', "A faixa \"{$tier}\" não faz parte do plano {$plan->name}. Faixas do plano: ".implode(', ', $plan->tiers).'.', 403);
     }
 
+    public static function noCapabilities(): self
+    {
+        return new self('no_capabilities', 'Este usuário não tem nenhuma função de IA liberada (é preciso ao menos "suporte").', 403);
+    }
+
     public static function creditLimit(): self
     {
         return new self('credit_limit', 'Os créditos de IA deste mês acabaram. É possível comprar créditos extras.', 429);

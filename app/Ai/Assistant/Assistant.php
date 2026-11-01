@@ -38,11 +38,18 @@ class Assistant
     /**
      * @param  list<string>  $allowedTools  tools do catálogo que este usuário pode usar (o anfitrião filtra pelas permissões dele)
      * @param  string|null  $tier  faixa de modelo pedida (padrão: a do plano)
+     * @param  list<string>|null  $userCapabilities  o que este usuário pode usar (null = tudo o que o plano permite)
      */
-    public function open(HostProfile $profile, string $userRef, array $allowedTools = [], ?string $tier = null): Conversation
+    public function open(HostProfile $profile, string $userRef, array $allowedTools = [], ?string $tier = null, ?array $userCapabilities = null): Conversation
     {
         $plan = $this->account->plan() ?? throw AssistantException::noAiPlan();
         $tier ??= $plan->defaultTier;
+
+        // Sempre a menor permissão vence: plano ∩ usuário. Dúvidas de uso ("suporte") são a base de toda conversa.
+        $capabilities = array_values(array_intersect($plan->capabilities, $userCapabilities ?? $plan->capabilities));
+        if (! in_array('suporte', $capabilities, true)) {
+            throw AssistantException::noCapabilities();
+        }
 
         if (! $plan->allowsTier($tier)) {
             throw AssistantException::tierNotInPlan($tier, $plan);
@@ -57,8 +64,8 @@ class Assistant
             throw AssistantException::unknownTools($unknown);
         }
 
-        // Plano sem "dados": nenhuma consulta do sistema é oferecida (a menor permissão vence).
-        if (! $plan->allows('dados')) {
+        // Sem "dados" (no plano ou para este usuário): nenhuma consulta do sistema é oferecida.
+        if (! in_array('dados', $capabilities, true)) {
             $allowedTools = [];
         }
 
@@ -68,7 +75,8 @@ class Assistant
             'tier' => $tier,
             'model' => AiPlan::modelFor($tier),
             'effort' => config('foxy.ai.effort'),
-            'system_prompt' => SystemPrompt::render($profile, $knowledge),
+            'system_prompt' => SystemPrompt::render($profile, $knowledge, $capabilities),
+            'capabilities' => $capabilities,
             'tools' => [...($catalog?->definitionsFor($allowedTools) ?? []), ...InternalTools::definitions()],
             'allowed_tools' => $allowedTools,
             'knowledge_version' => $knowledge->version,
@@ -105,7 +113,7 @@ class Assistant
             }
 
             $userMessage = ['role' => 'user', 'content' => [
-                ['type' => 'text', 'text' => $this->contextBlock($page, $error)],
+                ['type' => 'text', 'text' => $this->contextBlock($page, in_array('erros', $conversation->capabilities ?? AiPlan::CAPABILITIES, true) ? $error : null)],
                 ['type' => 'text', 'text' => $text],
             ]];
 
