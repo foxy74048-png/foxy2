@@ -8,6 +8,7 @@ use App\Platform\Entitlements\MeteredEntitlements;
 use App\Platform\Http\ApiError;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -21,6 +22,9 @@ class PlatformServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Visual comum a todos os produtos: <x-core::layout>, <x-core::plain>, <x-core::nav-link>, <x-core::icon>.
+        Blade::anonymousComponentPath(resource_path('views/core'), 'core');
+
         RateLimiter::for('api-client', function (Request $request) {
             $client = $request->attributes->get('api_client');
 

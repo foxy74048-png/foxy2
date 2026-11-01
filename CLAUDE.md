@@ -36,3 +36,9 @@ Princípio: definir o Core conceitualmente, implementar só o Core necessário p
 - Migrations aditivas e compatíveis com PostgreSQL (produção) e SQLite (testes). O CI roda nos dois.
 - Nenhum teste chama a Anthropic de verdade: usar o `FakeProvider`.
 - Commits em português, descrevendo a mudança. Mudou módulo ou contrato → atualizar o doc correspondente no mesmo commit.
+
+## Visual (Core)
+
+- Toda tela nova usa o Core: `<x-core::layout>` (menu lateral + conteúdo) ou `<x-core::plain>` (login/avisos), CSS em `public/core/foxy-core.css`.
+- Roxo sóbrio (`--primary` #5b3fd1), neutro e profissional; nada de lilás/rosa/creme; alertas em verde/vermelho de verdade; opções importantes sempre visíveis.
+- A janela da raposa é `public/core/foxy-assistant.js` + `.css`; sistemas integram pelo pacote `packages/foxy-ai-client` (ver `docs/06-api-foxy-ai.md`, seção 3.2).

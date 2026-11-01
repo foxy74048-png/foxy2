@@ -11,68 +11,95 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Console de testes da equipe Foxy: conversa com a Foxy AI como o negócio de demonstração.
+ * Console de testes da equipe Foxy: a clínica de demonstração com a janela da raposa de verdade
+ * (public/core/foxy-assistant.js). Este controller faz o papel do "servidor do sistema": guarda a
+ * chave, abre a conversa com as permissões do perfil escolhido e executa as consultas.
  */
 class ConsoleController
 {
     public function __construct(private DemoHost $host) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $ready = DemoHost::isReady();
+        $current = $ready ? ($this->host->assistants($this->userRef($request))['body']['current'] ?? null) : null;
+
         return view('console.index', [
-            'ready' => DemoHost::isReady(),
+            'ready' => $ready,
             'models' => array_values(config('foxy.ai.tiers')),
             'defaultModel' => config('foxy.ai.tiers.rapida'),
             'roles' => array_keys(DemoBusiness::ROLES),
             'questions' => DemoBusiness::evaluationQuestions(),
             'provider' => config('foxy.ai.provider'),
             'foxes' => FoxCatalog::all(),
+            'current' => $current ?? FoxCatalog::get(FoxCatalog::DEFAULT),
         ]);
     }
 
-    public function chat(Request $request): JsonResponse
+    /**
+     * Endpoint da janela da raposa: { text, page, error, model, role } → resposta no formato do widget.
+     */
+    public function message(Request $request): JsonResponse
     {
-        $data = $this->validated($request, [
+        $data = $request->validate([
+            'text' => ['required', 'string', 'max:4000'],
+            'page' => ['nullable', 'string', 'max:200'],
+            'error' => ['nullable', 'array'],
+            'error.message' => ['required_with:error', 'string', 'max:500'],
+            'error.code' => ['nullable', 'string', 'max:60'],
             'model' => ['required', Rule::in(array_values(config('foxy.ai.tiers')))],
-            'assistant' => ['required', Rule::in(FoxCatalog::ids())],
-            'assistant_name' => ['nullable', 'string', 'max:40'],
+            'role' => ['required', Rule::in(array_keys(DemoBusiness::ROLES))],
         ]);
 
-        $fox = [$data['assistant'], trim((string) ($data['assistant_name'] ?? ''))];
         $chat = $request->session()->get('console.chat');
-        $isNew = ! $chat || $chat['model'] !== $data['model'] || $chat['role'] !== $data['role'] || ($chat['fox'] ?? null) !== $fox;
+        $isNew = ! $chat || $chat['model'] !== $data['model'] || $chat['role'] !== $data['role'];
 
         if ($isNew) {
-            // Como um sistema real: grava a raposa escolhida pela pessoa e abre conversa nova com ela.
-            $chosen = $this->host->chooseFox($this->userRef($request, $data['role']), $fox[0], $fox[1] ?: null);
-            if ($chosen['status'] !== 200) {
-                return response()->json(['error' => $chosen['body']['error'] ?? ['message' => 'Nome de raposa inválido.']], 422);
-            }
-
-            $opened = $this->host->openConversation($this->userRef($request, $data['role']), $data['role'], $data['model']);
+            $opened = $this->host->openConversation($this->userRef($request), $data['role'], $data['model']);
 
             if ($opened['status'] !== 201) {
-                return response()->json(['error' => $opened['body']['error'] ?? ['message' => 'Erro ao abrir conversa']], 422);
+                return response()->json(['error' => $opened['body']['error'] ?? ['message' => 'Erro ao abrir conversa.']], 422);
             }
 
-            $chat = ['id' => $opened['body']['conversation_id'], 'model' => $data['model'], 'role' => $data['role'], 'fox' => $fox, 'assistant' => $opened['body']['assistant']];
+            $chat = ['id' => $opened['body']['conversation_id'], 'model' => $data['model'], 'role' => $data['role'], 'assistant' => $opened['body']['assistant']];
             $request->session()->put('console.chat', $chat);
         }
 
-        $answer = $this->host->ask($chat['id'], $data['question'], $data['page'] ?? null, $this->error($data));
+        $answer = $this->host->ask($chat['id'], $data['text'], $data['page'] ?? null, $data['error'] ?? null);
 
         if (in_array($answer['error']['code'] ?? null, ['conversation_full', 'conversation_expired'], true)) {
             $request->session()->forget('console.chat');
         }
 
-        return response()->json($answer + ['conversation_id' => $chat['id'], 'new_conversation' => $isNew, 'assistant' => $chat['assistant'] ?? null]);
+        return response()->json($answer + ['assistant' => $chat['assistant'], 'conversation_id' => $chat['id'], 'new_conversation' => $isNew]);
     }
 
     public function reset(Request $request): JsonResponse
     {
         $request->session()->forget('console.chat');
 
-        return response()->json(['ok' => true]);
+        return response()->json(['assistant' => $this->host->assistants($this->userRef($request))['body']['current'] ?? null]);
+    }
+
+    /**
+     * "Escolha a sua raposa": grava a escolha da pessoa (como um sistema real faria) e começa conversa nova.
+     */
+    public function chooseFox(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'assistant' => ['required', Rule::in(FoxCatalog::ids())],
+            'custom_name' => ['nullable', 'string', 'max:40'],
+        ]);
+
+        $chosen = $this->host->chooseFox($this->userRef($request), $data['assistant'], trim((string) ($data['custom_name'] ?? '')) ?: null);
+
+        if ($chosen['status'] !== 200) {
+            return response()->json(['error' => $chosen['body']['error'] ?? ['message' => 'Não foi possível escolher a raposa.']], 422);
+        }
+
+        $request->session()->forget('console.chat');
+
+        return response()->json(['assistant' => $chosen['body']['current']]);
     }
 
     /**
@@ -80,41 +107,28 @@ class ConsoleController
      */
     public function compare(Request $request): JsonResponse
     {
-        $data = $this->validated($request, [
+        $data = $request->validate([
+            'question' => ['required', 'string', 'max:4000'],
+            'role' => ['required', Rule::in(array_keys(DemoBusiness::ROLES))],
+            'page' => ['nullable', 'string', 'max:200'],
             'models' => ['required', 'array', 'min:1', 'max:3'],
             'models.*' => [Rule::in(array_values(config('foxy.ai.tiers')))],
         ]);
 
         $results = [];
         foreach (array_unique($data['models']) as $model) {
-            $opened = $this->host->openConversation($this->userRef($request, $data['role']).'-comparar', $data['role'], $model);
+            $opened = $this->host->openConversation($this->userRef($request), $data['role'], $model);
 
             $results[] = ['model' => $model] + ($opened['status'] === 201
-                ? $this->host->ask($opened['body']['conversation_id'], $data['question'], $data['page'] ?? null, $this->error($data))
-                : ['reply' => null, 'escalate' => null, 'trace' => [], 'usage' => null, 'error' => $opened['body']['error'] ?? null]);
+                ? $this->host->ask($opened['body']['conversation_id'], $data['question'], $data['page'] ?? null)
+                : ['reply' => null, 'drafts' => [], 'escalate' => null, 'trace' => [], 'usage' => null, 'error' => $opened['body']['error'] ?? null]);
         }
 
         return response()->json(['results' => $results]);
     }
 
-    private function validated(Request $request, array $extra): array
+    private function userRef(Request $request): string
     {
-        return $request->validate([
-            'question' => ['required', 'string', 'max:4000'],
-            'role' => ['required', Rule::in(array_keys(DemoBusiness::ROLES))],
-            'page' => ['nullable', 'string', 'max:200'],
-            'error_message' => ['nullable', 'string', 'max:500'],
-            'error_code' => ['nullable', 'string', 'max:60'],
-        ] + $extra);
-    }
-
-    private function error(array $data): ?array
-    {
-        return empty($data['error_message']) ? null : array_filter(['message' => $data['error_message'], 'code' => $data['error_code'] ?? null]);
-    }
-
-    private function userRef(Request $request, string $role): string
-    {
-        return 'console-'.$request->user()->getKey().'-'.$role;
+        return 'console-'.$request->user()->getKey();
     }
 }

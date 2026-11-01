@@ -13,7 +13,9 @@ Route::post('/console/logout', [LoginController::class, 'logout'])->name('logout
 
 Route::middleware('auth')->prefix('console')->group(function () {
     Route::get('/', [ConsoleController::class, 'index'])->name('console');
-    Route::post('/chat', [ConsoleController::class, 'chat']);
-    Route::post('/reset', [ConsoleController::class, 'reset']);
+    // Endpoints da janela da raposa (o console faz o papel do servidor do sistema).
+    Route::post('/assistant/messages', [ConsoleController::class, 'message']);
+    Route::post('/assistant/reset', [ConsoleController::class, 'reset']);
+    Route::post('/assistant/fox', [ConsoleController::class, 'chooseFox']);
     Route::post('/compare', [ConsoleController::class, 'compare']);
 });

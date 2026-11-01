@@ -127,6 +127,49 @@ DELETE /api/v1/assistant-preferences?user_ref=u-123                             
 - Vale para **conversas novas**; a conversa aberta continua com a raposa com que começou. A resposta de `POST /conversations` traz `assistant: { id, name, avatar_url }` para o sistema mostrar.
 - Avatares em `/core/assistants/{id}.svg`.
 
+## 3.2 Janela da raposa e cliente PHP (o jeito recomendado para sistemas Foxy)
+
+A Foxy entrega as duas pontas prontas; o sistema só escreve um controller e as suas consultas.
+
+**No navegador** (a chave nunca vai para o navegador):
+
+```html
+<link rel="stylesheet" href="https://ai.foxy.net.br/core/foxy-assistant.css">
+<script src="https://ai.foxy.net.br/core/foxy-assistant.js"></script>
+<script>
+  FoxyAssistant.mount({
+    endpoint: '/assistente/mensagens',          // rota do SEU sistema
+    resetEndpoint: '/assistente/nova',
+    csrfToken: document.querySelector('meta[name=csrf-token]').content,
+    assistant: { name: 'Lud', article: 'a', avatar_url: 'https://ai.foxy.net.br/core/assistants/lud.svg' },
+    suggestions: ['Como remarco um atendimento?', 'Quem mais me deve este mês?'],
+    getPage: () => 'Agenda › Semana',
+    draftActions: [{ label: 'Abrir no WhatsApp', channels: ['whatsapp'], onClick: (d) => window.open('https://wa.me/?text=' + encodeURIComponent(d.text)) }],
+  });
+</script>
+```
+
+- O endpoint do sistema recebe `{ text, page, error }` e devolve `{ reply, drafts, escalate, tools_used, assistant, error }` — exatamente o que `FoxyAiClient::ask()` retorna (+ `assistant` da conversa).
+- `widget.reportError({ message, code })` manda o erro da tela junto com a próxima pergunta; `widget.setAssistant(...)` troca a raposa mostrada.
+- Visual: roxo sóbrio do Core, tela cheia no celular, Enter envia, Esc fecha, aviso "A IA pode errar".
+
+**No servidor do sistema** (pacote `packages/foxy-ai-client`, namespace `Foxy\AiClient`):
+
+```php
+$foxy = (new FoxyAiClient(new HttpTransport('https://ai.foxy.net.br/api/v1', config('services.foxy_ai.key'))))
+    ->forOrganization($workspace->foxy_organization_id)
+    ->withToolLabels(['financeiro_saldos_em_aberto' => 'Financeiro']);
+
+$conversa = $foxy->openConversation(['host_profile' => 'foxy-agenda', 'user_ref' => (string) $user->id,
+    'allowed_tools' => $consultasQueEssaPessoaPodeUsar, 'allowed_capabilities' => $funcoesDaPessoa]);
+
+return response()->json($foxy->ask($conversa['body']['conversation_id'], $request->text,
+    fn ($tool, $input) => $minhasConsultas->run($tool, $input, $user),   // sempre com as permissões da pessoa
+    $request->page, $request->error));
+```
+
+O console de testes (`/console`) usa exatamente essas duas peças.
+
 ## 4. Privacidade e uso
 
 ```http

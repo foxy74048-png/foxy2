@@ -185,7 +185,7 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
 3. ✔ Permissões por usuário (`allowed_capabilities`) e capacidade por consulta.
 4. ✔ Raposas: catálogo, preferências (conta e usuário), regras por raposa, avatares SVG.
 5. ✔ Sugestão de mensagens (cartões `drafts`).
-6. Widget + cliente PHP; console de testes usando o widget.
+6. ✔ Widget + cliente PHP; console de testes usando o widget. Visual do Core (`public/core/foxy-core.css`, componentes `<x-core::layout>`, `<x-core::plain>`, `<x-core::nav-link>`, `<x-core::icon>`) copiado e adaptado do layout da Foxy atual; o sistema antigo não é dependência.
 
 ## 9. Decisões (aprovadas em 2026-11-01)
 

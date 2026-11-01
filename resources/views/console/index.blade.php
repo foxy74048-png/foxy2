@@ -1,39 +1,63 @@
-@extends('console.layout')
+<x-core::layout title="Console de testes" product="Foxy AI" subtitle="Equipe Foxy">
+    <x-slot:head>
+        <link rel="stylesheet" href="/core/foxy-assistant.css">
+        <style>
+            .foxes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+            .fox { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 14px;
+                   border: 1px solid var(--border); border-radius: 16px; cursor: pointer; margin: 0; font-weight: 400; background: #fff; }
+            .fox:has(input:checked) { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary) inset; }
+            .fox img { width: 64px; height: 64px; }
+            .fox em { font-size: 0.85rem; }
+            .compare-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+            pre { background: var(--bg); padding: 8px; border-radius: 10px; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0; }
+            .answer-text { white-space: pre-wrap; }
+        </style>
+    </x-slot:head>
 
-@section('body')
-<header>
-    <div><strong>Foxy AI</strong> — Console de testes <span class="badge">provedor: {{ $provider }}</span></div>
-    <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit">Sair</button></form>
-</header>
+    <x-slot:nav>
+        <x-core::nav-link href="/console" :active="true" icon="sparkles">Console de testes</x-core::nav-link>
+    </x-slot:nav>
 
-<main>
+    <x-slot:actions>
+        <span class="badge">provedor: {{ $provider }}</span>
+        <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="secondary"><x-core::icon name="logout" /> Sair</button></form>
+    </x-slot:actions>
+
     @unless ($ready)
-        <div class="card error">A demonstração ainda não foi configurada. Rode <code>php artisan foxy:demo:setup</code> no servidor.</div>
+        <div class="alert error">A demonstração ainda não foi configurada. Rode <code>php artisan foxy:demo:setup</code> no servidor.</div>
     @endunless
 
-    <div class="card">
-        <p class="muted" style="margin-top:0">Você está usando a <strong>Clínica Bem Viver</strong>, um negócio fictício. A IA conversa pela mesma API que um sistema real usaria; as consultas rodam sobre dados inventados do mês atual.</p>
+    <div class="alert info">
+        Você está na <strong>Clínica Bem Viver (demonstração)</strong>, com dados inventados do mês atual. A janela da raposa
+        (canto inferior direito) é a mesma que vai aparecer nos sistemas Foxy e conversa pela API como um sistema real.
+    </div>
 
-        <label>Escolha a sua raposa</label>
+    <section class="card stack" aria-labelledby="fox-title">
+        <h2 id="fox-title">Escolha a sua raposa</h2>
         <div class="foxes" role="radiogroup" aria-label="Raposa">
             @foreach ($foxes as $fox)
                 <label class="fox">
-                    <input type="radio" name="assistant" value="{{ $fox['id'] }}" @checked($loop->index === 1)>
-                    <img src="{{ $fox['avatar_url'] }}" alt="" width="56" height="56">
+                    <input type="radio" name="assistant" value="{{ $fox['id'] }}" @checked($fox['id'] === $current['id'])>
+                    <img src="{{ $fox['avatar_url'] }}" alt="">
                     <strong>{{ $fox['name'] }}</strong>
                     <span class="muted">{{ $fox['style'] }}</span>
                     <em class="muted">“{{ $fox['sample'] }}”</em>
                 </label>
             @endforeach
         </div>
-        <div class="row">
+        <div class="form-grid">
             <div>
-                <label for="assistant_name">Dar outro nome à raposa (opcional)</label>
-                <input id="assistant_name" maxlength="40" placeholder="Ex.: Lulu da Recepção">
+                <label for="custom_name">Dar outro nome (opcional)</label>
+                <input id="custom_name" maxlength="40" value="{{ ($current['custom'] ?? false) ? $current['name'] : '' }}" placeholder="Ex.: Lulu da Recepção">
             </div>
+            <div style="align-self:end"><button type="button" id="save-fox">Usar esta raposa</button></div>
         </div>
+        <p class="muted" id="fox-status" role="status"></p>
+    </section>
 
-        <div class="row">
+    <section class="card stack" aria-labelledby="setup-title">
+        <h2 id="setup-title">Situação do teste</h2>
+        <div class="form-grid">
             <div>
                 <label for="model">Modelo</label>
                 <select id="model">
@@ -43,165 +67,123 @@
                 </select>
             </div>
             <div>
-                <label for="role">Perfil de acesso do usuário</label>
+                <label for="role">Perfil de acesso da pessoa</label>
                 <select id="role">
                     @foreach ($roles as $role)
-                        <option value="{{ $role }}">{{ $role === 'dono' ? 'Dono (vê tudo)' : 'Recepção (sem financeiro)' }}</option>
+                        <option value="{{ $role }}">{{ $role === 'dono' ? 'Titular da conta (vê tudo)' : 'Recepção (sem financeiro)' }}</option>
                     @endforeach
                 </select>
             </div>
             <div>
-                <label for="page">Tela atual (opcional)</label>
-                <input id="page" placeholder="Ex.: Agenda › Novo atendimento">
+                <label for="page">Tela em que a pessoa está</label>
+                <input id="page" value="Agenda › Semana">
             </div>
         </div>
-        <div class="row">
+        <div class="form-grid">
             <div>
-                <label for="error_message">Erro mostrado na tela (opcional)</label>
+                <label for="error_message">Erro na tela (para simular)</label>
                 <input id="error_message" placeholder="Ex.: Horário indisponível">
             </div>
             <div>
-                <label for="error_code">Código do erro (opcional)</label>
+                <label for="error_code">Código do erro</label>
                 <input id="error_code" placeholder="Ex.: AG-409">
             </div>
+            <div style="align-self:end"><button type="button" class="secondary" id="simulate-error">Simular erro na tela</button></div>
         </div>
+        <p class="helper">Trocar modelo ou perfil abre uma conversa nova na próxima pergunta.</p>
+    </section>
 
-        <label for="question">Pergunta</label>
-        <textarea id="question" placeholder="Ex.: Quem mais me deve este mês?"></textarea>
+    <section class="card stack" aria-labelledby="last-title">
+        <h2 id="last-title">Última resposta (detalhes)</h2>
+        <div id="last" class="muted">Faça uma pergunta na janela da raposa.</div>
+    </section>
 
-        <div class="chips" style="margin-top:8px">
-            <span class="muted">Perguntas de teste:</span>
-            @foreach ($questions as $q)
-                <button type="button" data-question="{{ $q }}">{{ $q }}</button>
-            @endforeach
+    <section class="card stack" aria-labelledby="compare-title">
+        <h2 id="compare-title">Comparar modelos</h2>
+        <div>
+            <label for="compare_question">Pergunta</label>
+            <input id="compare_question" value="{{ $questions[0] ?? '' }}">
         </div>
-
-        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px">
-            <button class="primary" id="send" type="button">Enviar</button>
-            <button id="reset" type="button">Nova conversa</button>
-            <span class="muted" style="margin-left:16px">Comparar em:</span>
+        <div class="toolbar" style="justify-content:flex-start">
             @foreach ($models as $model)
-                <label style="display:inline; margin:0"><input type="checkbox" class="cmp" value="{{ $model }}" checked style="width:auto"> {{ $model }}</label>
+                <label style="display:inline-flex;gap:6px;align-items:center;margin:0"><input type="checkbox" class="cmp" value="{{ $model }}" checked> {{ $model }}</label>
             @endforeach
-            <button id="compare" type="button">Comparar modelos</button>
+            <button type="button" id="compare">Comparar</button>
         </div>
-        <p class="muted" id="status"></p>
-    </div>
+        <div class="compare-grid" id="compare-results"></div>
+    </section>
 
-    <div class="card" id="compare-card" hidden>
-        <h3 style="margin-top:0">Comparação</h3>
-        <div class="grid3" id="compare-results"></div>
-    </div>
+    <x-slot:scripts>
+        <script src="/core/foxy-assistant.js"></script>
+        <script>
+        (() => {
+            const $ = (id) => document.getElementById(id);
+            const token = document.querySelector('meta[name=csrf-token]').content;
+            const money = (v) => 'US$ ' + Number(v || 0).toFixed(4);
+            const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+            const post = async (url, body) => {
+                const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': token }, body: JSON.stringify(body) });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok && !json.error) json.error = { message: json.message || ('Erro ' + res.status) };
+                return json;
+            };
 
-    <div class="card">
-        <h3 style="margin-top:0">Conversa <span class="muted" id="totals"></span></h3>
-        <div id="chat"><p class="muted">Nenhuma mensagem ainda.</p></div>
-    </div>
-</main>
+            const details = (box, data) => {
+                box.innerHTML = '';
+                if (data.error) { box.append(el('div', 'alert error', (data.error.code ? '[' + data.error.code + '] ' : '') + data.error.message)); return; }
+                const u = data.usage || {};
+                box.append(el('p', null, (data.model || '') + ' · entrada ' + (u.input_tokens || 0) + ' · cache ' + (u.cache_read_tokens || 0) + ' · saída ' + (u.output_tokens || 0) + ' tokens · ' + money(u.cost_usd)));
+                (data.trace || []).forEach(t => box.append(el('pre', null, t.tool + ' ' + JSON.stringify(t.input) + '\n→ ' + JSON.stringify(t.output, null, 2))));
+                if (!(data.trace || []).length) box.append(el('p', 'muted', 'Nenhuma consulta ao sistema nesta resposta.'));
+            };
 
-<script>
-(() => {
-    const $ = (id) => document.getElementById(id);
-    const token = document.querySelector('meta[name=csrf-token]').content;
-    let total = { cost: 0, messages: 0 };
+            const assistant = FoxyAssistant.mount({
+                endpoint: '/console/assistant/messages',
+                resetEndpoint: '/console/assistant/reset',
+                csrfToken: token,
+                assistant: @json(['name' => $current['name'], 'article' => $current['article'], 'avatar_url' => $current['avatar_url']]),
+                suggestions: @json($questions),
+                getPage: () => $('page').value.trim(),
+                extra: () => ({ model: $('model').value, role: $('role').value }),
+                draftActions: [{ label: 'Abrir no WhatsApp', channels: ['whatsapp'], onClick: (d) => window.open('https://wa.me/?text=' + encodeURIComponent(d.text), '_blank', 'noopener') }],
+                onAnswer: (data) => details($('last'), data),
+            });
 
-    const payload = () => ({
-        question: $('question').value.trim(),
-        role: $('role').value,
-        model: $('model').value,
-        assistant: document.querySelector('input[name=assistant]:checked').value,
-        assistant_name: $('assistant_name').value.trim() || null,
-        page: $('page').value.trim() || null,
-        error_message: $('error_message').value.trim() || null,
-        error_code: $('error_code').value.trim() || null,
-    });
+            $('save-fox').addEventListener('click', async () => {
+                const chosen = document.querySelector('input[name=assistant]:checked').value;
+                const data = await post('/console/assistant/fox', { assistant: chosen, custom_name: $('custom_name').value.trim() || null });
+                if (data.error) { $('fox-status').textContent = data.error.message; return; }
+                assistant.setAssistant(data.assistant);
+                $('fox-status').textContent = 'Pronto: agora quem atende é ' + data.assistant.name + '. A próxima conversa já começa com essa raposa.';
+            });
 
-    async function post(url, body) {
-        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': token }, body: JSON.stringify(body) });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok && !json.error) json.error = { message: json.message || ('Erro HTTP ' + res.status) };
-        return json;
-    }
+            $('simulate-error').addEventListener('click', () => {
+                const message = $('error_message').value.trim();
+                if (!message) { $('error_message').focus(); return; }
+                assistant.reportError({ message, code: $('error_code').value.trim() || undefined });
+            });
 
-    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-    const money = (v) => 'US$ ' + Number(v || 0).toFixed(4);
-
-    function renderAnswer(container, data) {
-        if (data.error) {
-            container.append(el('div', 'msg ai error', (data.error.code ? '[' + data.error.code + '] ' : '') + data.error.message));
-            return;
-        }
-        const msg = el('div', 'msg ai');
-        if (data.assistant) {
-            const who = el('div', 'who');
-            const img = el('img'); img.src = data.assistant.avatar_url; img.alt = ''; img.width = 28; img.height = 28;
-            who.append(img, el('strong', null, data.assistant.name));
-            msg.append(who);
-        }
-        msg.append(el('div', null, data.reply));
-        container.append(msg);
-        if (data.escalate) container.append(el('div', 'msg ai', '→ Encaminhado ao suporte (' + data.escalate.reason + '): ' + data.escalate.summary));
-        (data.drafts || []).forEach(d => {
-            const card = el('div', 'draft');
-            card.append(el('div', 'muted', 'Mensagem sugerida · ' + d.channel + (d.title ? ' · ' + d.title : '')));
-            card.append(el('div', 'draft-text', d.text));
-            const copy = el('button', null, 'Copiar');
-            copy.type = 'button';
-            copy.addEventListener('click', async () => { await navigator.clipboard.writeText(d.text); copy.textContent = 'Copiado'; });
-            card.append(copy);
-            container.append(card);
-        });
-        const u = data.usage || {};
-        container.append(el('div', 'muted', (data.model || '') + ' · entrada ' + (u.input_tokens || 0) + ' · cache ' + (u.cache_read_tokens || 0) + ' · saída ' + (u.output_tokens || 0) + ' tokens · ' + money(u.cost_usd)));
-        if (data.trace && data.trace.length) {
-            const d = el('details'); d.append(el('summary', null, 'Consultas executadas pelo sistema (' + data.trace.length + ')'));
-            data.trace.forEach(t => d.append(el('pre', null, t.tool + ' ' + JSON.stringify(t.input) + '\n→ ' + JSON.stringify(t.output, null, 2))));
-            container.append(d);
-        }
-    }
-
-    function busy(on, text) {
-        ['send', 'compare', 'reset'].forEach(id => $(id).disabled = on);
-        $('status').textContent = text || '';
-    }
-
-    document.querySelectorAll('[data-question]').forEach(b => b.addEventListener('click', () => { $('question').value = b.dataset.question; $('question').focus(); }));
-
-    $('send').addEventListener('click', async () => {
-        const body = payload();
-        if (!body.question) return;
-        busy(true, 'Pensando…');
-        const chat = $('chat');
-        if (!total.messages) chat.innerHTML = '';
-        const data = await post('/console/chat', body);
-        if (data.new_conversation && total.messages) chat.append(el('p', 'muted', '— nova conversa (' + body.model + ', ' + body.role + ') —'));
-        chat.append(el('div', 'msg user', body.question));
-        renderAnswer(chat, data);
-        total.messages++; total.cost += Number(data.usage?.cost_usd || 0);
-        $('totals').textContent = '— ' + total.messages + ' mensagens · ' + money(total.cost);
-        $('question').value = '';
-        busy(false);
-    });
-
-    $('reset').addEventListener('click', async () => {
-        await post('/console/reset', {});
-        $('chat').innerHTML = '<p class="muted">Nova conversa.</p>';
-        total = { cost: 0, messages: 0 }; $('totals').textContent = '';
-    });
-
-    $('compare').addEventListener('click', async () => {
-        const body = payload();
-        body.models = [...document.querySelectorAll('.cmp:checked')].map(c => c.value);
-        if (!body.question || !body.models.length) return;
-        busy(true, 'Comparando em ' + body.models.length + ' modelos…');
-        const data = await post('/console/compare', body);
-        const box = $('compare-results'); box.innerHTML = ''; $('compare-card').hidden = false;
-        if (data.error) box.append(el('div', 'error', data.error.message));
-        (data.results || []).forEach(r => {
-            const col = el('div', 'card'); col.append(el('strong', null, r.model)); renderAnswer(col, r); box.append(col);
-        });
-        busy(false);
-    });
-})();
-</script>
-@endsection
+            $('compare').addEventListener('click', async () => {
+                const models = [...document.querySelectorAll('.cmp:checked')].map(c => c.value);
+                const question = $('compare_question').value.trim();
+                if (!question || !models.length) return;
+                const box = $('compare-results');
+                box.innerHTML = '<p class="muted">Comparando…</p>';
+                $('compare').disabled = true;
+                const data = await post('/console/compare', { question, models, role: $('role').value, page: $('page').value.trim() || null });
+                box.innerHTML = '';
+                if (data.error) box.append(el('div', 'alert error', data.error.message));
+                (data.results || []).forEach(r => {
+                    const col = el('div', 'card stack');
+                    col.append(el('strong', null, r.model));
+                    if (r.reply) col.append(el('div', 'answer-text', r.reply));
+                    (r.drafts || []).forEach(d => col.append(el('pre', null, '[' + d.channel + '] ' + d.text)));
+                    const info = el('div'); details(info, r); col.append(info);
+                    box.append(col);
+                });
+                $('compare').disabled = false;
+            });
+        })();
+        </script>
+    </x-slot:scripts>
+</x-core::layout>

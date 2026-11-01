@@ -17,6 +17,14 @@ class DemoBusiness
         'recepcao' => ['agenda_atendimentos', 'clientes_buscar'],
     ];
 
+    /** Como cada consulta aparece para a pessoa na janela da raposa ("Consultou: Financeiro"). */
+    public const TOOL_LABELS = [
+        'financeiro_saldos_em_aberto' => 'Financeiro',
+        'financeiro_resumo_mes' => 'Financeiro',
+        'agenda_atendimentos' => 'Agenda',
+        'clientes_buscar' => 'Clientes',
+    ];
+
     public static function profile(): array
     {
         return [

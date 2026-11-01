@@ -5,6 +5,7 @@ namespace App\Demo;
 use App\Platform\ApiClients\ApiClient;
 use App\Platform\Integrations\Integration;
 use App\Platform\Organizations\Organization;
+use Foxy\AiClient\FoxyAiClient;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -16,8 +17,6 @@ use RuntimeException;
 class DemoHost
 {
     private const KEY_FILE = 'demo-api-key';
-
-    private const MAX_STEPS = 6;
 
     public const PLAN = 'ia-50000';
 
@@ -85,25 +84,30 @@ class DemoHost
         return isset($data['key'], $data['organization']) ? $data : null;
     }
 
-    private function api(): InternalApi
+    /**
+     * O mesmo cliente PHP que os sistemas Foxy usam (packages/foxy-ai-client), aqui com transporte interno.
+     */
+    private function client(): FoxyAiClient
     {
         $credentials = self::credentials() ?? throw new RuntimeException('Demonstração não configurada. Rode: php artisan foxy:demo:setup');
 
-        return new InternalApi($credentials['key'], $credentials['organization']);
+        return (new FoxyAiClient(new InternalApi($credentials['key']), $credentials['organization']))
+            ->withToolLabels(DemoBusiness::TOOL_LABELS);
     }
 
     public function chooseFox(string $userRef, string $assistant, ?string $customName): array
     {
-        return $this->api()->call('PUT', '/assistant-preferences', array_filter([
-            'user_ref' => $userRef,
-            'assistant' => $assistant,
-            'custom_name' => $customName,
-        ]));
+        return $this->client()->chooseAssistant($userRef, $assistant, $customName);
+    }
+
+    public function assistants(string $userRef): array
+    {
+        return $this->client()->assistants($userRef);
     }
 
     public function openConversation(string $userRef, string $role, ?string $model): array
     {
-        return $this->api()->call('POST', '/conversations', array_filter([
+        return $this->client()->openConversation(array_filter([
             'host_profile' => DemoBusiness::SLUG,
             'user_ref' => $userRef,
             'allowed_tools' => DemoBusiness::ROLES[$role],
@@ -112,46 +116,10 @@ class DemoHost
     }
 
     /**
-     * Envia a mensagem e, enquanto a IA pedir tools, executa e devolve os resultados — como faria um sistema real.
-     *
-     * @return array{reply: ?string, escalate: ?array, trace: list<array>, usage: array, error: ?array, model: ?string}
+     * Envia a mensagem e executa as consultas pedidas pela IA sobre os dados de mentira — como faria um sistema real.
      */
     public function ask(string $conversationId, string $text, ?string $page = null, ?array $error = null): array
     {
-        $api = $this->api();
-        $trace = [];
-        $usage = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_tokens' => 0, 'cache_write_tokens' => 0, 'cost_usd' => 0.0];
-
-        $response = $api->call('POST', "/conversations/{$conversationId}/messages", array_filter([
-            'text' => $text,
-            'page' => $page,
-            'error' => $error,
-        ]));
-
-        for ($step = 0; $step < self::MAX_STEPS; $step++) {
-            if ($response['status'] >= 300) {
-                return ['reply' => null, 'escalate' => null, 'trace' => $trace, 'usage' => $usage, 'error' => $response['body']['error'] ?? ['message' => 'Erro'], 'model' => null];
-            }
-
-            $body = $response['body'];
-            foreach (array_keys($usage) as $field) {
-                $usage[$field] += $body['usage'][$field] ?? 0;
-            }
-
-            if ($body['status'] === 'answered') {
-                return ['reply' => $body['reply'], 'escalate' => $body['escalate'], 'drafts' => $body['drafts'] ?? [], 'trace' => $trace, 'usage' => $usage, 'error' => null, 'model' => $body['usage']['model'] ?? null];
-            }
-
-            $results = [];
-            foreach ($body['tool_calls'] as $call) {
-                $output = $this->business->run($call['name'], (array) $call['input']);
-                $trace[] = ['tool' => $call['name'], 'input' => $call['input'], 'output' => $output];
-                $results[] = ['id' => $call['id'], 'output' => $output];
-            }
-
-            $response = $api->call('POST', "/conversations/{$conversationId}/tool-results", ['results' => $results]);
-        }
-
-        return ['reply' => null, 'escalate' => null, 'trace' => $trace, 'usage' => $usage, 'error' => ['message' => 'Muitas rodadas de ferramentas.'], 'model' => null];
+        return $this->client()->ask($conversationId, $text, fn (string $tool, array $input) => $this->business->run($tool, $input), $page, $error);
     }
 }
