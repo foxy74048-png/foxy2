@@ -33,6 +33,8 @@
         .fox { display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; padding:12px; border:1px solid var(--line); border-radius:8px; cursor:pointer; color:var(--fg); font-size:14px; margin:0; }
         .fox input { width:auto; }
         .fox:has(input:checked) { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset; }
+        .draft { border:1px solid var(--accent); border-radius:8px; padding:10px 12px; margin:8px 0; background:#fff; }
+        .draft-text { white-space:pre-wrap; margin:6px 0 8px; }
         .who { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
         .badge { display:inline-block; padding:1px 8px; border-radius:10px; background:var(--bg); border:1px solid var(--line); font-size:12px; }
     </style>

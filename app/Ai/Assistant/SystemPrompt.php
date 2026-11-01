@@ -13,7 +13,7 @@ use App\Ai\Plans\AiPlan;
  */
 class SystemPrompt
 {
-    public const RULES_VERSION = 4;
+    public const RULES_VERSION = 5;
 
     /**
      * @param  list<string>  $capabilities  capacidades efetivas da conversa (plano ∩ permissão do usuário)
@@ -63,6 +63,12 @@ class SystemPrompt
     private static function limits(array $capabilities): string
     {
         $lines = [];
+
+        if (in_array('escrita', $capabilities, true)) {
+            $lines[] = '- Mensagens: quando a pessoa pedir um texto para enviar a alguém (lembrete, confirmação, aniversário, cobrança gentil, retorno, divulgação), escreva a mensagem e entregue com a ferramenta foxy_sugerir_mensagem, no tom adequado ao canal. Se precisar de um dado (ex.: data do atendimento) e houver consulta disponível, consulte antes. Nunca diga que enviou: quem envia é a pessoa.';
+        } else {
+            $lines[] = '- Nesta conversa você não escreve mensagens para a pessoa enviar. Se pedirem, explique que essa função não está liberada.';
+        }
 
         if (! in_array('dados', $capabilities, true)) {
             $lines[] = '- Nesta conversa você NÃO tem acesso aos dados do sistema (valores, clientes, agenda). Se pedirem, diga que esse acesso não está liberado para a pessoa pela IA e, se o conhecimento disser, mostre onde ver isso na tela.';

@@ -139,7 +139,7 @@ class DemoHost
             }
 
             if ($body['status'] === 'answered') {
-                return ['reply' => $body['reply'], 'escalate' => $body['escalate'], 'trace' => $trace, 'usage' => $usage, 'error' => null, 'model' => $body['usage']['model'] ?? null];
+                return ['reply' => $body['reply'], 'escalate' => $body['escalate'], 'drafts' => $body['drafts'] ?? [], 'trace' => $trace, 'usage' => $usage, 'error' => null, 'model' => $body['usage']['model'] ?? null];
             }
 
             $results = [];

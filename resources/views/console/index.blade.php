@@ -141,6 +141,16 @@
         msg.append(el('div', null, data.reply));
         container.append(msg);
         if (data.escalate) container.append(el('div', 'msg ai', '→ Encaminhado ao suporte (' + data.escalate.reason + '): ' + data.escalate.summary));
+        (data.drafts || []).forEach(d => {
+            const card = el('div', 'draft');
+            card.append(el('div', 'muted', 'Mensagem sugerida · ' + d.channel + (d.title ? ' · ' + d.title : '')));
+            card.append(el('div', 'draft-text', d.text));
+            const copy = el('button', null, 'Copiar');
+            copy.type = 'button';
+            copy.addEventListener('click', async () => { await navigator.clipboard.writeText(d.text); copy.textContent = 'Copiado'; });
+            card.append(copy);
+            container.append(card);
+        });
         const u = data.usage || {};
         container.append(el('div', 'muted', (data.model || '') + ' · entrada ' + (u.input_tokens || 0) + ' · cache ' + (u.cache_read_tokens || 0) + ' · saída ' + (u.output_tokens || 0) + ' tokens · ' + money(u.cost_usd)));
         if (data.trace && data.trace.length) {

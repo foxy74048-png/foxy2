@@ -92,7 +92,7 @@ class DataQuestionsTest extends TestCase
         $id = $this->open(['agenda_atendimentos']);
         $this->ask($id, 'oi')->assertOk();
 
-        $this->assertSame(['agenda_atendimentos', 'foxy_encaminhar_suporte'], array_column($this->ai->lastRequest()->tools, 'name'));
+        $this->assertSame(['agenda_atendimentos', 'foxy_encaminhar_suporte', 'foxy_sugerir_mensagem'], array_column($this->ai->lastRequest()->tools, 'name'));
     }
 
     public function test_opening_with_tool_outside_catalog_fails(): void

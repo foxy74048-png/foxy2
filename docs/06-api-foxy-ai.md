@@ -109,6 +109,8 @@ POST /api/v1/conversations/{id}/tool-results
 - Se não puder executar: `{ "id": "toolu_1", "output": "Sem permissão", "is_error": true }` — a IA explica à pessoa.
 - A resposta pode ser `answered` ou um novo `tool_requested` (até 4 rodadas por mensagem).
 
+**Mensagens sugeridas:** com a capacidade `escrita`, a resposta `answered` pode trazer `drafts: [{ "channel": "whatsapp" | "email" | "texto", "title": "Lembrete de amanhã" | null, "text": "..." }]` (até 5). Mostre cada uma num cartão com **Copiar** (e, se quiser, um botão do seu sistema como "Abrir no WhatsApp"). A IA **nunca envia**: quem envia é a pessoa.
+
 **Encaminhar ao suporte:** quando `escalate` vier preenchido (`{ "reason": "defeito" | "sem_resposta" | "pedido_da_pessoa", "summary": "..." }`), abra o chamado no seu canal (WhatsApp, e-mail...) com o resumo.
 
 ## 3.1 A raposa ("a sua IA")

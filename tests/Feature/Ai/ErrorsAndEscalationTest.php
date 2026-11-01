@@ -59,7 +59,7 @@ class ErrorsAndEscalationTest extends TestCase
     {
         $this->send(['text' => 'oi'])->assertOk();
 
-        $this->assertSame(['foxy_encaminhar_suporte'], array_column($this->ai->lastRequest()->tools, 'name'));
+        $this->assertContains('foxy_encaminhar_suporte', array_column($this->ai->lastRequest()->tools, 'name'));
     }
 
     public function test_escalation_returns_summary_to_the_host(): void

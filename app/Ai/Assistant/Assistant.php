@@ -80,7 +80,7 @@ class Assistant
             'capabilities' => $capabilities,
             'assistant' => $fox['id'],
             'assistant_name' => $fox['name'],
-            'tools' => [...($catalog?->definitionsFor($allowedTools) ?? []), ...InternalTools::definitions()],
+            'tools' => [...($catalog?->definitionsFor($allowedTools) ?? []), ...InternalTools::definitions($capabilities)],
             'allowed_tools' => $allowedTools,
             'knowledge_version' => $knowledge->version,
             'tools_version' => $profile->current_tools_version,
@@ -140,7 +140,9 @@ class Assistant
                 throw AssistantException::noPendingTools();
             }
 
-            $pending = $conversation->pending_tool_calls ?? ['calls' => [], 'escalate' => null];
+            $pending = $conversation->pending_tool_calls ?? ['calls' => []];
+            // Pendências gravadas antes das mensagens sugeridas guardavam só 'escalate'.
+            $effects = $pending['effects'] ?? ['escalate' => $pending['escalate'] ?? null, 'drafts' => []];
             $blocks = $this->toolResultBlocks($pending['calls'], $results);
 
             if (! $conversation->claim(Conversation::AWAITING_TOOLS)) {
@@ -152,7 +154,7 @@ class Assistant
                 'errors' => count(array_filter($results, fn ($r) => (bool) ($r['is_error'] ?? false))),
             ]);
 
-            return $this->runTurn($conversation, [['role' => 'user', 'content' => $blocks]], Conversation::AWAITING_TOOLS, escalate: $pending['escalate'] ?? null);
+            return $this->runTurn($conversation, [['role' => 'user', 'content' => $blocks]], Conversation::AWAITING_TOOLS, effects: $effects);
         });
     }
 
@@ -197,9 +199,10 @@ class Assistant
      * Chama o modelo até ele responder em texto ou pedir tools do anfitrião. Tools internas e pedidos
      * inválidos são resolvidos aqui; nada é gravado no histórico antes de a rodada terminar com sucesso.
      */
-    private function runTurn(Conversation $conversation, array $newMessages, string $statusOnFailure, bool $startsWithUserMessage = false, ?array $escalate = null): AssistantResult
+    private function runTurn(Conversation $conversation, array $newMessages, string $statusOnFailure, bool $startsWithUserMessage = false, ?array $effects = null): AssistantResult
     {
         $usage = [];
+        $effects ??= InternalTools::emptyEffects();
         $maxRounds = config('foxy.ai.max_tool_rounds_per_message');
 
         try {
@@ -217,10 +220,10 @@ class Assistant
                 }
 
                 $conversation->tool_rounds++;
-                $pending = $this->classifyToolCalls($conversation, $calls, $escalate);
+                $pending = $this->classifyToolCalls($conversation, $calls, $effects);
 
                 if (array_filter($pending, fn ($c) => $c['host'])) {
-                    return $this->pauseForHostTools($conversation, $newMessages, $pending, $escalate, $usage, $startsWithUserMessage);
+                    return $this->pauseForHostTools($conversation, $newMessages, $pending, $effects, $usage, $startsWithUserMessage);
                 }
 
                 $newMessages[] = ['role' => 'user', 'content' => array_column($pending, 'result')];
@@ -237,8 +240,12 @@ class Assistant
         $refused = $response->stopReason === 'refusal';
         $reply = $refused && $response->text() === '' ? self::REFUSAL_REPLY : $response->text();
 
-        if ($escalate) {
-            Audit::record('ai.escalated', 'ok', $conversation, ['reason' => $escalate['reason']]);
+        if ($effects['escalate']) {
+            Audit::record('ai.escalated', 'ok', $conversation, ['reason' => $effects['escalate']['reason']]);
+        }
+
+        if ($effects['drafts'] !== []) {
+            Audit::record('ai.drafts_suggested', 'ok', $conversation, ['count' => count($effects['drafts']), 'channels' => array_column($effects['drafts'], 'channel')]);
         }
 
         Audit::record('ai.message_answered', $refused ? 'refused' : 'ok', $conversation, [
@@ -247,7 +254,7 @@ class Assistant
             'model_calls' => count($usage),
         ]);
 
-        return new AssistantResult($conversation, AssistantResult::ANSWERED, $reply, $usage, escalate: $escalate);
+        return new AssistantResult($conversation, AssistantResult::ANSWERED, $reply, $usage, escalate: $effects['escalate'], drafts: $effects['drafts']);
     }
 
     /**
@@ -256,7 +263,7 @@ class Assistant
      *
      * @return list<array{id: string, name: string, input: array, host: bool, result?: array}>
      */
-    private function classifyToolCalls(Conversation $conversation, array $calls, ?array &$escalate): array
+    private function classifyToolCalls(Conversation $conversation, array $calls, array &$effects): array
     {
         $catalog = $conversation->hostProfile->toolCatalogs()->where('version', $conversation->tools_version)->first();
         $pending = [];
@@ -265,8 +272,8 @@ class Assistant
             $entry = $call + ['host' => false];
 
             if (InternalTools::isInternal($call['name'])) {
-                [$entry['result'], $escalated] = InternalTools::run($call);
-                $escalate ??= $escalated;
+                [$entry['result'], $effect] = InternalTools::run($call);
+                $effects = InternalTools::merge($effects, $effect);
             } elseif (! in_array($call['name'], $conversation->allowed_tools, true) || ! ($tool = $catalog?->find($call['name']))) {
                 $entry['result'] = ToolResults::error($call['id'], 'Ferramenta não disponível nesta conversa.');
                 Audit::record('ai.tool_rejected', 'rejected', $conversation, ['tool' => $call['name']]);
@@ -282,10 +289,10 @@ class Assistant
         return $pending;
     }
 
-    private function pauseForHostTools(Conversation $conversation, array $newMessages, array $pending, ?array $escalate, array $usage, bool $startsWithUserMessage): AssistantResult
+    private function pauseForHostTools(Conversation $conversation, array $newMessages, array $pending, array $effects, array $usage, bool $startsWithUserMessage): AssistantResult
     {
         $this->persist($conversation, $newMessages, $startsWithUserMessage, ['tool_rounds' => $conversation->tool_rounds]);
-        $conversation->release(Conversation::AWAITING_TOOLS, ['calls' => $pending, 'escalate' => $escalate]);
+        $conversation->release(Conversation::AWAITING_TOOLS, ['calls' => $pending, 'effects' => $effects]);
 
         $hostCalls = array_values(array_map(
             fn ($c) => ['id' => $c['id'], 'name' => $c['name'], 'input' => $c['input'] === [] ? new \stdClass : $c['input']],

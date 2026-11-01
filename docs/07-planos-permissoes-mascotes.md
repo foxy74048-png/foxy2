@@ -167,7 +167,7 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
 ## 6. Sugestão de mensagens (capacidade `escrita`)
 
 - A pessoa pede no chat ("escreve um lembrete para a Ana", "uma mensagem de aniversário") ou clica numa sugestão.
-- A IA devolve a mensagem num **cartão próprio** (`drafts: [{ "canal": "whatsapp", "texto": "..." }]`), com **Copiar** e o botão de ação que o sistema oferecer.
+- A IA devolve a mensagem num **cartão próprio** (`drafts: [{ "channel": "whatsapp", "title": "...", "text": "..." }]`, ferramenta interna `foxy_sugerir_mensagem`), com **Copiar** e o botão de ação que o sistema oferecer.
 - Pode usar as consultas para personalizar (ex.: data do próximo atendimento).
 - **A IA nunca envia nada** (decisão A5): quem clica e envia é a pessoa.
 
@@ -184,7 +184,7 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
 2. Planos, créditos, faixas de modelo e assinatura por API.
 3. ✔ Permissões por usuário (`allowed_capabilities`) e capacidade por consulta.
 4. ✔ Raposas: catálogo, preferências (conta e usuário), regras por raposa, avatares SVG.
-5. Sugestão de mensagens (cartões `drafts`).
+5. ✔ Sugestão de mensagens (cartões `drafts`).
 6. Widget + cliente PHP; console de testes usando o widget.
 
 ## 9. Decisões (aprovadas em 2026-11-01)

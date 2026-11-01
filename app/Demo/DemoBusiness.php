@@ -124,6 +124,8 @@ class DemoBusiness
             'Apareceu "Horário indisponível" quando tentei salvar, o que faço?',
             'Como emito nota fiscal?',
             'A Ana Souza tem algo em aberto?',
+            'Escreve um lembrete de WhatsApp para quem tem atendimento amanhã',
+            'Me dá uma mensagem gentil de cobrança para quem mais deve',
         ];
     }
 
