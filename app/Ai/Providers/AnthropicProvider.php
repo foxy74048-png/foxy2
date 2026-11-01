@@ -21,6 +21,7 @@ class AnthropicProvider implements ModelProvider
         private ?string $refusalFallbacks = 'default',
         float $timeoutSeconds = 90,
         ?ClientInterface $transporter = null,
+        private ?string $workspaceId = null,
     ) {
         $options = ['timeout' => $timeoutSeconds, 'maxRetries' => 2];
 
@@ -49,6 +50,11 @@ class AnthropicProvider implements ModelProvider
             if (! $request->allowTools) {
                 $params['toolChoice'] = ['type' => 'none'];
             }
+        }
+
+        // Chave da organização (sem workspace fixo) exige dizer em qual workspace a chamada roda.
+        if ($this->workspaceId) {
+            $params['workspaceID'] = $this->workspaceId;
         }
 
         if ($this->refusalFallbacks) {

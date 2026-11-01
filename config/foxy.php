@@ -19,6 +19,8 @@ return [
     'ai' => [
         'provider' => env('FOXY_AI_PROVIDER', 'anthropic'),
         'anthropic_api_key' => env('ANTHROPIC_API_KEY'),
+        // Só para chaves sem workspace fixo (ex.: wrkspc_...). Chave criada dentro de um workspace não precisa.
+        'anthropic_workspace_id' => env('ANTHROPIC_WORKSPACE_ID'),
 
         // Modelo e esforço padrão; cada conversa fica com os valores da abertura.
         'model' => env('FOXY_AI_MODEL', 'claude-opus-5-5'),

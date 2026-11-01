@@ -18,6 +18,7 @@ class AiServiceProvider extends ServiceProvider
                     apiKey: (string) config('foxy.ai.anthropic_api_key') ?: throw new LogicException('ANTHROPIC_API_KEY não configurada.'),
                     refusalFallbacks: config('foxy.ai.refusal_fallbacks') ?: null,
                     timeoutSeconds: config('foxy.ai.timeout_seconds'),
+                    workspaceId: config('foxy.ai.anthropic_workspace_id') ?: null,
                 ),
                 'fake' => new FakeProvider,
                 default => throw new LogicException('FOXY_AI_PROVIDER inválido.'),

@@ -87,6 +87,17 @@ class AnthropicProviderTest extends TestCase
         $this->assertArrayNotHasKey('fallbacks', $body);
     }
 
+    public function test_sends_workspace_header_only_when_configured(): void
+    {
+        $http = $this->transporter(200, $this->okBody());
+        (new AnthropicProvider('k', null, 30, $http, workspaceId: 'wrkspc_teste'))->send($this->request());
+        $this->assertSame('wrkspc_teste', $http->request->getHeaderLine('anthropic-workspace-id'));
+
+        $http = $this->transporter(200, $this->okBody());
+        (new AnthropicProvider('k', null, 30, $http))->send($this->request());
+        $this->assertFalse($http->request->hasHeader('anthropic-workspace-id'));
+    }
+
     public function test_api_error_becomes_provider_unavailable(): void
     {
         $http = $this->transporter(400, ['type' => 'error', 'error' => ['type' => 'invalid_request_error', 'message' => 'ruim']]);
