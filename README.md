@@ -17,6 +17,7 @@ Etapas 1–4 aprovadas; implementação da Foxy AI em andamento (Laravel 13, PHP
 | 3. Recorte da Platform | [docs/04-recorte-platform.md](docs/04-recorte-platform.md) | v1.0 — aprovado |
 | 4. Arquitetura concreta | [docs/05-arquitetura.md](docs/05-arquitetura.md) | v1.0 — C1–C4 aprovadas |
 | 5. Implementação | [docs/05-arquitetura.md](docs/05-arquitetura.md), seção 10 | em andamento — guia da API: [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md) |
+| 6. Planos, permissões, mascotes e widget | [docs/07-planos-permissoes-mascotes.md](docs/07-planos-permissoes-mascotes.md) | proposta v0.1 — decisões E1–E8 aguardando aprovação |
 
 Insumo de apoio: [docs/legado-insumos.md](docs/legado-insumos.md) — o que o sistema atual já resolve e o que pode ser aproveitado.
 
