@@ -1,6 +1,6 @@
 # Foxy AI — Planos, permissões, mascotes e o assistente nos sistemas
 
-> **Status:** Proposta v0.1 — **aguardando aprovação** (decisões E1–E8, seção 9). Nada disso foi implementado.
+> **Status:** v1.0 — E1–E8 aprovadas em 2026-11-01, com ajustes do responsável (planos em seis tamanhos + créditos extras de 1.000 em 1.000; raposas Chico, Lud, Lobinho e Ayla, renomeáveis; layout no Core a partir do visual da Foxy atual). Implementação em andamento (seção 8).
 > **Pedido (2026-11-01):** planos e permissões bem definidos e integrados por API (mesmo entre sistemas nossos), preparados para escalar e para modelos mais caros; a IA representada por uma **raposa** que a pessoa escolhe ("a sua IA"); layout profissional, unissex e simples; IA que lê o sistema, ajuda a usar e sugere mensagens.
 > **Regra mantida:** nada de dados fictícios em contas reais; a clínica de demonstração continua só no console de testes.
 
@@ -56,22 +56,23 @@ AiPlan (global, definido pela Foxy, versionado)
 └── retenção das conversas          30 dias (pode crescer em planos maiores)
 ```
 
-**Planos iniciais sugeridos** (números finais depois dos testes reais de custo):
+**Planos (aprovado em 2026-11-01):** seis tamanhos de franquia. Os recursos acompanham o tamanho (ajustável na configuração, sem mudar código):
 
-| | Essencial | Profissional | Avançado |
-|---|---|---|---|
-| Dúvidas de uso e erros | ✔ | ✔ | ✔ |
-| Perguntas sobre os dados ("quem me deve?") | — | ✔ | ✔ |
-| Sugestão de mensagens | — | ✔ | ✔ |
-| Faixas de modelo | rápida | rápida, equilibrada | todas |
-| Créditos/mês | 1.000 | 5.000 | 25.000 |
-| Raposa | escolher | escolher | escolher + dar nome |
+| Plano (créditos/mês) | 1.000 | 3.000 | 5.000 | 10.000 | 25.000 | 50.000 |
+|---|---|---|---|---|---|---|
+| Dúvidas de uso e erros | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ |
+| Perguntas sobre os dados ("quem me deve?") | — | — | ✔ | ✔ | ✔ | ✔ |
+| Sugestão de mensagens | — | — | ✔ | ✔ | ✔ | ✔ |
+| Faixas de modelo | rápida | rápida | rápida, equilibrada | rápida, equilibrada | todas | todas |
+| Raposa: escolher e renomear | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ |
+
+**Créditos extras em todos os planos**, em pacotes de **1.000** (1.000, 2.000, 3.000…), somados à franquia do mês.
 
 ### 2.4 Assinatura (por API)
 
 - Cada organização tem uma **assinatura de IA**: plano + início do ciclo + créditos extras do mês.
 - Quem define é a **integração**, pela API (`PUT /v1/organizations/{id}/ai-subscription`): o sistema sabe qual plano o cliente pagou e repassa. A Foxy AI **não cobra ninguém** (coerente com a regra de não automatizar cobrança).
-- Créditos acabaram → resposta `429 credit_limit` com mensagem clara; a integração pode somar créditos extras (`POST .../ai-credits`).
+- Créditos acabaram → resposta `429 credit_limit` com mensagem clara; a integração soma créditos extras (`POST .../ai-credits`, múltiplos de 1.000), válidos no mês em que foram comprados.
 - Mudança de plano vale na hora para conversas novas; conversas abertas mantêm a faixa com que começaram (regra do histórico que só cresce).
 
 ## 3. Permissões (três camadas, sempre a menor vence)
@@ -94,10 +95,12 @@ Cada raposa tem **nome unissex, visual próprio e um jeito de falar**. As regras
 
 | Raposa | Visual (proposta) | Jeito |
 |---|---|---|
-| **Kiko** | ruiva clássica, óculos | Objetiva e direta, respostas curtas |
-| **Lumi** | ártica (branca), cachecol | Acolhedora e paciente, explica passo a passo |
-| **Ravi** | cinza-prata, fone de ouvido | Animada, usa emoji com moderação |
-| **Sol** | dourada, gravata-borboleta | Formal e cuidadosa, linguagem mais séria |
+| **Chico** | ruivo clássico, óculos | Objetivo e direto, respostas curtas |
+| **Lud** | ártica (branca), cachecol | Acolhedora e paciente, explica passo a passo |
+| **Lobinho** | cinza-prata, fone de ouvido | Animado, usa emoji com moderação |
+| **Ayla** | dourada, lenço no pescoço | Formal e cuidadosa, linguagem mais séria |
+
+Nomes definidos em 2026-11-01. Qualquer pessoa pode **renomear** a sua raposa depois (em todos os planos).
 
 Estilo visual: ilustração plana, traço limpo, adulta e profissional (nada infantil), fundo neutro, combinando com o roxo sóbrio da Foxy.
 
@@ -105,9 +108,9 @@ Estilo visual: ilustração plana, traço limpo, adulta e profissional (nada inf
 
 - A **conta** escolhe a raposa padrão de todos.
 - Cada **usuário** pode escolher a sua — e ela vale **em todos os sistemas Foxy** que ele usar, porque a escolha fica guardada na Foxy AI (`user_ref` + organização).
-- Planos maiores permitem **dar um nome próprio** à raposa ("Fifi da Clínica Bem Viver").
+- Qualquer plano permite **dar outro nome** à raposa (ex.: "Lud" vira "Lulu da Recepção").
 - API: `GET /v1/assistants` (catálogo com avatares), `PUT /v1/assistant-preferences` (conta ou usuário).
-- Na conversa, a raposa entra nas regras fixas ("Você é a Lumi, assistente da Foxy…"), escolhida na abertura.
+- Na conversa, a raposa entra nas regras fixas ("Você é a Lud, assistente da Foxy…"), escolhida na abertura.
 
 ### 4.3 Imagens
 
@@ -132,7 +135,7 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
 
 ```text
                                      ┌───────────────────────────────────┐
-                                     │ (🦊) Lumi                    ─  ✕ │  ← avatar e nome da raposa
+                                     │ (🦊) Lud                    ─  ✕ │  ← avatar e nome da raposa
                                      │ Assistente da Foxy                │
                                      ├───────────────────────────────────┤
                                      │ Sugestões para esta tela:         │  ← muda conforme a tela
@@ -141,14 +144,14 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
                                      │                                   │
                                      │  Você: quem mais me deve?         │
                                      │  🔎 Consultando o Financeiro…      │  ← mostra o que a IA consultou
-                                     │  Lumi: A Ana Souza (R$ 320,00)…   │
+                                     │  Lud: A Ana Souza (R$ 320,00)…   │
                                      │                                   │
                                      │  ┌ Mensagem sugerida ───────────┐ │  ← sugestão de mensagem
                                      │  │ Olá, Ana! Passando para…     │ │
                                      │  │ [Copiar] [Abrir no WhatsApp] │ │  ← quem envia é a pessoa
                                      │  └──────────────────────────────┘ │
                                      ├───────────────────────────────────┤
-                                     │ [ Pergunte à Lumi…          ] [➤] │
+                                     │ [ Pergunte à Lud…          ] [➤] │
                                      │ A IA pode errar. Confira antes.   │
                                      └───────────────────────────────────┘
                                                               (🦊) ← botão flutuante
@@ -183,15 +186,15 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
 5. Sugestão de mensagens (cartões `drafts`).
 6. Widget + cliente PHP; console de testes usando o widget.
 
-## 9. Decisões para aprovar
+## 9. Decisões (aprovadas em 2026-11-01)
 
-| # | Decisão | Recomendação |
+| # | Decisão | Decidido |
 |---|---|---|
 | **E1** | Hierarquia | Integração (sistema) → Organização (cliente final) → Usuário, com o manual/consultas na integração (seção 1). |
 | **E2** | Unidade do plano | **Créditos Foxy proporcionais ao custo** (1 crédito = US$ 0,001), não número de mensagens. |
 | **E3** | Modelos no plano | **Faixas** (rápida, equilibrada, avançada), ligadas a modelos pela configuração. |
-| **E4** | Planos iniciais | Essencial, Profissional e Avançado como na tabela 2.3; valores finais de créditos depois de medir custo real. |
-| **E5** | Quem escolhe a raposa | Conta escolhe a padrão; **cada usuário pode escolher a sua**, valendo em todos os sistemas; nome próprio só no Avançado. |
-| **E6** | Raposas iniciais | Kiko, Lumi, Ravi e Sol (seção 4.1), com avatares SVG feitos aqui para começar. |
-| **E7** | Como aparece nos sistemas | **Widget oficial + cliente PHP** da Foxy (seção 5), em vez de cada sistema desenhar a sua janela. |
+| **E4** | Planos | Seis tamanhos (1.000, 3.000, 5.000, 10.000, 25.000 e 50.000 créditos/mês), recursos como na tabela 2.3; **créditos extras de 1.000 em 1.000 em todos**. |
+| **E5** | Quem escolhe a raposa | Conta escolhe a padrão; **cada usuário pode escolher a sua**, valendo em todos os sistemas; **qualquer plano pode renomear**. |
+| **E6** | Raposas iniciais | **Chico, Lud, Lobinho e Ayla** (seção 4.1), com avatares SVG feitos aqui para começar. |
+| **E7** | Como aparece nos sistemas | **Widget oficial + cliente PHP** da Foxy (seção 5). O visual parte do layout da Foxy atual, **copiado e adaptado para o Core** (`Platform`), para todos os produtos novos usarem. O sistema antigo continua separado e não é dependência. |
 | **E8** | Sugestão de mensagens | Capacidade `escrita` dentro do chat, com cartão "Copiar"; nunca envia sozinha. |
