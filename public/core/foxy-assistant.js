@@ -34,6 +34,18 @@
         return node;
     }
 
+    /**
+     * Resposta da IA com **negrito**: vira <strong> sem usar innerHTML (o texto da IA nunca vira HTML).
+     */
+    function aiMessage(text) {
+        const node = el('div', 'fxa-msg ai');
+        String(text || '').split(/(\*\*[^*\n]+\*\*)/g).forEach((part) => {
+            if (/^\*\*[^*\n]+\*\*$/.test(part)) node.append(el('strong', null, part.slice(2, -2)));
+            else if (part) node.append(document.createTextNode(part));
+        });
+        return node;
+    }
+
     /** Aceita o formato da API (avatar_url, custom_name) e o do JS (avatarUrl, customName). */
     function normalize(a) {
         a = Object.assign({}, a || {});
@@ -270,7 +282,7 @@
             if (data.tools_used && data.tools_used.length) {
                 body.append(el('div', 'fxa-note', '🔎 Consultou: ' + data.tools_used.join(', ')));
             }
-            if (data.reply) body.append(el('div', 'fxa-msg ai', data.reply));
+            if (data.reply) body.append(aiMessage(data.reply));
             (data.drafts || []).forEach((d) => body.append(draftCard(d)));
             if (data.feature_request) body.append(el('div', 'fxa-note', '📝 Ideia anotada para a equipe avaliar.'));
             if (data.escalate) {
@@ -351,7 +363,7 @@
             if (!data.messages || !data.messages.length) return false;
             body.innerHTML = '';
             body.append(el('div', 'fxa-note', 'Conversa recente'));
-            data.messages.forEach((m) => body.append(el('div', 'fxa-msg ' + (m.role === 'user' ? 'user' : 'ai'), m.text)));
+            data.messages.forEach((m) => body.append(m.role === 'user' ? el('div', 'fxa-msg user', m.text) : aiMessage(m.text)));
             scroll();
             return true;
         }
