@@ -122,18 +122,22 @@ class PlansAndCreditsTest extends TestCase
         $this->ask($id)->assertStatus(429)->assertJsonPath('error.code', 'credit_limit');
     }
 
-    public function test_extra_credits_in_packs_of_1000_unblock_the_month(): void
+    public function test_extra_credits_in_packs_of_250_unblock_the_month(): void
     {
         $this->setPlan('ia-1000');
         $id = $this->open()->json('conversation_id');
         $this->pushOneDollar();
         $this->ask($id)->assertOk();
 
-        $this->withToken($this->key)->postJson("/api/v1/organizations/{$this->clinic}/ai-credits", ['credits' => 1500])->assertStatus(422);
+        $this->withToken($this->key)->postJson("/api/v1/organizations/{$this->clinic}/ai-credits", ['credits' => 300])->assertStatus(422);
         $this->withToken($this->key)->postJson("/api/v1/organizations/{$this->clinic}/ai-credits", ['credits' => 2000, 'reference' => 'pedido-77'])
             ->assertCreated()
             ->assertJsonPath('credits_extra', 2000)
             ->assertJsonPath('credits_available', 2000);
+
+        // O mesmo pagamento enviado de novo (ex.: aviso repetido do Stripe) não soma outra vez.
+        $this->withToken($this->key)->postJson("/api/v1/organizations/{$this->clinic}/ai-credits", ['credits' => 2000, 'reference' => 'pedido-77'])
+            ->assertOk()->assertJsonPath('duplicate', true)->assertJsonPath('credits_extra', 2000);
 
         $this->ask($id)->assertOk();
         $this->assertDatabaseHas('audit_entries', ['action' => 'ai.credits_added']);

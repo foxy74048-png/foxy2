@@ -250,6 +250,10 @@ class Assistant
             Audit::record('ai.feature_requested', 'ok', $conversation);
         }
 
+        if ($effects['knowledge_gap'] ?? null) {
+            Audit::record('ai.knowledge_gap', 'ok', $conversation);
+        }
+
         if ($effects['drafts'] !== []) {
             Audit::record('ai.drafts_suggested', 'ok', $conversation, ['count' => count($effects['drafts']), 'channels' => array_column($effects['drafts'], 'channel')]);
         }
@@ -260,7 +264,7 @@ class Assistant
             'model_calls' => count($usage),
         ]);
 
-        return new AssistantResult($conversation, AssistantResult::ANSWERED, $reply, $usage, escalate: $effects['escalate'], drafts: $effects['drafts'], featureRequest: $effects['feature_request'] ?? null);
+        return new AssistantResult($conversation, AssistantResult::ANSWERED, $reply, $usage, escalate: $effects['escalate'], drafts: $effects['drafts'], featureRequest: $effects['feature_request'] ?? null, knowledgeGap: $effects['knowledge_gap'] ?? null);
     }
 
     /**

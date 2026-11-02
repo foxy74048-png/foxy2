@@ -29,12 +29,13 @@ PATCH /api/v1/organizations/{id}   { "status": "suspended" }   (ou "active")
 GET  /api/v1/ai/plans                                   → os planos (créditos, capacidades, faixas)
 PUT  /api/v1/organizations/{id}/ai-subscription         { "plan": "ia-5000" }   (opcional: "status": "suspended")
 GET  /api/v1/organizations/{id}/ai-subscription         → plano, créditos incluídos, extras, usados, disponíveis, % usado
-POST /api/v1/organizations/{id}/ai-credits              { "credits": 2000, "reference": "pedido-77" }   (múltiplos de 1.000)
+POST /api/v1/organizations/{id}/ai-credits              { "credits": 1000, "reference": "pedido-77" }   (múltiplos de 250)
+GET  /api/v1/ai/usage?month=2026-11                     → uso do mês de cada cliente do sistema: perguntas, créditos por modo, custo, plano
 ```
 
 - **Créditos:** 1 crédito = US$ 0,001 de custo de IA. Cada resposta consome conforme o custo real (Haiku ~0,5 crédito por pergunta simples).
 - **Planos:** `ia-250`, `ia-1000`, `ia-1500`, `ia-2000`, `ia-5000`, `ia-10000`, `ia-25000`, `ia-50000` — todos com todas as capacidades e as três faixas. 1 crédito ≈ 1 pergunta no modo rápido; nos modos equilibrado (~10×) e avançado (~20×) a mesma franquia rende menos perguntas, e quem escolhe o modo é a pessoa.
-- **Créditos extras** valem no mês da compra e se somam à franquia. Créditos acabaram → `429 credit_limit`.
+- **Créditos extras** (múltiplos de 250) valem no mês da compra e se somam à franquia. A mesma `reference` (ex.: id do pagamento) só soma uma vez — repetir a chamada devolve `duplicate: true`. Créditos acabaram → `429 credit_limit`.
 - Cliente sem plano → `403 no_ai_plan`. **Quem cobra o cliente é o sistema**; a Foxy AI só mede e limita.
 - Ao abrir a conversa, peça a faixa com `"tier": "rapida" | "equilibrada" | "avancada"` (padrão: a do plano). Faixa fora do plano → `403 tier_not_in_plan`. Planos sem "dados" não oferecem as consultas do sistema (a resposta mostra `allowed_tools` efetivo).
 - Toda resposta traz `request_id` (no corpo e no cabeçalho `X-Request-Id`). Informe-o ao suporte em caso de problema.
@@ -113,6 +114,8 @@ POST /api/v1/conversations/{id}/tool-results
 
 **Ideia que o sistema ainda não tem:** quando a pessoa pede algo que não existe, a IA diz isso com honestidade e a resposta traz `feature_request: { "summary": "..." }` (sem nomes de clientes). Guarde para a sua equipe avaliar — a Foxy AI não guarda essa lista.
 
+**Dúvida que o manual não responde:** a IA diz que não sabe, oferece o suporte e a resposta traz `knowledge_gap: { "summary": "..." }`. Guarde para completar o manual.
+
 **Histórico recente:** `GET /api/v1/conversations/{id}/messages` → `{ messages: [{ role: "user" | "ai", text }], user_messages, expires_at }` — só os textos trocados (sem contexto da tela nem resultados de consultas), para a janela mostrar a conversa ao reabrir.
 
 **Encaminhar ao suporte:** quando `escalate` vier preenchido (`{ "reason": "defeito" | "sem_resposta" | "pedido_da_pessoa", "summary": "..." }`), abra o chamado no seu canal (WhatsApp, e-mail...) com o resumo.
@@ -162,6 +165,7 @@ A Foxy entrega as duas pontas prontas; o sistema só escreve um controller e as 
   - `setup: { endpoint, required, foxes, visuals }` — escolha da raposa **dentro do chat** (cartões das raposas, estilo do desenho e nome opcional). Com `required: true` ela aparece antes da primeira pergunta; o endpoint recebe `{ assistant, visual, custom_name }`. Qualquer resposta com `setup_required: true` também a abre. `foxes`/`visuals` vêm de `GET /assistants`.
   - `escalateAction: { label, onClick(escalate) }` — botão no cartão "Encaminhado ao suporte" (ex.: abrir o chat de suporte do sistema já com o resumo).
   - `historyEndpoint` — rota do seu sistema (GET) que devolve `{ messages, assistant, usage_text }` a partir de `FoxyAiClient::history()`; a janela mostra a conversa recente ao reabrir em outra tela.
+  - `error.link: { label, url }` vira um botão no balão de erro (ex.: "Comprar mais perguntas").
   - Resposta com `feature_request` mostra a nota "Ideia anotada para a equipe avaliar".
   - `usageText` (e `usage_text` em qualquer resposta) — linha do rodapé com o uso do mês, ex.: "Restam ~240 perguntas neste mês".
 - Visual: roxo sóbrio do Core, tela cheia no celular, Enter envia, Esc fecha, aviso "A IA pode errar".

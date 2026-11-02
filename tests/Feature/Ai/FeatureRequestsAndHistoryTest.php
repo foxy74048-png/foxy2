@@ -43,6 +43,33 @@ class FeatureRequestsAndHistoryTest extends TestCase
         $this->assertStringContainsString('foxy_registrar_sugestao', $this->ai->lastRequest()->system);
     }
 
+    public function test_question_the_manual_does_not_answer_is_returned_to_the_host(): void
+    {
+        $id = $this->openConversation($this->key);
+        $this->ai->pushToolUse([['id' => 'toolu_1', 'name' => 'foxy_registrar_duvida', 'input' => ['duvida' => 'Como mudo a cor do meu site?']]])
+            ->pushText('Não tenho essa informação agora. Quer que eu encaminhe ao suporte?');
+
+        $this->send($id, 'Como mudo a cor do meu site?')
+            ->assertOk()
+            ->assertJsonPath('knowledge_gap.summary', 'Como mudo a cor do meu site?')
+            ->assertJsonPath('feature_request', null);
+
+        $this->assertDatabaseHas('audit_entries', ['action' => 'ai.knowledge_gap']);
+    }
+
+    public function test_system_sees_the_month_usage_of_each_client(): void
+    {
+        [$integration, $systemKey] = $this->integrationWithKey('Foxy');
+        $org = $this->withToken($systemKey)->postJson('/api/v1/organizations', ['name' => 'Studio A', 'external_ref' => 'ws-1'])->json('id');
+        $this->withToken($systemKey)->putJson("/api/v1/organizations/{$org}/ai-subscription", ['plan' => 'ia-1000'])->assertOk();
+
+        $usage = $this->withToken($systemKey)->getJson('/api/v1/ai/usage')->assertOk();
+
+        $this->assertSame([['messages' => 0, 'credits' => 0, 'credits_by_tier' => [], 'cost_usd' => 0, 'organization_id' => $org, 'name' => 'Studio A', 'external_ref' => 'ws-1', 'plan' => 'ia-1000']], $usage->json('data'));
+        // Só os clientes deste sistema.
+        $this->withToken($this->key)->getJson('/api/v1/ai/usage')->assertOk()->assertJsonMissing(['name' => 'Studio A']);
+    }
+
     public function test_empty_feature_request_goes_back_to_the_model_as_error(): void
     {
         $id = $this->openConversation($this->key);

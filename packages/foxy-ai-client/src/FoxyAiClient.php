@@ -95,6 +95,14 @@ class FoxyAiClient
         return $this->call('GET', "/conversations/{$conversationId}/messages");
     }
 
+    /**
+     * Uso do mês de todos os clientes deste sistema (perguntas, créditos por modo, custo).
+     */
+    public function usageByClient(?string $month = null): array
+    {
+        return $this->call('GET', '/ai/usage'.($month ? "?month={$month}" : ''), [], false);
+    }
+
     public function usage(?string $month = null): array
     {
         return $this->call('GET', '/usage'.($month ? "?month={$month}" : ''));
@@ -103,7 +111,7 @@ class FoxyAiClient
     /**
      * Envia a mensagem e resolve as consultas pedidas pela IA com $runTool (que deve respeitar as permissões
      * da pessoa). Devolve o formato da janela da raposa:
-     * { reply, drafts, escalate, feature_request, tools_used, trace, usage, model, error }.
+     * { reply, drafts, escalate, feature_request, knowledge_gap, tools_used, trace, usage, model, error }.
      *
      * @param  callable(string $tool, array $input): mixed  $runTool  lance exceção para devolver erro à IA
      * @param  array{message: string, code?: string, action?: string}|null  $error  erro mostrado na tela
@@ -130,7 +138,7 @@ class FoxyAiClient
             }
 
             if (($body['status'] ?? null) === 'answered') {
-                return $this->answer($body['reply'] ?? '', $body['drafts'] ?? [], $body['escalate'] ?? null, $trace, $usage, $body['usage']['model'] ?? null, null, $body['feature_request'] ?? null);
+                return $this->answer($body['reply'] ?? '', $body['drafts'] ?? [], $body['escalate'] ?? null, $trace, $usage, $body['usage']['model'] ?? null, null, $body['feature_request'] ?? null, $body['knowledge_gap'] ?? null);
             }
 
             $results = [];
@@ -154,7 +162,7 @@ class FoxyAiClient
         return $this->answer(null, [], null, $trace, $usage, null, ['message' => 'Muitas rodadas de consultas.']);
     }
 
-    private function answer(?string $reply, array $drafts, ?array $escalate, array $trace, array $usage, ?string $model, ?array $error = null, ?array $featureRequest = null): array
+    private function answer(?string $reply, array $drafts, ?array $escalate, array $trace, array $usage, ?string $model, ?array $error = null, ?array $featureRequest = null, ?array $knowledgeGap = null): array
     {
         $used = array_values(array_unique(array_map(fn ($t) => $this->toolLabels[$t['tool']] ?? $t['tool'], $trace)));
 
@@ -163,6 +171,7 @@ class FoxyAiClient
             'drafts' => $drafts,
             'escalate' => $escalate,
             'feature_request' => $featureRequest,
+            'knowledge_gap' => $knowledgeGap,
             'tools_used' => $used,
             'trace' => $trace,
             'usage' => $usage,

@@ -70,7 +70,7 @@ Só se guarda o necessário: a conversa (para a IA lembrar do que foi dito) até
 
 O catálogo continua aceitando planos com menos capacidades ou modos (ajuste só em `config/foxy.php`), caso algum sistema precise.
 
-**Créditos extras em todos os planos**, em pacotes de **1.000** (1.000, 2.000, 3.000…), somados à franquia do mês.
+**Créditos extras em todos os planos**, em múltiplos de **250** (revisto em 2026-11-02; ex.: 250, 1.000, 3.000), somados à franquia do mês. Quem vende e cobra os pacotes é o sistema.
 
 ### 2.4 Assinatura (por API)
 

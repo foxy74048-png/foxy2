@@ -115,3 +115,4 @@
 .fxa-mode select { border: 1px solid var(--border, rgba(91, 63, 209, 0.16)); border-radius: 8px; padding: 4px 8px; font: inherit; background: #fff; }
 .fxa-mode-hint { color: var(--muted, #6b6880); font-size: 12px; }
 .fxa-usage { margin: 6px 2px 0; font-size: 12px; color: var(--text, #1f1b2d); }
+.fxa-error-link { display: inline-block; margin-top: 8px; padding: 6px 12px; border-radius: 10px; background: var(--primary, #5b3fd1); color: #fff; font-weight: 600; text-decoration: none; }

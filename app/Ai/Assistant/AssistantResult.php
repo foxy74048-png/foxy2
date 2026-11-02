@@ -24,6 +24,7 @@ final readonly class AssistantResult
         public ?array $escalate = null,
         public array $drafts = [],
         public ?array $featureRequest = null,
+        public ?array $knowledgeGap = null,
     ) {}
 
     public function toArray(): array
@@ -40,6 +41,8 @@ final readonly class AssistantResult
             $data['drafts'] = $this->drafts;
             // Algo que a pessoa quis e o sistema ainda não tem: o anfitrião guarda para a equipe avaliar.
             $data['feature_request'] = $this->featureRequest;
+            // Dúvida de uso que o conhecimento não cobre: o anfitrião guarda para completar o manual.
+            $data['knowledge_gap'] = $this->knowledgeGap;
         } else {
             $data['tool_calls'] = $this->toolCalls;
         }

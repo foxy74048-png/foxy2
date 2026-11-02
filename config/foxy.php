@@ -47,10 +47,11 @@ return [
         /*
         | Planos (docs/07, seção 2.3; tamanhos revistos em 2026-11-02). Créditos por mês; 1 crédito = US$ 0,001 de custo
         | de IA ≈ 1 pergunta no modo rápido. Todos os planos têm todas as capacidades e todos os modos: o modo mais
-        | caro só gasta os créditos mais depressa (a pessoa escolhe). Créditos extras: pacotes de 1.000.
+        | caro só gasta os créditos mais depressa (a pessoa escolhe). Créditos extras: múltiplos de 250.
         */
         'credit_usd' => 0.001,
-        'extra_credits_step' => 1000,
+        // Pacotes extras em múltiplos de 250 (ex.: 250, 1.000, 3.000), somados à franquia do mês.
+        'extra_credits_step' => 250,
         'plans' => [
             'ia-250' => $plan(250, $full, $allTiers, 7, 10),
             'ia-1000' => $plan(1000, $full, $allTiers, 15, 20),

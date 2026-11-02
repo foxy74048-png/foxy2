@@ -112,7 +112,7 @@ class MessageDraftsTest extends TestCase
         $this->api()->postJson("/api/v1/conversations/{$id}/messages", ['text' => 'escreve um lembrete'])->assertOk();
 
         $request = $this->ai->lastRequest();
-        $this->assertSame(['foxy_encaminhar_suporte', 'foxy_registrar_sugestao'], array_column($request->tools, 'name'));
+        $this->assertSame(['foxy_encaminhar_suporte', 'foxy_registrar_sugestao', 'foxy_registrar_duvida'], array_column($request->tools, 'name'));
         $this->assertStringContainsString('você não escreve mensagens', $request->system);
 
         $this->plan('ia-5000');

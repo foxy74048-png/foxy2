@@ -18,6 +18,8 @@ class InternalTools
 
     public const FEATURE = 'foxy_registrar_sugestao';
 
+    public const GAP = 'foxy_registrar_duvida';
+
     private const ESCALATE_REASONS = ['defeito', 'sem_resposta', 'pedido_da_pessoa'];
 
     public const DRAFT_CHANNELS = ['whatsapp', 'email', 'texto'];
@@ -54,6 +56,20 @@ class InternalTools
                     'pedido' => ['type' => 'string', 'description' => 'O que a pessoa queria fazer, em uma ou duas frases, do jeito que um desenvolvedor entenderia. Sem nomes de clientes nem dados sensíveis.'],
                 ],
                 'required' => ['pedido'],
+                'additionalProperties' => false,
+            ],
+        ];
+
+        $tools[] = [
+            'name' => self::GAP,
+            'description' => 'Registra, para a equipe do sistema completar o manual, uma dúvida de USO que você não conseguiu responder porque a resposta não está no conhecimento '
+                .'(a funcionalidade parece existir, mas o manual não explica). Use uma vez por dúvida. Não use para funcionalidades que não existem (isso é foxy_registrar_sugestao).',
+            'input_schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'duvida' => ['type' => 'string', 'description' => 'A dúvida, em uma frase, do jeito que a pessoa perguntou. Sem nomes de clientes nem dados sensíveis.'],
+                ],
+                'required' => ['duvida'],
                 'additionalProperties' => false,
             ],
         ];
@@ -96,6 +112,7 @@ class InternalTools
             self::ESCALATE => self::escalate($call),
             self::DRAFT => self::draft($call),
             self::FEATURE => self::feature($call),
+            self::GAP => self::gap($call),
             default => [ToolResults::error($call['id'], 'Ferramenta desconhecida.'), null],
         };
     }
@@ -107,6 +124,10 @@ class InternalTools
     {
         if (isset($effect['escalate'])) {
             $effects['escalate'] ??= $effect['escalate'];
+        }
+
+        if (isset($effect['knowledge_gap'])) {
+            $effects['knowledge_gap'] ??= $effect['knowledge_gap'];
         }
 
         if (isset($effect['feature_request'])) {
@@ -122,7 +143,7 @@ class InternalTools
 
     public static function emptyEffects(): array
     {
-        return ['escalate' => null, 'drafts' => [], 'feature_request' => null];
+        return ['escalate' => null, 'drafts' => [], 'feature_request' => null, 'knowledge_gap' => null];
     }
 
     private static function escalate(array $call): array
@@ -151,6 +172,20 @@ class InternalTools
         return [
             ToolResults::ok($call['id'], 'Sugestão registrada para a equipe avaliar. Diga em uma frase que anotou a ideia — sem prometer que será feita nem prazo.'),
             ['feature_request' => ['summary' => $request]],
+        ];
+    }
+
+    private static function gap(array $call): array
+    {
+        $question = trim((string) ($call['input']['duvida'] ?? ''));
+
+        if ($question === '' || mb_strlen($question) > 500) {
+            return [ToolResults::error($call['id'], 'Entrada inválida: escreva a "duvida" em até 500 caracteres.'), null];
+        }
+
+        return [
+            ToolResults::ok($call['id'], 'Dúvida registrada para a equipe completar o manual. Diga que não tem essa informação agora e ofereça encaminhar ao suporte.'),
+            ['knowledge_gap' => ['summary' => $question]],
         ];
     }
 

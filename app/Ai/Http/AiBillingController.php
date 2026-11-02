@@ -6,6 +6,7 @@ use App\Ai\Plans\AiAccount;
 use App\Ai\Plans\AiCreditGrant;
 use App\Ai\Plans\AiPlan;
 use App\Ai\Plans\AiSubscription;
+use App\Ai\Usage\UsageReport;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ContextStore;
 use App\Platform\Context\ExecutionContext;
@@ -58,11 +59,38 @@ class AiBillingController
         ]);
 
         return $this->asClient($id, function () use ($data) {
+            // Mesma referência (ex.: id do pagamento) = mesmo pacote: repetir a chamada não soma de novo.
+            if (! empty($data['reference']) && AiCreditGrant::where('reference', $data['reference'])->exists()) {
+                return response()->json($this->account->summary() + ['duplicate' => true]);
+            }
+
             AiCreditGrant::create(['period' => now()->format('Y-m'), 'credits' => $data['credits'], 'reference' => $data['reference'] ?? null]);
             Audit::record('ai.credits_added', 'ok', null, ['credits' => $data['credits'], 'reference' => $data['reference'] ?? null]);
 
             return response()->json($this->account->summary(), 201);
         });
+    }
+
+    /**
+     * Uso do mês de cada cliente deste sistema: perguntas, créditos gastos por modo e custo (para o admin do sistema).
+     */
+    public function usageByClient(Request $request): JsonResponse
+    {
+        $data = $request->validate(['month' => ['nullable', 'date_format:Y-m']]);
+        $month = $data['month'] ?? now()->format('Y-m');
+        $context = ExecutionContext::current();
+
+        $organizations = Organization::where('integration_id', $context->integration->getKey())->get()->keyBy(fn ($o) => $o->getKey());
+
+        return response()->json([
+            'month' => $month,
+            'data' => UsageReport::forOrganizations($organizations->keys()->all(), $month)->map(fn (array $row, string $orgId) => $row + [
+                'organization_id' => $orgId,
+                'name' => $organizations[$orgId]->name,
+                'external_ref' => $organizations[$orgId]->external_ref,
+                'plan' => AiSubscription::withoutGlobalScopes()->where('organization_id', $orgId)->value('plan'),
+            ])->values(),
+        ]);
     }
 
     public function showForClient(string $id): JsonResponse

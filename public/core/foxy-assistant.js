@@ -7,6 +7,7 @@
  *   POST resetEndpoint  { mode, ...extra() }                     →  { assistant, usage_text }   (opcional: começa conversa nova)
  *   POST setup.endpoint { assistant, visual, custom_name }       →  { assistant, usage_text }   (opcional: escolha da raposa no chat)
  *   GET  historyEndpoint                                      →  { messages: [{ role: 'user'|'ai', text }], assistant, usage_text }   (opcional)
+ *   error pode trazer link: { label, url } (botão no balão de erro, ex.: comprar mais perguntas).
  *   Qualquer resposta pode trazer usage_text (mostrado no rodapé) e setup_required: true (abre a escolha da raposa).
  *
  * Uso:
@@ -256,7 +257,14 @@
 
         function render(data) {
             if (data.error) {
-                body.append(el('div', 'fxa-msg error', data.error.message || 'Não foi possível responder agora.'));
+                const box = el('div', 'fxa-msg error', data.error.message || 'Não foi possível responder agora.');
+                // Ex.: perguntas do mês acabaram → { label: 'Comprar mais perguntas', url: '/assistente/comprar' }
+                if (data.error.link && data.error.link.url) {
+                    const a = el('a', 'fxa-error-link', data.error.link.label || 'Abrir');
+                    a.href = data.error.link.url;
+                    box.append(el('br'), a);
+                }
+                body.append(box);
                 return;
             }
             if (data.tools_used && data.tools_used.length) {

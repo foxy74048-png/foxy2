@@ -40,6 +40,7 @@ Route::prefix('v1')->middleware(['api.client', 'throttle:api-client'])->group(fu
 
         // Plano de IA e créditos extras de cada cliente (quem cobra o cliente é o sistema).
         Route::get('/ai/plans', [AiBillingController::class, 'plans']);
+        Route::get('/ai/usage', [AiBillingController::class, 'usageByClient']);
         Route::get('/organizations/{id}/ai-subscription', [AiBillingController::class, 'showForClient']);
         Route::put('/organizations/{id}/ai-subscription', [AiBillingController::class, 'putSubscription']);
         Route::post('/organizations/{id}/ai-credits', [AiBillingController::class, 'addCredits']);

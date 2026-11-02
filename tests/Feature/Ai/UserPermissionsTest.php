@@ -60,7 +60,7 @@ class UserPermissionsTest extends TestCase
             ->postJson("/api/v1/conversations/{$id}/messages", ['text' => 'quem me deve?'])->assertOk();
 
         $request = $this->ai->lastRequest();
-        $this->assertSame(['foxy_encaminhar_suporte', 'foxy_registrar_sugestao'], array_column($request->tools, 'name'));
+        $this->assertSame(['foxy_encaminhar_suporte', 'foxy_registrar_sugestao', 'foxy_registrar_duvida'], array_column($request->tools, 'name'));
         $this->assertStringContainsString('NÃO tem acesso aos dados do sistema', $request->system);
     }
 
