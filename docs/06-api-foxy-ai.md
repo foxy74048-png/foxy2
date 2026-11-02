@@ -118,14 +118,15 @@ POST /api/v1/conversations/{id}/tool-results
 ```http
 GET    /api/v1/assistants?user_ref=u-123        → as 4 raposas (nome, jeito, exemplo, avatar_url) + a que vale para a pessoa
 PUT    /api/v1/assistant-preferences            { "assistant": "ayla" }                                  (padrão da conta)
-PUT    /api/v1/assistant-preferences            { "user_ref": "u-123", "assistant": "chico", "custom_name": "Chicão" }
+PUT    /api/v1/assistant-preferences            { "user_ref": "u-123", "assistant": "chico", "custom_name": "Chicão", "visual": "neon" }
 DELETE /api/v1/assistant-preferences?user_ref=u-123                                                       (volta ao padrão da conta)
 ```
 
 - Raposas: `chico` (objetivo), `lud` (acolhedora — padrão da Foxy), `lobinho` (animado), `ayla` (formal).
 - `custom_name` (opcional, até 40 caracteres): o nome que a pessoa deu. Disponível em todos os planos.
 - Vale para **conversas novas**; a conversa aberta continua com a raposa com que começou. A resposta de `POST /conversations` traz `assistant: { id, name, avatar_url }` para o sistema mostrar.
-- Avatares em `/core/assistants/{id}.svg`.
+- `visual` (opcional): estilo do desenho — `facetas` (padrão, irmã do logo), `linhas` (traços claros) ou `neon` (mais tecnológico). Cada raposa vem com `avatars` nos três estilos e `avatar_url` do escolhido.
+- Avatares em `/core/assistants/{visual}/{id}.svg` (o antigo `/core/assistants/{id}.svg` continua, no estilo padrão).
 
 ## 3.2 Janela da raposa e cliente PHP (o jeito recomendado para sistemas Foxy)
 

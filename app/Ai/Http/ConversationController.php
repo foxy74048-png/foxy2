@@ -39,7 +39,9 @@ class ConversationController
             'assistant' => [
                 'id' => $conversation->assistant,
                 'name' => $conversation->assistant_name,
-                'avatar_url' => FoxCatalog::get($conversation->assistant)['avatar_url'],
+                'article' => FoxCatalog::get($conversation->assistant)['article'],
+                'visual' => $conversation->assistant_visual ?? FoxCatalog::DEFAULT_VISUAL,
+                'avatar_url' => FoxCatalog::get($conversation->assistant, $conversation->assistant_visual)['avatar_url'],
             ],
             'capabilities' => $conversation->capabilities,
             'tier' => $conversation->tier,

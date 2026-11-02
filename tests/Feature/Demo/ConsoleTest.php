@@ -123,15 +123,18 @@ class ConsoleTest extends TestCase
         $this->setupDemo();
         $this->loggedIn()->message()->assertOk();
 
-        $this->postJson('/console/assistant/fox', ['assistant' => 'chico', 'custom_name' => 'Chicão'])
+        $this->postJson('/console/assistant/fox', ['assistant' => 'chico', 'custom_name' => 'Chicão', 'visual' => 'linhas'])
             ->assertOk()
             ->assertJsonPath('assistant.id', 'chico')
-            ->assertJsonPath('assistant.name', 'Chicão');
+            ->assertJsonPath('assistant.name', 'Chicão')
+            ->assertJsonPath('assistant.visual', 'linhas');
 
-        $this->message()->assertJsonPath('new_conversation', true)->assertJsonPath('assistant.name', 'Chicão');
+        $this->message()->assertJsonPath('new_conversation', true)->assertJsonPath('assistant.name', 'Chicão')->assertJsonPath('assistant.visual', 'linhas');
         $this->assertStringContainsString('Você é Chicão', $this->ai->lastRequest()->system);
 
-        $this->get('/console')->assertSee('value="Chicão"', false);
+        $this->get('/console')->assertSee('value="Chicão"', false)
+            ->assertSee('Estilo do desenho')
+            ->assertSee('/core/assistants/linhas/chico.svg', false);
         $this->postJson('/console/assistant/fox', ['assistant' => 'lud', 'custom_name' => '<b>'])->assertStatus(422);
     }
 

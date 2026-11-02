@@ -80,6 +80,7 @@ class Assistant
             'capabilities' => $capabilities,
             'assistant' => $fox['id'],
             'assistant_name' => $fox['name'],
+            'assistant_visual' => $fox['visual'],
             'tools' => [...($catalog?->definitionsFor($allowedTools) ?? []), ...InternalTools::definitions($capabilities)],
             'allowed_tools' => $allowedTools,
             'knowledge_version' => $knowledge->version,

@@ -37,11 +37,14 @@ class FoxAssistantsTest extends TestCase
         $response = $this->withToken($this->key)->getJson('/api/v1/assistants')->assertOk();
 
         $this->assertSame(['Chico', 'Lud', 'Lobinho', 'Ayla'], array_column($response->json('data'), 'name'));
-        $this->assertStringEndsWith('/core/assistants/chico.svg', $response->json('data.0.avatar_url'));
+        $this->assertStringEndsWith('/core/assistants/facetas/chico.svg', $response->json('data.0.avatar_url'));
         $response->assertJsonPath('current.id', 'lud')->assertJsonPath('current.source', 'foxy');
 
         foreach (['chico', 'lud', 'lobinho', 'ayla'] as $id) {
-            $this->assertFileExists(public_path("core/assistants/{$id}.svg"));
+            $this->assertFileExists(public_path("core/assistants/{$id}.svg"), 'Endereço antigo continua valendo.');
+            foreach (['facetas', 'linhas', 'neon'] as $visual) {
+                $this->assertFileExists(public_path("core/assistants/{$visual}/{$id}.svg"));
+            }
         }
     }
 
@@ -50,7 +53,25 @@ class FoxAssistantsTest extends TestCase
         config(['app.url' => 'https://ai.foxy.test/']);
 
         $this->withToken($this->key)->getJson('/api/v1/assistants')
-            ->assertJsonPath('data.0.avatar_url', 'https://ai.foxy.test/core/assistants/chico.svg');
+            ->assertJsonPath('data.0.avatar_url', 'https://ai.foxy.test/core/assistants/facetas/chico.svg');
+    }
+
+    public function test_each_person_chooses_the_drawing_style(): void
+    {
+        $this->withToken($this->key)->getJson('/api/v1/assistants')
+            ->assertJsonPath('visuals.facetas', 'Facetas — "de cristal", da família do logo')
+            ->assertJsonPath('current.visual', 'facetas')
+            ->assertJsonCount(3, 'data.0.avatars');
+
+        $this->choose(['user_ref' => 'u-1', 'assistant' => 'ayla', 'visual' => 'neon'])->assertOk()
+            ->assertJsonPath('current.visual', 'neon');
+
+        $response = $this->openFor('u-1')->assertJsonPath('assistant.visual', 'neon');
+        $this->assertStringEndsWith('/core/assistants/neon/ayla.svg', $response->json('assistant.avatar_url'));
+
+        // Sem escolher visual, vale o padrão (facetas); visual desconhecido é recusado.
+        $this->openFor('u-2')->assertJsonPath('assistant.visual', 'facetas');
+        $this->choose(['assistant' => 'lud', 'visual' => 'aquarela'])->assertStatus(422);
     }
 
     public function test_without_choice_the_default_fox_answers(): void

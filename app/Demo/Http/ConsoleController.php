@@ -32,6 +32,7 @@ class ConsoleController
             'questions' => DemoBusiness::evaluationQuestions(),
             'provider' => config('foxy.ai.provider'),
             'foxes' => FoxCatalog::all(),
+            'visuals' => FoxCatalog::visuals(),
             'current' => $current ?? FoxCatalog::get(FoxCatalog::DEFAULT),
         ]);
     }
@@ -89,9 +90,10 @@ class ConsoleController
         $data = $request->validate([
             'assistant' => ['required', Rule::in(FoxCatalog::ids())],
             'custom_name' => ['nullable', 'string', 'max:40'],
+            'visual' => ['nullable', Rule::in(array_keys(FoxCatalog::visuals()))],
         ]);
 
-        $chosen = $this->host->chooseFox($this->userRef($request), $data['assistant'], trim((string) ($data['custom_name'] ?? '')) ?: null);
+        $chosen = $this->host->chooseFox($this->userRef($request), $data['assistant'], trim((string) ($data['custom_name'] ?? '')) ?: null, $data['visual'] ?? null);
 
         if ($chosen['status'] !== 200) {
             return response()->json(['error' => $chosen['body']['error'] ?? ['message' => 'Não foi possível escolher a raposa.']], 422);

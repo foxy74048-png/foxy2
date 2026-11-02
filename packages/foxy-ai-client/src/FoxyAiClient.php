@@ -74,12 +74,16 @@ class FoxyAiClient
         return $this->call('GET', '/assistants'.($userRef ? '?user_ref='.rawurlencode($userRef) : ''));
     }
 
-    public function chooseAssistant(?string $userRef, string $assistant, ?string $customName = null): array
+    /**
+     * @param  string|null  $visual  estilo do desenho: facetas (padrão), linhas ou neon
+     */
+    public function chooseAssistant(?string $userRef, string $assistant, ?string $customName = null, ?string $visual = null): array
     {
         return $this->call('PUT', '/assistant-preferences', array_filter([
             'user_ref' => $userRef,
             'assistant' => $assistant,
             'custom_name' => $customName,
+            'visual' => $visual,
         ]));
     }
 

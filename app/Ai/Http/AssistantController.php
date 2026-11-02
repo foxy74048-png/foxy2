@@ -21,6 +21,7 @@ class AssistantController
 
         return response()->json([
             'data' => FoxCatalog::all(),
+            'visuals' => FoxCatalog::visuals(),
             'current' => AssistantPreference::resolveFor($data['user_ref'] ?? null),
         ]);
     }
@@ -34,18 +35,20 @@ class AssistantController
             'user_ref' => ['nullable', 'string', 'max:120'],
             'assistant' => ['required', Rule::in(FoxCatalog::ids())],
             'custom_name' => ['nullable', 'string', 'max:40', 'regex:/^[\pL\pN][\pL\pN \-\'.]*$/u'],
+            'visual' => ['nullable', Rule::in(array_keys(FoxCatalog::visuals()))],
         ]);
 
         $userRef = $data['user_ref'] ?? '';
 
         AssistantPreference::updateOrCreate(
             ['user_ref' => $userRef],
-            ['assistant' => $data['assistant'], 'custom_name' => isset($data['custom_name']) ? trim($data['custom_name']) : null],
+            ['assistant' => $data['assistant'], 'custom_name' => isset($data['custom_name']) ? trim($data['custom_name']) : null, 'visual' => $data['visual'] ?? null],
         );
 
         Audit::record('ai.assistant_chosen', 'ok', null, [
             'scope' => $userRef === '' ? 'conta' : 'usuario',
             'assistant' => $data['assistant'],
+            'visual' => $data['visual'] ?? FoxCatalog::DEFAULT_VISUAL,
             'renamed' => ! empty($data['custom_name']),
         ]);
 

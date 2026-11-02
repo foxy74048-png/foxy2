@@ -6,13 +6,13 @@ use App\Platform\Organizations\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Raposa da conta (user_ref vazio) ou de um usuário, com o nome que a pessoa deu (opcional).
+ * Raposa da conta (user_ref vazio) ou de um usuário, com o nome que a pessoa deu e o visual do desenho (opcionais).
  */
 class AssistantPreference extends Model
 {
     use BelongsToOrganization;
 
-    protected $fillable = ['organization_id', 'user_ref', 'assistant', 'custom_name'];
+    protected $fillable = ['organization_id', 'user_ref', 'assistant', 'custom_name', 'visual'];
 
     /**
      * A raposa que vale para este usuário: a dele → a da conta → a padrão da Foxy.
@@ -24,7 +24,7 @@ class AssistantPreference extends Model
         $preferences = self::whereIn('user_ref', array_filter(['', $userRef], fn ($v) => $v !== null))->get()->keyBy('user_ref');
         $chosen = ($userRef !== null ? $preferences->get($userRef) : null) ?? $preferences->get('');
 
-        $fox = FoxCatalog::get($chosen?->assistant ?? FoxCatalog::DEFAULT);
+        $fox = FoxCatalog::get($chosen?->assistant ?? FoxCatalog::DEFAULT, $chosen?->visual);
         $custom = trim((string) $chosen?->custom_name);
 
         return array_merge($fox, [

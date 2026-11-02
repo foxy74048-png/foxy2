@@ -38,10 +38,22 @@
             @foreach ($foxes as $fox)
                 <label class="fox">
                     <input type="radio" name="assistant" value="{{ $fox['id'] }}" @checked($fox['id'] === $current['id'])>
-                    <img src="{{ $fox['avatar_url'] }}" alt="">
+                    <img src="{{ $fox['avatars'][$current['visual']] }}" alt="" data-avatars='@json($fox['avatars'])'>
                     <strong>{{ $fox['name'] }}</strong>
                     <span class="muted">{{ $fox['style'] }}</span>
                     <em class="muted">“{{ $fox['sample'] }}”</em>
+                </label>
+            @endforeach
+        </div>
+
+        <h3 style="margin:8px 0 0">Estilo do desenho</h3>
+        <div class="foxes" role="radiogroup" aria-label="Estilo do desenho">
+            @foreach ($visuals as $visual => $label)
+                <label class="fox">
+                    <input type="radio" name="visual" value="{{ $visual }}" @checked($visual === $current['visual'])>
+                    <img src="{{ \App\Ai\Assistants\FoxCatalog::avatarUrl($current['id'], $visual) }}" alt="" data-visual="{{ $visual }}">
+                    <strong>{{ \Illuminate\Support\Str::before($label, ' —') }}</strong>
+                    <span class="muted">{{ \Illuminate\Support\Str::after($label, '— ') }}</span>
                 </label>
             @endforeach
         </div>
@@ -149,9 +161,20 @@
                 onAnswer: (data) => details($('last'), data),
             });
 
+            // As imagens acompanham a escolha: raposas no estilo marcado, estilos com a raposa marcada.
+            const chosenFox = () => document.querySelector('input[name=assistant]:checked');
+            const chosenVisual = () => document.querySelector('input[name=visual]:checked').value;
+            const refreshImages = () => {
+                const visual = chosenVisual();
+                document.querySelectorAll('img[data-avatars]').forEach(img => { img.src = JSON.parse(img.dataset.avatars)[visual]; });
+                const avatars = JSON.parse(chosenFox().closest('label').querySelector('img').dataset.avatars);
+                document.querySelectorAll('img[data-visual]').forEach(img => { img.src = avatars[img.dataset.visual]; });
+            };
+            document.querySelectorAll('input[name=assistant], input[name=visual]').forEach(i => i.addEventListener('change', refreshImages));
+
             $('save-fox').addEventListener('click', async () => {
-                const chosen = document.querySelector('input[name=assistant]:checked').value;
-                const data = await post('/console/assistant/fox', { assistant: chosen, custom_name: $('custom_name').value.trim() || null });
+                const chosen = chosenFox().value;
+                const data = await post('/console/assistant/fox', { assistant: chosen, visual: chosenVisual(), custom_name: $('custom_name').value.trim() || null });
                 if (data.error) { $('fox-status').textContent = data.error.message; return; }
                 assistant.setAssistant(data.assistant);
                 $('fox-status').textContent = 'Pronto: agora quem atende é ' + data.assistant.name + '. A próxima conversa já começa com essa raposa.';

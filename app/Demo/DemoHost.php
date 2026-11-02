@@ -95,9 +95,9 @@ class DemoHost
             ->withToolLabels(DemoBusiness::TOOL_LABELS);
     }
 
-    public function chooseFox(string $userRef, string $assistant, ?string $customName): array
+    public function chooseFox(string $userRef, string $assistant, ?string $customName, ?string $visual = null): array
     {
-        return $this->client()->chooseAssistant($userRef, $assistant, $customName);
+        return $this->client()->chooseAssistant($userRef, $assistant, $customName, $visual);
     }
 
     public function assistants(string $userRef): array

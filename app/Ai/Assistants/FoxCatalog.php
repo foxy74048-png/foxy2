@@ -10,6 +10,15 @@ class FoxCatalog
 {
     public const DEFAULT = 'lud';
 
+    public const DEFAULT_VISUAL = 'facetas';
+
+    /** Estilos do desenho, à escolha de cada pessoa (definidos em 2026-11-02; gerador em design/raposas). */
+    private const VISUALS = [
+        'facetas' => 'Facetas — "de cristal", da família do logo',
+        'linhas' => 'Linhas — traços geométricos claros',
+        'neon' => 'Neon — linhas luminosas, mais tecnológico',
+    ];
+
     private const FOXES = [
         'chico' => [
             'name' => 'Chico',
@@ -47,15 +56,36 @@ class FoxCatalog
     }
 
     /**
-     * @return array{id: string, name: string, article: string, look: string, style: string, sample: string, avatar_url: string}
+     * @return array{id: string, name: string, article: string, look: string, style: string, sample: string, visual: string, avatar_url: string, avatars: array<string, string>}
      */
-    public static function get(string $id): array
+    public static function get(string $id, ?string $visual = null): array
     {
         $fox = self::FOXES[$id] ?? self::FOXES[self::DEFAULT];
         $id = isset(self::FOXES[$id]) ? $id : self::DEFAULT;
+        $visual = isset(self::VISUALS[$visual]) ? $visual : self::DEFAULT_VISUAL;
 
-        // Endereço absoluto pelo APP_URL: os sistemas mostram a imagem servida pela Foxy AI.
-        return ['id' => $id] + $fox + ['avatar_url' => rtrim((string) config('app.url'), '/')."/core/assistants/{$id}.svg"];
+        $avatars = [];
+        foreach (array_keys(self::VISUALS) as $option) {
+            $avatars[$option] = self::avatarUrl($id, $option);
+        }
+
+        return ['id' => $id] + $fox + ['visual' => $visual, 'avatar_url' => $avatars[$visual], 'avatars' => $avatars];
+    }
+
+    /**
+     * Endereço absoluto pelo APP_URL: os sistemas mostram a imagem servida pela Foxy AI.
+     */
+    public static function avatarUrl(string $id, string $visual): string
+    {
+        return rtrim((string) config('app.url'), '/')."/core/assistants/{$visual}/{$id}.svg";
+    }
+
+    /**
+     * @return array<string, string> visual → descrição
+     */
+    public static function visuals(): array
+    {
+        return self::VISUALS;
     }
 
     /**
