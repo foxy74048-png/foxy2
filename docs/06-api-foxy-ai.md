@@ -111,6 +111,10 @@ POST /api/v1/conversations/{id}/tool-results
 
 **Mensagens sugeridas:** com a capacidade `escrita`, a resposta `answered` pode trazer `drafts: [{ "channel": "whatsapp" | "email" | "texto", "title": "Lembrete de amanhã" | null, "text": "..." }]` (até 5). Mostre cada uma num cartão com **Copiar** (e, se quiser, um botão do seu sistema como "Abrir no WhatsApp"). A IA **nunca envia**: quem envia é a pessoa.
 
+**Ideia que o sistema ainda não tem:** quando a pessoa pede algo que não existe, a IA diz isso com honestidade e a resposta traz `feature_request: { "summary": "..." }` (sem nomes de clientes). Guarde para a sua equipe avaliar — a Foxy AI não guarda essa lista.
+
+**Histórico recente:** `GET /api/v1/conversations/{id}/messages` → `{ messages: [{ role: "user" | "ai", text }], user_messages, expires_at }` — só os textos trocados (sem contexto da tela nem resultados de consultas), para a janela mostrar a conversa ao reabrir.
+
 **Encaminhar ao suporte:** quando `escalate` vier preenchido (`{ "reason": "defeito" | "sem_resposta" | "pedido_da_pessoa", "summary": "..." }`), abra o chamado no seu canal (WhatsApp, e-mail...) com o resumo.
 
 ## 3.1 A raposa ("a sua IA")
@@ -157,6 +161,8 @@ A Foxy entrega as duas pontas prontas; o sistema só escreve um controller e as 
   - `modes: [{ id: 'rapida', label: 'Rápido', hint: '...' }, ...]` e `mode` — seletor de modo sempre à mostra no rodapé; trocar o modo chama o `resetEndpoint` com `{ mode }` (conversa nova) e toda pergunta leva `mode`.
   - `setup: { endpoint, required, foxes, visuals }` — escolha da raposa **dentro do chat** (cartões das raposas, estilo do desenho e nome opcional). Com `required: true` ela aparece antes da primeira pergunta; o endpoint recebe `{ assistant, visual, custom_name }`. Qualquer resposta com `setup_required: true` também a abre. `foxes`/`visuals` vêm de `GET /assistants`.
   - `escalateAction: { label, onClick(escalate) }` — botão no cartão "Encaminhado ao suporte" (ex.: abrir o chat de suporte do sistema já com o resumo).
+  - `historyEndpoint` — rota do seu sistema (GET) que devolve `{ messages, assistant, usage_text }` a partir de `FoxyAiClient::history()`; a janela mostra a conversa recente ao reabrir em outra tela.
+  - Resposta com `feature_request` mostra a nota "Ideia anotada para a equipe avaliar".
   - `usageText` (e `usage_text` em qualquer resposta) — linha do rodapé com o uso do mês, ex.: "Restam ~240 perguntas neste mês".
 - Visual: roxo sóbrio do Core, tela cheia no celular, Enter envia, Esc fecha, aviso "A IA pode errar".
 
@@ -184,7 +190,7 @@ DELETE /api/v1/conversations?user_ref=u-123   → { "deleted": 2 }
 GET    /api/v1/usage?month=2026-10            → { "month", "messages", "cost_usd", "by_model": [...] }
 ```
 
-- Conversas (com os resultados de tools que passaram por elas) ficam **30 dias** e são apagadas automaticamente. Use o `DELETE` quando um usuário pedir exclusão dos dados (LGPD).
+- Conversas (com os resultados de tools que passaram por elas) ficam pelo prazo do plano — **7 dias** no `ia-250`, **15** do `ia-1000` ao `ia-2000` e **30** do `ia-5000` em diante — e são apagadas automaticamente. O plano também limita o tamanho de cada conversa (10, 20 ou 30 mensagens da pessoa); passou disso, abra outra. Use o `DELETE` quando um usuário pedir exclusão dos dados (LGPD).
 - Os registros de uso (tokens e custo, sem texto) ficam para cobrança e relatório.
 
 ## 5. Erros que o sistema deve tratar
@@ -200,7 +206,7 @@ GET    /api/v1/usage?month=2026-10            → { "month", "messages", "cost_u
 | 409 | `conversation_full` | Limite de mensagens da conversa (padrão 20): abra outra conversa. |
 | 409 | `conversation_busy` | Outra mensagem está sendo processada nesta conversa. |
 | 409 | `no_pending_tools` | Resultados enviados sem pedido pendente. |
-| 410 | `conversation_expired` | Conversa com mais de 30 dias: abra outra. |
+| 410 | `conversation_expired` | Conversa passou do prazo do plano: abra outra. |
 | 422 | `validation_failed`, `knowledge_missing`, `unknown_tools`, `tool_results_mismatch`, `tool_result_too_large` | Corrija a requisição (detalhes em `message`/`details`). |
 | 403 | `no_ai_plan` / `tier_not_in_plan` | Cliente sem plano de IA ativo, ou faixa de modelo fora do plano. |
 | 429 | `credit_limit` / `rate_limited` | Créditos do mês acabaram (compre extras) ou excesso de mensagens por minuto. |

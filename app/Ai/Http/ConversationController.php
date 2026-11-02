@@ -70,6 +70,36 @@ class ConversationController
     }
 
     /**
+     * Histórico recente para a janela da raposa mostrar ao reabrir: só os textos trocados
+     * (sem o contexto da tela, sem consultas nem resultados).
+     */
+    public function history(string $id): JsonResponse
+    {
+        $conversation = Conversation::findOrFail($id);
+        $messages = [];
+
+        foreach ($conversation->history() as $message) {
+            $texts = array_values(array_filter($message['content'], fn ($block) => ($block['type'] ?? null) === 'text'));
+            if ($texts === []) {
+                continue; // resultados de consulta ou só pedidos de ferramenta
+            }
+
+            // Mensagem da pessoa: [contexto, texto]; da IA: os blocos de texto da resposta.
+            $text = $message['role'] === 'user' ? end($texts)['text'] : implode("\n", array_column($texts, 'text'));
+            if (trim($text) !== '') {
+                $messages[] = ['role' => $message['role'] === 'user' ? 'user' : 'ai', 'text' => $text];
+            }
+        }
+
+        return response()->json([
+            'conversation_id' => $conversation->getKey(),
+            'messages' => array_slice($messages, -40),
+            'user_messages' => $conversation->user_messages,
+            'expires_at' => $conversation->expires_at->toIso8601String(),
+        ]);
+    }
+
+    /**
      * LGPD: apaga todas as conversas (e mensagens) de um usuário do anfitrião.
      */
     public function destroyForUser(Request $request): JsonResponse

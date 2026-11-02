@@ -53,7 +53,7 @@ AiPlan (global, definido pela Foxy, versionado)
 ├── créditos por mês                ex.: 3.000
 ├── limite por usuário (opcional)   ex.: no máx. 30% dos créditos por pessoa
 ├── mascote                         escolher raposa (todos) · dar nome próprio (planos maiores)
-└── retenção das conversas          30 dias (pode crescer em planos maiores)
+└── histórico recente               prazo e tamanho da conversa (7 dias/10 msgs → 30 dias/30 msgs)
 ```
 
 **Planos (revistos em 2026-11-02):** a franquia é contada em créditos, e **1 crédito ≈ 1 pergunta no modo rápido**. Todos os planos têm tudo (dúvidas de uso, erros, perguntas sobre os dados, sugestão de mensagens, escolher e renomear a raposa) e os três modos: o modo mais caro só faz a franquia render menos perguntas, e **quem escolhe o modo é a pessoa**, no próprio chat.
@@ -63,6 +63,10 @@ AiPlan (global, definido pela Foxy, versionado)
 | Perguntas no modo rápido (≈) | 250 | 1.000 | 1.500 | 2.000 | 5.000 | 10.000 | 25.000 | 50.000 |
 | No modo equilibrado (≈ 10 créditos) | 25 | 100 | 150 | 200 | 500 | 1.000 | 2.500 | 5.000 |
 | No modo avançado (≈ 20 créditos) | 12 | 50 | 75 | 100 | 250 | 500 | 1.250 | 2.500 |
+| Conversa guardada por | 7 dias | 15 dias | 15 dias | 15 dias | 30 dias | 30 dias | 30 dias | 30 dias |
+| Mensagens por conversa | 10 | 20 | 20 | 20 | 30 | 30 | 30 | 30 |
+
+Só se guarda o necessário: a conversa (para a IA lembrar do que foi dito) até o prazo do plano, e mais nada. Pedidos de funcionalidade que não existe voltam ao sistema (`feature_request`), que decide onde anotar.
 
 O catálogo continua aceitando planos com menos capacidades ou modos (ajuste só em `config/foxy.php`), caso algum sistema precise.
 

@@ -23,6 +23,7 @@ final readonly class AssistantResult
         public array $toolCalls = [],
         public ?array $escalate = null,
         public array $drafts = [],
+        public ?array $featureRequest = null,
     ) {}
 
     public function toArray(): array
@@ -37,6 +38,8 @@ final readonly class AssistantResult
             $data['escalate'] = $this->escalate;
             // Mensagens sugeridas para a pessoa revisar e copiar; a IA nunca envia.
             $data['drafts'] = $this->drafts;
+            // Algo que a pessoa quis e o sistema ainda não tem: o anfitrião guarda para a equipe avaliar.
+            $data['feature_request'] = $this->featureRequest;
         } else {
             $data['tool_calls'] = $this->toolCalls;
         }

@@ -149,7 +149,7 @@ class ConversationApiTest extends TestCase
 
     public function test_conversation_has_a_message_limit(): void
     {
-        config(['foxy.ai.max_user_messages_per_conversation' => 2]);
+        config(['foxy.ai.plans.ia-50000.max_user_messages' => 2]); // o limite vem do plano do cliente
         $id = $this->openConversation($this->key);
 
         $this->send($id)->assertOk();

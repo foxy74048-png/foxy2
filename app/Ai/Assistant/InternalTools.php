@@ -5,7 +5,8 @@ namespace App\Ai\Assistant;
 /**
  * Tools da própria Foxy, resolvidas aqui dentro (o anfitrião nunca as recebe).
  * Nomes começam com "foxy_", prefixo reservado. Cada uma produz um "efeito" que volta ao anfitrião
- * na resposta: encaminhamento ao suporte (escalate) ou mensagem sugerida (drafts).
+ * na resposta: encaminhamento ao suporte (escalate), mensagem sugerida (drafts) ou pedido de algo que o
+ * sistema ainda não tem (feature_request), para a equipe do sistema avaliar.
  */
 class InternalTools
 {
@@ -14,6 +15,8 @@ class InternalTools
     public const ESCALATE = 'foxy_encaminhar_suporte';
 
     public const DRAFT = 'foxy_sugerir_mensagem';
+
+    public const FEATURE = 'foxy_registrar_sugestao';
 
     private const ESCALATE_REASONS = ['defeito', 'sem_resposta', 'pedido_da_pessoa'];
 
@@ -40,6 +43,20 @@ class InternalTools
                 'additionalProperties' => false,
             ],
         ]];
+
+        $tools[] = [
+            'name' => self::FEATURE,
+            'description' => 'Registra, para a equipe do sistema avaliar, algo que a pessoa quis fazer e que o sistema ainda NÃO oferece (não está no conhecimento). '
+                .'Use uma vez por pedido, depois de dizer com honestidade que ainda não existe. Não use para dúvidas de uso, defeitos (isso é suporte) nem para o que o sistema já faz.',
+            'input_schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'pedido' => ['type' => 'string', 'description' => 'O que a pessoa queria fazer, em uma ou duas frases, do jeito que um desenvolvedor entenderia. Sem nomes de clientes nem dados sensíveis.'],
+                ],
+                'required' => ['pedido'],
+                'additionalProperties' => false,
+            ],
+        ];
 
         if (in_array('escrita', $capabilities, true)) {
             $tools[] = [
@@ -78,6 +95,7 @@ class InternalTools
         return match ($call['name']) {
             self::ESCALATE => self::escalate($call),
             self::DRAFT => self::draft($call),
+            self::FEATURE => self::feature($call),
             default => [ToolResults::error($call['id'], 'Ferramenta desconhecida.'), null],
         };
     }
@@ -91,6 +109,10 @@ class InternalTools
             $effects['escalate'] ??= $effect['escalate'];
         }
 
+        if (isset($effect['feature_request'])) {
+            $effects['feature_request'] ??= $effect['feature_request'];
+        }
+
         if (isset($effect['draft']) && count($effects['drafts']) < 5) {
             $effects['drafts'][] = $effect['draft'];
         }
@@ -100,7 +122,7 @@ class InternalTools
 
     public static function emptyEffects(): array
     {
-        return ['escalate' => null, 'drafts' => []];
+        return ['escalate' => null, 'drafts' => [], 'feature_request' => null];
     }
 
     private static function escalate(array $call): array
@@ -115,6 +137,20 @@ class InternalTools
         return [
             ToolResults::ok($call['id'], 'Encaminhamento registrado. Avise a pessoa que o caso foi encaminhado ao suporte e que o sistema vai mostrar como acompanhar.'),
             ['escalate' => ['reason' => $reason, 'summary' => $summary]],
+        ];
+    }
+
+    private static function feature(array $call): array
+    {
+        $request = trim((string) ($call['input']['pedido'] ?? ''));
+
+        if ($request === '' || mb_strlen($request) > 500) {
+            return [ToolResults::error($call['id'], 'Entrada inválida: descreva o "pedido" em até 500 caracteres.'), null];
+        }
+
+        return [
+            ToolResults::ok($call['id'], 'Sugestão registrada para a equipe avaliar. Diga em uma frase que anotou a ideia — sem prometer que será feita nem prazo.'),
+            ['feature_request' => ['summary' => $request]],
         ];
     }
 

@@ -6,6 +6,7 @@
  *   POST endpoint       { text, page, error, mode, ...extra() }  →  { reply, drafts, escalate, assistant, tools_used, error, usage_text }
  *   POST resetEndpoint  { mode, ...extra() }                     →  { assistant, usage_text }   (opcional: começa conversa nova)
  *   POST setup.endpoint { assistant, visual, custom_name }       →  { assistant, usage_text }   (opcional: escolha da raposa no chat)
+ *   GET  historyEndpoint                                      →  { messages: [{ role: 'user'|'ai', text }], assistant, usage_text }   (opcional)
  *   Qualquer resposta pode trazer usage_text (mostrado no rodapé) e setup_required: true (abre a escolha da raposa).
  *
  * Uso:
@@ -54,6 +55,7 @@
             setup: null,
             escalateAction: null,
             usageText: '',
+            historyEndpoint: null,
         }, options || {});
 
         let assistant = Object.assign({ name: 'Lud', article: 'a', avatarUrl: '/core/assistants/lud.svg' }, normalize(opts.assistant));
@@ -262,6 +264,7 @@
             }
             if (data.reply) body.append(el('div', 'fxa-msg ai', data.reply));
             (data.drafts || []).forEach((d) => body.append(draftCard(d)));
+            if (data.feature_request) body.append(el('div', 'fxa-note', '📝 Ideia anotada para a equipe avaliar.'));
             if (data.escalate) {
                 const card = el('div', 'fxa-card escalate');
                 card.append(el('div', 'fxa-card-title', 'Encaminhado ao suporte'), el('div', 'fxa-card-text', data.escalate.summary));
@@ -325,10 +328,36 @@
             needsSetup ? chooser(true) : greet();
         }
 
-        function open() {
+        /** Ao reabrir (ex.: depois de trocar de tela), mostra o fim da conversa em andamento. */
+        async function loadHistory() {
+            if (!opts.historyEndpoint) return false;
+            let data;
+            try {
+                const response = await fetch(opts.historyEndpoint, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+                data = response.ok ? await response.json() : null;
+            } catch (e) { data = null; }
+            if (!data) return false;
+            if (data.assistant) { assistant = Object.assign(assistant, normalize(data.assistant)); applyAssistant(); }
+            applyUsage(data.usage_text);
+            if (body.querySelector('.fxa-msg, .fxa-foxes')) return true; // a pessoa já começou enquanto carregava
+            if (!data.messages || !data.messages.length) return false;
+            body.innerHTML = '';
+            body.append(el('div', 'fxa-note', 'Conversa recente'));
+            data.messages.forEach((m) => body.append(el('div', 'fxa-msg ' + (m.role === 'user' ? 'user' : 'ai'), m.text)));
+            scroll();
+            return true;
+        }
+
+        async function open() {
             panel.hidden = false; launcher.hidden = true;
-            if (!body.childElementCount) { needsSetup ? chooser(true) : greet(); }
             input.focus();
+            if (body.childElementCount) return;
+            if (needsSetup) { chooser(true); return; }
+            const loading = el('div', 'fxa-thinking', 'Abrindo');
+            body.append(loading);
+            const restored = await loadHistory();
+            loading.remove();
+            if (!restored && !body.querySelector('.fxa-msg, .fxa-foxes')) greet();
         }
         function close() { panel.hidden = true; launcher.hidden = false; launcher.focus(); }
 
@@ -354,7 +383,7 @@
             /** Erro que apareceu na tela: vai junto com a próxima pergunta. */
             reportError(error) { pendingError = error; open(); },
             /** Abre a escolha da raposa (ex.: link "Trocar raposa" no menu do sistema). */
-            chooseFox() { open(); chooser(false); },
+            chooseFox() { panel.hidden = false; launcher.hidden = true; chooser(false); },
         };
     }
 

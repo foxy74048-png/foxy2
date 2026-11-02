@@ -86,7 +86,8 @@ class Assistant
             'knowledge_version' => $knowledge->version,
             'tools_version' => $profile->current_tools_version,
             'status' => Conversation::AWAITING_USER,
-            'expires_at' => now()->addDays(config('foxy.ai.conversation_retention_days')),
+            // Histórico recente: o plano decide por quanto tempo a conversa fica guardada.
+            'expires_at' => now()->addDays($plan->retentionDays),
         ]);
 
         $this->asAgent($conversation, fn () => Audit::record('ai.conversation_opened', 'ok', $conversation, [
@@ -245,6 +246,10 @@ class Assistant
             Audit::record('ai.escalated', 'ok', $conversation, ['reason' => $effects['escalate']['reason']]);
         }
 
+        if ($effects['feature_request'] ?? null) {
+            Audit::record('ai.feature_requested', 'ok', $conversation);
+        }
+
         if ($effects['drafts'] !== []) {
             Audit::record('ai.drafts_suggested', 'ok', $conversation, ['count' => count($effects['drafts']), 'channels' => array_column($effects['drafts'], 'channel')]);
         }
@@ -255,7 +260,7 @@ class Assistant
             'model_calls' => count($usage),
         ]);
 
-        return new AssistantResult($conversation, AssistantResult::ANSWERED, $reply, $usage, escalate: $effects['escalate'], drafts: $effects['drafts']);
+        return new AssistantResult($conversation, AssistantResult::ANSWERED, $reply, $usage, escalate: $effects['escalate'], drafts: $effects['drafts'], featureRequest: $effects['feature_request'] ?? null);
     }
 
     /**
@@ -327,7 +332,7 @@ class Assistant
             throw AssistantException::conversationExpired();
         }
 
-        $max = config('foxy.ai.max_user_messages_per_conversation');
+        $max = $this->account->plan()?->maxUserMessages ?? config('foxy.ai.max_user_messages_per_conversation');
         if ($conversation->user_messages >= $max) {
             throw AssistantException::conversationFull($max);
         }

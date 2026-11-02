@@ -20,13 +20,19 @@ final readonly class AiPlan
         public array $capabilities,
         public array $tiers,
         public string $defaultTier,
+        public int $retentionDays = 30,
+        public int $maxUserMessages = 20,
     ) {}
 
     public static function find(?string $code): ?self
     {
         $config = $code ? (config('foxy.ai.plans')[$code] ?? null) : null;
 
-        return $config ? new self($code, $config['name'], $config['credits'], $config['capabilities'], $config['tiers'], $config['default_tier']) : null;
+        return $config ? new self(
+            $code, $config['name'], $config['credits'], $config['capabilities'], $config['tiers'], $config['default_tier'],
+            $config['retention_days'] ?? (int) config('foxy.ai.conversation_retention_days'),
+            $config['max_user_messages'] ?? (int) config('foxy.ai.max_user_messages_per_conversation'),
+        ) : null;
     }
 
     /**
@@ -69,6 +75,8 @@ final readonly class AiPlan
             'capabilities' => $this->capabilities,
             'tiers' => $this->tiers,
             'default_tier' => $this->defaultTier,
+            'retention_days' => $this->retentionDays,
+            'max_user_messages' => $this->maxUserMessages,
         ];
     }
 }

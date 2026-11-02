@@ -1,11 +1,15 @@
 <?php
 
-$plan = fn (int $credits, array $capabilities, array $tiers) => [
+// Histórico recente: planos maiores guardam a conversa por mais tempo e aceitam conversas mais longas.
+// Passou do prazo, a conversa é apagada (foxy:ai:purge-conversations); passou do limite, começa-se outra.
+$plan = fn (int $credits, array $capabilities, array $tiers, int $retentionDays, int $maxUserMessages) => [
     'name' => 'IA '.number_format($credits, 0, ',', '.'),
     'credits' => $credits,
     'capabilities' => $capabilities,
     'tiers' => $tiers,
     'default_tier' => 'rapida',
+    'retention_days' => $retentionDays,
+    'max_user_messages' => $maxUserMessages,
 ];
 
 $full = ['suporte', 'erros', 'dados', 'escrita'];
@@ -48,14 +52,14 @@ return [
         'credit_usd' => 0.001,
         'extra_credits_step' => 1000,
         'plans' => [
-            'ia-250' => $plan(250, $full, $allTiers),
-            'ia-1000' => $plan(1000, $full, $allTiers),
-            'ia-1500' => $plan(1500, $full, $allTiers),
-            'ia-2000' => $plan(2000, $full, $allTiers),
-            'ia-5000' => $plan(5000, $full, $allTiers),
-            'ia-10000' => $plan(10000, $full, $allTiers),
-            'ia-25000' => $plan(25000, $full, $allTiers),
-            'ia-50000' => $plan(50000, $full, $allTiers),
+            'ia-250' => $plan(250, $full, $allTiers, 7, 10),
+            'ia-1000' => $plan(1000, $full, $allTiers, 15, 20),
+            'ia-1500' => $plan(1500, $full, $allTiers, 15, 20),
+            'ia-2000' => $plan(2000, $full, $allTiers, 15, 20),
+            'ia-5000' => $plan(5000, $full, $allTiers, 30, 30),
+            'ia-10000' => $plan(10000, $full, $allTiers, 30, 30),
+            'ia-25000' => $plan(25000, $full, $allTiers, 30, 30),
+            'ia-50000' => $plan(50000, $full, $allTiers, 30, 30),
         ],
         // Plano usado quando o cliente ainda não tem assinatura (null = sem IA até o sistema definir o plano).
         'default_plan' => env('FOXY_AI_DEFAULT_PLAN'),

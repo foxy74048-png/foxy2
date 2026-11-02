@@ -49,6 +49,7 @@ Route::prefix('v1')->middleware(['api.client', 'throttle:api-client'])->group(fu
     Route::middleware(['api.organization', 'api.scope:ai.conversations'])->group(function () {
         Route::post('/conversations', [ConversationController::class, 'store']);
         Route::post('/conversations/{id}/messages', [ConversationController::class, 'message']);
+        Route::get('/conversations/{id}/messages', [ConversationController::class, 'history']);
         Route::post('/conversations/{id}/tool-results', [ConversationController::class, 'toolResults']);
         Route::delete('/conversations', [ConversationController::class, 'destroyForUser']);
         Route::get('/usage', [UsageController::class, 'show']);
