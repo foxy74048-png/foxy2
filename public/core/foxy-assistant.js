@@ -6,6 +6,7 @@
  *   POST endpoint       { text, page, error, mode, ...extra() }  →  { reply, drafts, escalate, assistant, tools_used, error, usage_text }
  *   POST resetEndpoint  { mode, ...extra() }                     →  { assistant, usage_text }   (opcional: começa conversa nova)
  *   POST setup.endpoint { assistant, visual, custom_name }       →  { assistant, usage_text }   (opcional: escolha da raposa no chat)
+ *   GET  settingsEndpoint                                     →  { usage: { title, percent, lines: [..] }, links: [{ label, url }] }   (opcional: tela ⚙)
  *   GET  historyEndpoint                                      →  { messages: [{ role: 'user'|'ai', text }], assistant, usage_text }   (opcional)
  *   error pode trazer link: { label, url } (botão no balão de erro, ex.: comprar mais perguntas).
  *   Qualquer resposta pode trazer usage_text (mostrado no rodapé) e setup_required: true (abre a escolha da raposa).
@@ -69,6 +70,7 @@
             escalateAction: null,
             usageText: '',
             historyEndpoint: null,
+            settingsEndpoint: null,
         }, options || {});
 
         let assistant = Object.assign({ name: 'Lud', article: 'a', avatarUrl: '/core/assistants/lud.svg' }, normalize(opts.assistant));
@@ -95,14 +97,18 @@
         const who = el('div', 'fxa-who');
         const headName = el('strong');
         who.append(headName, el('small', null, 'Assistente da Foxy'));
-        const foxBtn = el('button', 'fxa-icon-btn', 'Trocar raposa'); foxBtn.type = 'button';
-        foxBtn.hidden = !opts.setup;
+        // ⚙ Configurações: a raposa, o modo e o uso do mês, dentro da própria janela.
+        const gearBtn = el('button', 'fxa-icon-btn fxa-gear', '⚙'); gearBtn.type = 'button';
+        gearBtn.title = 'Configurações'; gearBtn.setAttribute('aria-label', 'Configurações');
+        gearBtn.hidden = !(opts.setup || opts.settingsEndpoint || (opts.modes && opts.modes.length > 1));
         const newBtn = el('button', 'fxa-icon-btn', 'Nova conversa'); newBtn.type = 'button';
         const closeBtn = el('button', 'fxa-icon-btn', '✕'); closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', 'Fechar');
-        head.append(headImg, who, foxBtn, newBtn, closeBtn);
+        head.append(headImg, who, gearBtn, newBtn, closeBtn);
 
         const body = el('div', 'fxa-body');
         body.setAttribute('aria-live', 'polite');
+        const settingsView = el('div', 'fxa-body fxa-settings');
+        settingsView.hidden = true;
 
         const foot = el('div', 'fxa-foot');
 
@@ -127,7 +133,7 @@
         const usageLine = el('p', 'fxa-usage');
         foot.append(modeRow, form, usageLine, el('p', 'fxa-disclaimer', 'A IA pode errar. Confira antes de usar ou enviar.'));
 
-        panel.append(head, body, foot);
+        panel.append(head, body, settingsView, foot);
         document.body.append(launcher, panel);
 
         function applyAssistant() {
@@ -241,6 +247,95 @@
                 applyAssistant(); applyUsage(data.usage_text); greet();
             });
             paint(); scroll();
+        }
+
+        function closeSettings() {
+            settingsView.hidden = true; body.hidden = false; foot.hidden = false;
+            gearBtn.setAttribute('aria-pressed', 'false');
+        }
+
+        /** Tela ⚙: a raposa (trocar), o modo e os indicadores de uso do mês. A conversa fica guardada por trás. */
+        async function openSettings() {
+            if (!settingsView.hidden) { closeSettings(); return; }
+            body.hidden = true; foot.hidden = true; settingsView.hidden = false;
+            gearBtn.setAttribute('aria-pressed', 'true');
+            settingsView.innerHTML = '';
+
+            const back = el('button', 'fxa-link-btn', '← Voltar à conversa'); back.type = 'button';
+            back.addEventListener('click', closeSettings);
+            settingsView.append(back, el('h3', 'fxa-settings-title', 'Configurações'));
+
+            // Sua raposa
+            if (opts.setup) {
+                const card = el('div', 'fxa-settings-card');
+                const row = el('div', 'fxa-settings-fox');
+                const img = el('img'); img.alt = ''; img.src = assistant.avatarUrl;
+                const text = el('div');
+                text.append(el('strong', null, assistant.name), el('span', null, 'Sua raposa'));
+                row.append(img, text);
+                const change = el('button', 'fxa-primary', 'Trocar raposa, estilo ou nome'); change.type = 'button';
+                change.addEventListener('click', () => { closeSettings(); chooser(false); });
+                card.append(row, change);
+                settingsView.append(card);
+            }
+
+            // Modo
+            if (opts.modes && opts.modes.length > 1) {
+                const card = el('div', 'fxa-settings-card');
+                card.append(el('strong', null, 'Modo das respostas'));
+                (opts.modes || []).forEach((m) => {
+                    const label = el('label', 'fxa-radio');
+                    const radio = el('input'); radio.type = 'radio'; radio.name = 'fxa-mode-radio-' + uid; radio.value = m.id; radio.checked = m.id === mode;
+                    const textBox = el('span');
+                    textBox.append(el('b', null, m.label), el('small', null, m.hint || ''));
+                    label.append(radio, textBox);
+                    radio.addEventListener('change', () => { mode = m.id; applyMode(); closeSettings(); reset(); });
+                    card.append(label);
+                });
+                card.append(el('small', 'fxa-muted', 'Trocar o modo começa uma conversa nova.'));
+                settingsView.append(card);
+            }
+
+            // Uso do mês
+            if (opts.settingsEndpoint) {
+                const card = el('div', 'fxa-settings-card');
+                card.append(el('strong', null, 'Uso deste mês'));
+                const loading = el('div', 'fxa-thinking', 'Carregando');
+                card.append(loading);
+                settingsView.append(card);
+
+                let data = null;
+                try {
+                    const response = await fetch(opts.settingsEndpoint, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+                    data = response.ok ? await response.json() : null;
+                } catch (e) { data = null; }
+                loading.remove();
+
+                const usage = data && data.usage;
+                if (!usage) {
+                    card.append(el('small', 'fxa-muted', (data && data.error && data.error.message) || 'Não foi possível carregar agora.'));
+                } else {
+                    if (usage.title) card.append(el('div', 'fxa-usage-title', usage.title));
+                    if (typeof usage.percent === 'number') {
+                        const bar = el('div', 'fxa-bar');
+                        const fill = el('span');
+                        fill.style.width = Math.min(100, Math.max(0, usage.percent)) + '%';
+                        if (usage.percent >= 90) fill.className = 'danger';
+                        bar.setAttribute('role', 'progressbar');
+                        bar.setAttribute('aria-valuenow', String(usage.percent));
+                        bar.setAttribute('aria-valuemin', '0'); bar.setAttribute('aria-valuemax', '100');
+                        bar.append(fill);
+                        card.append(bar);
+                    }
+                    const list = el('ul', 'fxa-usage-lines');
+                    (usage.lines || []).forEach((line) => list.append(el('li', null, line)));
+                    card.append(list);
+                }
+                (data && data.links || []).forEach((link) => {
+                    const a = el('a', 'fxa-error-link', link.label); a.href = link.url;
+                    card.append(a);
+                });
+            }
         }
 
         function scroll() { body.scrollTop = body.scrollHeight; }
@@ -384,7 +479,7 @@
         launcher.addEventListener('click', open);
         closeBtn.addEventListener('click', close);
         newBtn.addEventListener('click', reset);
-        foxBtn.addEventListener('click', () => chooser(false));
+        gearBtn.addEventListener('click', openSettings);
         // Trocar o modo começa uma conversa nova (cada conversa fica no modo em que começou).
         modeSelect.addEventListener('change', () => { mode = modeSelect.value; applyMode(); reset(); });
         panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
@@ -403,7 +498,9 @@
             /** Erro que apareceu na tela: vai junto com a próxima pergunta. */
             reportError(error) { pendingError = error; open(); },
             /** Abre a escolha da raposa (ex.: link "Trocar raposa" no menu do sistema). */
-            chooseFox() { panel.hidden = false; launcher.hidden = true; chooser(false); },
+            chooseFox() { panel.hidden = false; launcher.hidden = true; closeSettings(); chooser(false); },
+            /** Abre a tela ⚙ (raposa, modo e uso do mês). */
+            openSettings() { panel.hidden = false; launcher.hidden = true; if (settingsView.hidden) openSettings(); },
         };
     }
 

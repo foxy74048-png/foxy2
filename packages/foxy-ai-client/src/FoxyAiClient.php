@@ -103,9 +103,14 @@ class FoxyAiClient
         return $this->call('GET', '/ai/usage'.($month ? "?month={$month}" : ''), [], false);
     }
 
-    public function usage(?string $month = null): array
+    /**
+     * Uso do mês deste cliente (créditos do plano, extras, usados, por modo); com $userRef, também o da pessoa.
+     */
+    public function usage(?string $month = null, ?string $userRef = null): array
     {
-        return $this->call('GET', '/usage'.($month ? "?month={$month}" : ''));
+        $query = http_build_query(array_filter(['month' => $month, 'user_ref' => $userRef]));
+
+        return $this->call('GET', '/usage'.($query !== '' ? "?{$query}" : ''));
     }
 
     /**

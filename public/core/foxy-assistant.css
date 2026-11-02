@@ -116,3 +116,25 @@
 .fxa-mode-hint { color: var(--muted, #6b6880); font-size: 12px; }
 .fxa-usage { margin: 6px 2px 0; font-size: 12px; color: var(--text, #1f1b2d); }
 .fxa-error-link { display: inline-block; margin-top: 8px; padding: 6px 12px; border-radius: 10px; background: var(--primary, #5b3fd1); color: #fff; font-weight: 600; text-decoration: none; }
+
+/* ⚙ Configurações dentro da janela */
+.fxa-gear { font-size: 16px; padding: 4px 9px; }
+.fxa-gear[aria-pressed="true"] { background: rgba(255, 255, 255, 0.18); }
+.fxa-settings[hidden], .fxa-body[hidden], .fxa-foot[hidden] { display: none; }
+.fxa-settings-title { margin: 2px 0 0; font-size: 16px; }
+.fxa-link-btn { align-self: flex-start; background: none; border: none; padding: 0; color: var(--primary-dark, #4527a0); font: 600 13px/1.3 inherit; cursor: pointer; }
+.fxa-settings-card { display: flex; flex-direction: column; gap: 8px; background: #fff; border: 1px solid var(--border, rgba(91, 63, 209, 0.16)); border-radius: 14px; padding: 12px; }
+.fxa-settings-fox { display: flex; align-items: center; gap: 10px; }
+.fxa-settings-fox img { width: 48px; height: 48px; border-radius: 50%; background: var(--bg, #f5f5f8); }
+.fxa-settings-fox div { display: flex; flex-direction: column; }
+.fxa-settings-fox span, .fxa-muted { color: var(--muted, #6b6880); font-size: 12px; }
+.fxa-radio { display: flex; gap: 8px; align-items: flex-start; padding: 6px 4px; border-radius: 10px; cursor: pointer; }
+.fxa-radio:hover { background: var(--primary-soft, rgba(91, 63, 209, 0.08)); }
+.fxa-radio input { margin-top: 3px; accent-color: var(--primary, #5b3fd1); }
+.fxa-radio span { display: flex; flex-direction: column; font-size: 13px; }
+.fxa-radio small { color: var(--muted, #6b6880); }
+.fxa-usage-title { font-size: 14px; font-weight: 600; }
+.fxa-bar { height: 10px; border-radius: 999px; background: var(--bg, #f0eff5); overflow: hidden; }
+.fxa-bar span { display: block; height: 100%; background: var(--primary, #5b3fd1); border-radius: 999px; }
+.fxa-bar span.danger { background: #b91c1c; }
+.fxa-usage-lines { margin: 0; padding-left: 18px; font-size: 13px; display: flex; flex-direction: column; gap: 3px; }

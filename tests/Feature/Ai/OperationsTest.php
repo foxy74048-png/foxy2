@@ -89,7 +89,15 @@ class OperationsTest extends TestCase
             ->assertJsonPath('messages', 2)
             ->assertJsonPath('cost_usd', 4.1)
             ->assertJsonPath('by_model.0.model', 'claude-haiku-5-5')
-            ->assertJsonPath('by_model.1.calls', 1);
+            ->assertJsonPath('by_model.1.calls', 1)
+            ->assertJsonPath('credits_by_tier.avancada', 4000)
+            ->assertJsonPath('credits_by_tier.rapida', 100);
+
+        // A pessoa vê o próprio uso (tela de configurações da janela da raposa).
+        $this->withToken($this->key)->getJson('/api/v1/usage?user_ref=u-1')
+            ->assertJsonPath('user.messages', 2)
+            ->assertJsonPath('user.credits', 4100);
+        $this->withToken($this->key)->getJson('/api/v1/usage?user_ref=u-2')->assertJsonPath('user.messages', 0);
 
         $this->withToken($this->key)->getJson('/api/v1/usage?month=2020-01')->assertJsonPath('messages', 0)->assertJsonPath('by_model', []);
         $this->withToken($this->key)->getJson('/api/v1/usage?month=janeiro')->assertStatus(422);
