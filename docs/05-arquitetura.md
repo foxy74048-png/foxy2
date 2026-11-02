@@ -81,7 +81,7 @@ Todas com `organization_id` indexado (exceto `organizations`). IDs ULID, que pod
 1. Middleware autentica a chave → monta o `ExecutionContext` → rate limit.
 2. `Entitlements::canUse(org, user_ref)` → senão, `429`.
 3. Monta a requisição ao modelo **sempre na mesma ordem**, para o cache funcionar:
-   `tools` (catálogo permitido, ordem fixa; entrada validada pela Foxy) → `system` (regras Foxy + perfil + conhecimento, **ponto de cache aqui**) → histórico → mensagem nova com data, tela e erro.
+   `tools` (catálogo permitido, ordem fixa; entrada validada pela Foxy) → `system` **parte comum** (regras Foxy + perfil + conhecimento — igual para todos os clientes do anfitrião, **ponto de cache aqui**) → `system` **parte da conversa** (raposa, jeito, limites desta pessoa) → histórico → mensagem nova com data, tela e erro. A parte comum vem antes da raposa de propósito (revisto em 2026-11-02): o manual entra no cache uma vez para todos, e não uma vez por cliente/raposa — a 1ª pergunta depois de 5 min parados custava ~3 créditos só para recriar o cache.
    Regras, tools e modelo ficam **fixos na abertura da conversa** e o histórico **só cresce**: o modelo guarda o próprio raciocínio no histórico e recusa histórico editado (e o cache se perderia). Por isso a data de hoje vai na mensagem, não nas regras.
 4. Chama o `ModelProvider` (timeout de 60 s, até 2 novas tentativas automáticas do SDK).
 5. Se o modelo pediu tool: confere se ela está em `allowed_tools` e se a entrada valida no schema → grava e devolve `tool_requested`. Tool fora da lista = erro registrado na auditoria, nunca repassado.

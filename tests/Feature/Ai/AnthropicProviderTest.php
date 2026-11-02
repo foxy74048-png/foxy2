@@ -51,6 +51,40 @@ class AnthropicProviderTest extends TestCase
         return new ModelRequest('claude-opus-5-5', 'low', 8000, 'REGRAS', $tools, [['role' => 'user', 'content' => 'oi']], $allowTools);
     }
 
+    public function test_common_part_is_cached_apart_from_the_conversation_part(): void
+    {
+        $http = $this->transporter(200, $this->okBody());
+        $system = 'REGRAS E MANUAL'.\App\Ai\Assistant\SystemPrompt::SEPARATOR.'<nesta_conversa>Lud</nesta_conversa>';
+
+        (new AnthropicProvider('test-key', 'default', 30, $http))
+            ->send(new ModelRequest('claude-haiku-5-5', 'low', 8000, $system, [], [['role' => 'user', 'content' => 'oi']]));
+
+        $this->assertSame([
+            ['type' => 'text', 'text' => 'REGRAS E MANUAL', 'cache_control' => ['type' => 'ephemeral']],
+            ['type' => 'text', 'text' => '<nesta_conversa>Lud</nesta_conversa>'],
+        ], json_decode((string) $http->request->getBody(), true)['system']);
+    }
+
+    public function test_common_part_is_the_same_for_every_fox_and_permission(): void
+    {
+        $profile = new \App\Ai\HostProfiles\HostProfile(['slug' => 'foxy', 'name' => 'Foxy', 'tone' => 'Acolhedor.']);
+        $knowledge = new \App\Ai\HostProfiles\KnowledgePack(['version' => 3, 'content' => '## Agenda']);
+
+        $lud = \App\Ai\Assistant\SystemPrompt::render($profile, $knowledge, \App\Ai\Plans\AiPlan::CAPABILITIES, \App\Ai\Assistants\FoxCatalog::get('lud'));
+        $chico = \App\Ai\Assistant\SystemPrompt::render($profile, $knowledge, ['suporte', 'erros'], ['name' => 'Chicão'] + \App\Ai\Assistants\FoxCatalog::get('chico'));
+
+        [$commonLud, $partLud] = \App\Ai\Assistant\SystemPrompt::split($lud);
+        [$commonChico, $partChico] = \App\Ai\Assistant\SystemPrompt::split($chico);
+
+        $this->assertSame($commonLud, $commonChico);
+        $this->assertStringContainsString('## Agenda', $commonLud);
+        $this->assertStringNotContainsString('Lud', $commonLud);
+        $this->assertStringContainsString('Você é Lud', $partLud);
+        $this->assertStringContainsString('Você é Chicão', $partChico);
+        $this->assertStringContainsString('NÃO tem acesso aos dados', $partChico);
+        $this->assertStringNotContainsString('NÃO tem acesso aos dados', $partLud);
+    }
+
     public function test_sends_cached_rules_effort_and_refusal_fallback(): void
     {
         $http = $this->transporter(200, $this->okBody());

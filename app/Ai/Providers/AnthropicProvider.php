@@ -3,6 +3,7 @@
 namespace App\Ai\Providers;
 
 use Anthropic\Client;
+use App\Ai\Assistant\SystemPrompt;
 use Anthropic\Core\Exceptions\APIException;
 use Illuminate\Support\Facades\Log;
 use Psr\Http\Client\ClientInterface;
@@ -37,8 +38,9 @@ class AnthropicProvider implements ModelProvider
         $params = [
             'model' => $request->model,
             'maxTokens' => $request->maxTokens,
-            // Ordem fixa: tools → system (ponto de cache) → histórico (cache automático no fim).
-            'system' => [['type' => 'text', 'text' => $request->system, 'cache_control' => ['type' => 'ephemeral']]],
+            // Ordem fixa: tools → system comum (ponto de cache, igual para todos os clientes do anfitrião)
+            // → parte da conversa (raposa, permissões) → histórico (cache automático no fim).
+            'system' => self::systemBlocks($request->system),
             'cacheControl' => ['type' => 'ephemeral'],
             'outputConfig' => ['effort' => $request->effort],
             'messages' => array_map(self::restoreEmptyToolInputs(...), $request->messages),
@@ -79,6 +81,21 @@ class AnthropicProvider implements ModelProvider
             cacheReadTokens: (int) ($message->usage->cacheReadInputTokens ?? 0),
             cacheWriteTokens: (int) ($message->usage->cacheCreationInputTokens ?? 0),
         );
+    }
+
+    /**
+     * Parte comum com ponto de cache próprio; a parte da conversa vem depois, sem quebrar o cache da comum.
+     */
+    private static function systemBlocks(string $system): array
+    {
+        [$common, $conversation] = SystemPrompt::split($system);
+        $blocks = [['type' => 'text', 'text' => $common, 'cache_control' => ['type' => 'ephemeral']]];
+
+        if (trim($conversation) !== '') {
+            $blocks[] = ['type' => 'text', 'text' => $conversation];
+        }
+
+        return $blocks;
     }
 
     /**
