@@ -26,14 +26,14 @@ PATCH /api/v1/organizations/{id}   { "status": "suspended" }   (ou "active")
 ### Plano de IA e créditos de cada cliente
 
 ```http
-GET  /api/v1/ai/plans                                   → os seis planos (créditos, capacidades, faixas)
+GET  /api/v1/ai/plans                                   → os planos (créditos, capacidades, faixas)
 PUT  /api/v1/organizations/{id}/ai-subscription         { "plan": "ia-5000" }   (opcional: "status": "suspended")
 GET  /api/v1/organizations/{id}/ai-subscription         → plano, créditos incluídos, extras, usados, disponíveis, % usado
 POST /api/v1/organizations/{id}/ai-credits              { "credits": 2000, "reference": "pedido-77" }   (múltiplos de 1.000)
 ```
 
 - **Créditos:** 1 crédito = US$ 0,001 de custo de IA. Cada resposta consome conforme o custo real (Haiku ~0,5 crédito por pergunta simples).
-- **Planos:** `ia-1000`, `ia-3000` (dúvidas de uso e erros, faixa rápida); `ia-5000`, `ia-10000` (+ dados e mensagens, faixas rápida e equilibrada); `ia-25000`, `ia-50000` (tudo, todas as faixas).
+- **Planos:** `ia-250`, `ia-1000`, `ia-1500`, `ia-2000`, `ia-5000`, `ia-10000`, `ia-25000`, `ia-50000` — todos com todas as capacidades e as três faixas. 1 crédito ≈ 1 pergunta no modo rápido; nos modos equilibrado (~10×) e avançado (~20×) a mesma franquia rende menos perguntas, e quem escolhe o modo é a pessoa.
 - **Créditos extras** valem no mês da compra e se somam à franquia. Créditos acabaram → `429 credit_limit`.
 - Cliente sem plano → `403 no_ai_plan`. **Quem cobra o cliente é o sistema**; a Foxy AI só mede e limita.
 - Ao abrir a conversa, peça a faixa com `"tier": "rapida" | "equilibrada" | "avancada"` (padrão: a do plano). Faixa fora do plano → `403 tier_not_in_plan`. Planos sem "dados" não oferecem as consultas do sistema (a resposta mostra `allowed_tools` efetivo).
@@ -151,7 +151,13 @@ A Foxy entrega as duas pontas prontas; o sistema só escreve um controller e as 
 ```
 
 - O endpoint do sistema recebe `{ text, page, error }` e devolve `{ reply, drafts, escalate, tools_used, assistant, error }` — exatamente o que `FoxyAiClient::ask()` retorna (+ `assistant` da conversa).
-- `widget.reportError({ message, code })` manda o erro da tela junto com a próxima pergunta; `widget.setAssistant(...)` troca a raposa mostrada.
+- `widget.reportError({ message, code })` manda o erro da tela junto com a próxima pergunta; `widget.setAssistant(...)` troca a raposa mostrada; `widget.chooseFox()` abre a escolha da raposa.
+- Opções extras (todas opcionais):
+  - `launcher: 'icon'` — botão redondo só com a raposa, no canto (padrão: botão com o texto "Pergunte à Lud").
+  - `modes: [{ id: 'rapida', label: 'Rápido', hint: '...' }, ...]` e `mode` — seletor de modo sempre à mostra no rodapé; trocar o modo chama o `resetEndpoint` com `{ mode }` (conversa nova) e toda pergunta leva `mode`.
+  - `setup: { endpoint, required, foxes, visuals }` — escolha da raposa **dentro do chat** (cartões das raposas, estilo do desenho e nome opcional). Com `required: true` ela aparece antes da primeira pergunta; o endpoint recebe `{ assistant, visual, custom_name }`. Qualquer resposta com `setup_required: true` também a abre. `foxes`/`visuals` vêm de `GET /assistants`.
+  - `escalateAction: { label, onClick(escalate) }` — botão no cartão "Encaminhado ao suporte" (ex.: abrir o chat de suporte do sistema já com o resumo).
+  - `usageText` (e `usage_text` em qualquer resposta) — linha do rodapé com o uso do mês, ex.: "Restam ~240 perguntas neste mês".
 - Visual: roxo sóbrio do Core, tela cheia no celular, Enter envia, Esc fecha, aviso "A IA pode errar".
 
 **No servidor do sistema** (pacote `packages/foxy-ai-client`, namespace `Foxy\AiClient`):

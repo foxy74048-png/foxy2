@@ -8,8 +8,8 @@ $plan = fn (int $credits, array $capabilities, array $tiers) => [
     'default_tier' => 'rapida',
 ];
 
-$basic = ['suporte', 'erros'];
 $full = ['suporte', 'erros', 'dados', 'escrita'];
+$allTiers = ['rapida', 'equilibrada', 'avancada'];
 
 return [
 
@@ -41,18 +41,21 @@ return [
         ],
 
         /*
-        | Planos (docs/07, seção 2.3, aprovados em 2026-11-01). Créditos por mês; 1 crédito = US$ 0,001 de custo de IA.
-        | Créditos extras: pacotes de 1.000 em todos os planos.
+        | Planos (docs/07, seção 2.3; tamanhos revistos em 2026-11-02). Créditos por mês; 1 crédito = US$ 0,001 de custo
+        | de IA ≈ 1 pergunta no modo rápido. Todos os planos têm todas as capacidades e todos os modos: o modo mais
+        | caro só gasta os créditos mais depressa (a pessoa escolhe). Créditos extras: pacotes de 1.000.
         */
         'credit_usd' => 0.001,
         'extra_credits_step' => 1000,
         'plans' => [
-            'ia-1000' => $plan(1000, $basic, ['rapida']),
-            'ia-3000' => $plan(3000, $basic, ['rapida']),
-            'ia-5000' => $plan(5000, $full, ['rapida', 'equilibrada']),
-            'ia-10000' => $plan(10000, $full, ['rapida', 'equilibrada']),
-            'ia-25000' => $plan(25000, $full, ['rapida', 'equilibrada', 'avancada']),
-            'ia-50000' => $plan(50000, $full, ['rapida', 'equilibrada', 'avancada']),
+            'ia-250' => $plan(250, $full, $allTiers),
+            'ia-1000' => $plan(1000, $full, $allTiers),
+            'ia-1500' => $plan(1500, $full, $allTiers),
+            'ia-2000' => $plan(2000, $full, $allTiers),
+            'ia-5000' => $plan(5000, $full, $allTiers),
+            'ia-10000' => $plan(10000, $full, $allTiers),
+            'ia-25000' => $plan(25000, $full, $allTiers),
+            'ia-50000' => $plan(50000, $full, $allTiers),
         ],
         // Plano usado quando o cliente ainda não tem assinatura (null = sem IA até o sistema definir o plano).
         'default_plan' => env('FOXY_AI_DEFAULT_PLAN'),

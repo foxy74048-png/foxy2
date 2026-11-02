@@ -82,3 +82,36 @@
     .fxa-panel { inset: 0; width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; }
     .fxa-launcher { right: 16px; bottom: 16px; }
 }
+
+/* Botão redondo só com a raposa (launcher: 'icon') */
+.fxa-launcher.fxa-launcher-icon { padding: 4px; width: 60px; height: 60px; justify-content: center; }
+.fxa-launcher.fxa-launcher-icon img { width: 52px; height: 52px; }
+.fxa-launcher.fxa-launcher-icon span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* Escolha da raposa no próprio chat */
+.fxa-foxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fxa-fox {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+    background: #fff; border: 1px solid var(--border, rgba(91, 63, 209, 0.16)); border-radius: 14px;
+    padding: 10px 8px; font: 13px/1.35 inherit; color: var(--text, #1f1b2d); cursor: pointer;
+}
+.fxa-fox img { width: 56px; height: 56px; border-radius: 50%; background: var(--bg, #f5f5f8); }
+.fxa-fox strong { font-size: 14px; }
+.fxa-fox span { color: var(--muted, #6b6880); font-size: 12px; }
+.fxa-fox em { color: var(--muted, #6b6880); font-size: 11.5px; }
+.fxa-fox.selected { border: 2px solid var(--primary, #5b3fd1); padding: 9px 7px; box-shadow: 0 0 0 3px var(--primary-soft, rgba(91, 63, 209, 0.12)); }
+.fxa-visuals button.selected { background: var(--primary, #5b3fd1); color: #fff; border-color: var(--primary, #5b3fd1); }
+.fxa-name { border: 1px solid var(--border, rgba(91, 63, 209, 0.16)); border-radius: 10px; padding: 8px 10px; font: inherit; }
+.fxa-primary {
+    align-self: stretch; border: none; border-radius: 12px; padding: 11px 14px;
+    background: var(--primary, #5b3fd1); color: #fff; font: 600 14px/1 inherit; cursor: pointer;
+}
+.fxa-primary:disabled { opacity: 0.6; cursor: wait; }
+
+/* Modo e uso do mês (sempre à mostra) */
+.fxa-mode { display: flex; align-items: center; gap: 8px; margin: 0 2px 8px; font-size: 13px; }
+.fxa-mode[hidden], .fxa-usage[hidden], .fxa-icon-btn[hidden] { display: none; }
+.fxa-mode label { font-weight: 600; color: var(--text, #1f1b2d); }
+.fxa-mode select { border: 1px solid var(--border, rgba(91, 63, 209, 0.16)); border-radius: 8px; padding: 4px 8px; font: inherit; background: #fff; }
+.fxa-mode-hint { color: var(--muted, #6b6880); font-size: 12px; }
+.fxa-usage { margin: 6px 2px 0; font-size: 12px; color: var(--text, #1f1b2d); }

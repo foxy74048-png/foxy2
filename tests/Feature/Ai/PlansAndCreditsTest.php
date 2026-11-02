@@ -52,13 +52,13 @@ class PlansAndCreditsTest extends TestCase
         $this->ai->push(new ModelResponse('claude-haiku-5-5', 'end_turn', [['type' => 'text', 'text' => 'ok']], 10_000_000, 0));
     }
 
-    public function test_lists_the_six_plans(): void
+    public function test_lists_the_plans(): void
     {
         $plans = $this->withToken($this->key)->getJson('/api/v1/ai/plans')->assertOk()->json('data');
 
-        $this->assertSame([1000, 3000, 5000, 10000, 25000, 50000], array_column($plans, 'credits_per_month'));
-        $this->assertSame(['suporte', 'erros'], $plans[0]['capabilities']);
-        $this->assertSame(['rapida', 'equilibrada', 'avancada'], $plans[5]['tiers']);
+        $this->assertSame([250, 1000, 1500, 2000, 5000, 10000, 25000, 50000], array_column($plans, 'credits_per_month'));
+        $this->assertSame(['suporte', 'erros', 'dados', 'escrita'], $plans[0]['capabilities']);
+        $this->assertSame(['rapida', 'equilibrada', 'avancada'], $plans[0]['tiers']);
     }
 
     public function test_client_without_plan_has_no_ai(): void
@@ -80,7 +80,7 @@ class PlansAndCreditsTest extends TestCase
 
     public function test_plan_decides_the_model_tier(): void
     {
-        $this->setPlan('ia-1000');
+        $this->setPlan($this->defineBasicAiPlan());
 
         $this->open()->assertCreated()->assertJsonPath('tier', 'rapida')->assertJsonPath('model', 'claude-haiku-5-5');
         $this->open(['tier' => 'avancada'])->assertForbidden()->assertJsonPath('error.code', 'tier_not_in_plan');
@@ -99,7 +99,7 @@ class PlansAndCreditsTest extends TestCase
 
     public function test_small_plans_do_not_offer_data_queries(): void
     {
-        $this->setPlan('ia-3000');
+        $this->setPlan($this->defineBasicAiPlan());
         $this->open(['allowed_tools' => ['financeiro_saldos_em_aberto']])->assertCreated()->assertJsonPath('allowed_tools', []);
 
         $this->setPlan('ia-5000');

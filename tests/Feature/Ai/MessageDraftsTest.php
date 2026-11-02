@@ -107,7 +107,7 @@ class MessageDraftsTest extends TestCase
 
     public function test_without_writing_capability_the_tool_is_not_offered(): void
     {
-        $this->plan('ia-3000');
+        $this->plan($this->defineBasicAiPlan());
         $id = $this->open();
         $this->api()->postJson("/api/v1/conversations/{$id}/messages", ['text' => 'escreve um lembrete'])->assertOk();
 

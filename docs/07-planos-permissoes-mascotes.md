@@ -1,6 +1,6 @@
 # Foxy AI — Planos, permissões, mascotes e o assistente nos sistemas
 
-> **Status:** v1.0 — E1–E8 aprovadas em 2026-11-01, com ajustes do responsável (planos em seis tamanhos + créditos extras de 1.000 em 1.000; raposas Chico, Lud, Lobinho e Ayla, renomeáveis; layout no Core a partir do visual da Foxy atual). **Implementado e publicado** em https://ai.foxy.net.br (2026-11-02), com as raposas em três estilos de desenho à escolha de cada pessoa (facetas, linhas e neon).
+> **Status:** v1.0 — E1–E8 aprovadas em 2026-11-01, com ajustes do responsável (planos por tamanho de franquia + créditos extras de 1.000 em 1.000; raposas Chico, Lud, Lobinho e Ayla, renomeáveis; layout no Core a partir do visual da Foxy atual). **Implementado e publicado** em https://ai.foxy.net.br (2026-11-02), com as raposas em três estilos de desenho à escolha de cada pessoa (facetas, linhas e neon).
 > **Pedido (2026-11-01):** planos e permissões bem definidos e integrados por API (mesmo entre sistemas nossos), preparados para escalar e para modelos mais caros; a IA representada por uma **raposa** que a pessoa escolhe ("a sua IA"); layout profissional, unissex e simples; IA que lê o sistema, ajuda a usar e sugere mensagens.
 > **Regra mantida:** nada de dados fictícios em contas reais; a clínica de demonstração continua só no console de testes.
 
@@ -29,7 +29,7 @@ Foxy (nós)
 Contar "mensagens" quebra quando entram modelos mais caros (uma mensagem no Opus custa ~30× uma no Haiku). Proposta: o plano dá **créditos por mês**, e cada resposta consome créditos **proporcionais ao custo real**.
 
 - **1 crédito = US$ 0,001 de custo de IA** (estimado pelo `usage_records`, que já existe).
-- Haiku: ~0,5 crédito por mensagem · Sonnet: ~9 · Opus: ~16 (estimativas atuais).
+- Haiku: ~0,5 crédito por mensagem · Sonnet: ~9 · Opus: ~16 (estimativas atuais). Para a pessoa, arredondamos para cima: **1 pergunta rápida ≈ 1 crédito**, equilibrada ≈ 10 e avançada ≈ 20 (a medição real de novembro/2026 deu ~0,6 crédito por pergunta no modo rápido).
 - Modelo novo e mais caro → consome mais créditos **sozinho**, sem mudar plano nem código.
 - O usuário vê em linguagem simples: "Você usou 35% da franquia deste mês".
 
@@ -56,15 +56,15 @@ AiPlan (global, definido pela Foxy, versionado)
 └── retenção das conversas          30 dias (pode crescer em planos maiores)
 ```
 
-**Planos (aprovado em 2026-11-01):** seis tamanhos de franquia. Os recursos acompanham o tamanho (ajustável na configuração, sem mudar código):
+**Planos (revistos em 2026-11-02):** a franquia é contada em créditos, e **1 crédito ≈ 1 pergunta no modo rápido**. Todos os planos têm tudo (dúvidas de uso, erros, perguntas sobre os dados, sugestão de mensagens, escolher e renomear a raposa) e os três modos: o modo mais caro só faz a franquia render menos perguntas, e **quem escolhe o modo é a pessoa**, no próprio chat.
 
-| Plano (créditos/mês) | 1.000 | 3.000 | 5.000 | 10.000 | 25.000 | 50.000 |
-|---|---|---|---|---|---|---|
-| Dúvidas de uso e erros | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ |
-| Perguntas sobre os dados ("quem me deve?") | — | — | ✔ | ✔ | ✔ | ✔ |
-| Sugestão de mensagens | — | — | ✔ | ✔ | ✔ | ✔ |
-| Faixas de modelo | rápida | rápida | rápida, equilibrada | rápida, equilibrada | todas | todas |
-| Raposa: escolher e renomear | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ |
+| Plano | `ia-250` | `ia-1000` | `ia-1500` | `ia-2000` | `ia-5000` | `ia-10000` | `ia-25000` | `ia-50000` |
+|---|---|---|---|---|---|---|---|---|
+| Perguntas no modo rápido (≈) | 250 | 1.000 | 1.500 | 2.000 | 5.000 | 10.000 | 25.000 | 50.000 |
+| No modo equilibrado (≈ 10 créditos) | 25 | 100 | 150 | 200 | 500 | 1.000 | 2.500 | 5.000 |
+| No modo avançado (≈ 20 créditos) | 12 | 50 | 75 | 100 | 250 | 500 | 1.250 | 2.500 |
+
+O catálogo continua aceitando planos com menos capacidades ou modos (ajuste só em `config/foxy.php`), caso algum sistema precise.
 
 **Créditos extras em todos os planos**, em pacotes de **1.000** (1.000, 2.000, 3.000…), somados à franquia do mês.
 
@@ -194,7 +194,7 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
 | **E1** | Hierarquia | Integração (sistema) → Organização (cliente final) → Usuário, com o manual/consultas na integração (seção 1). |
 | **E2** | Unidade do plano | **Créditos Foxy proporcionais ao custo** (1 crédito = US$ 0,001), não número de mensagens. |
 | **E3** | Modelos no plano | **Faixas** (rápida, equilibrada, avançada), ligadas a modelos pela configuração. |
-| **E4** | Planos | Seis tamanhos (1.000, 3.000, 5.000, 10.000, 25.000 e 50.000 créditos/mês), recursos como na tabela 2.3; **créditos extras de 1.000 em 1.000 em todos**. |
+| **E4** | Planos | Seis tamanhos (1.000, 3.000, 5.000, 10.000, 25.000 e 50.000 créditos/mês), recursos como na tabela 2.3; **créditos extras de 1.000 em 1.000 em todos**. *Revisto em 2026-11-02: tamanhos de 250 a 50.000, todos com tudo e os três modos (seção 2.3).* |
 | **E5** | Quem escolhe a raposa | Conta escolhe a padrão; **cada usuário pode escolher a sua**, valendo em todos os sistemas; **qualquer plano pode renomear**. |
 | **E6** | Raposas iniciais | **Chico, Lud, Lobinho e Ayla** (seção 4.1), com avatares SVG feitos aqui para começar. |
 | **E7** | Como aparece nos sistemas | **Widget oficial + cliente PHP** da Foxy (seção 5). O visual parte do layout da Foxy atual, **copiado e adaptado para o Core** (`Platform`), para todos os produtos novos usarem. O sistema antigo continua separado e não é dependência. |

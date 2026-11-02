@@ -66,7 +66,7 @@ class UserPermissionsTest extends TestCase
 
     public function test_user_can_never_get_more_than_the_plan(): void
     {
-        $this->plan('ia-1000');
+        $this->plan($this->defineBasicAiPlan());
 
         $this->open(['allowed_capabilities' => ['suporte', 'erros', 'dados', 'escrita']])->assertCreated()
             ->assertJsonPath('capabilities', ['suporte', 'erros'])
