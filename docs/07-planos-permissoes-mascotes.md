@@ -1,6 +1,6 @@
 # Foxy AI — Planos, permissões, mascotes e o assistente nos sistemas
 
-> **Status:** v1.0 — E1–E8 aprovadas em 2026-11-01, com ajustes do responsável (planos em seis tamanhos + créditos extras de 1.000 em 1.000; raposas Chico, Lud, Lobinho e Ayla, renomeáveis; layout no Core a partir do visual da Foxy atual). Implementação em andamento (seção 8).
+> **Status:** v1.0 — E1–E8 aprovadas em 2026-11-01, com ajustes do responsável (planos em seis tamanhos + créditos extras de 1.000 em 1.000; raposas Chico, Lud, Lobinho e Ayla, renomeáveis; layout no Core a partir do visual da Foxy atual). **Implementado e publicado** em https://ai.foxy.net.br (2026-11-02), com as raposas em três estilos de desenho à escolha de cada pessoa (facetas, linhas e neon).
 > **Pedido (2026-11-01):** planos e permissões bem definidos e integrados por API (mesmo entre sistemas nossos), preparados para escalar e para modelos mais caros; a IA representada por uma **raposa** que a pessoa escolhe ("a sua IA"); layout profissional, unissex e simples; IA que lê o sistema, ajuda a usar e sugere mensagens.
 > **Regra mantida:** nada de dados fictícios em contas reais; a clínica de demonstração continua só no console de testes.
 
@@ -178,10 +178,10 @@ A Foxy entrega **duas peças prontas** para os nossos sistemas:
 - **Medidor:** `ai.messages` vira `ai.credits` (o registro de custo já existe; muda a unidade do limite).
 - **Console de testes:** passa a usar o widget real e a tela de escolha de raposa.
 
-## 8. Ordem de implementação (após aprovação)
+## 8. Ordem de implementação (concluída)
 
-1. Integração + organização por cliente (provisionar contas pela API, cabeçalho `X-Foxy-Organization`).
-2. Planos, créditos, faixas de modelo e assinatura por API.
+1. ✔ Integração + organização por cliente (provisionar contas pela API, cabeçalho `X-Foxy-Organization`).
+2. ✔ Planos, créditos, faixas de modelo e assinatura por API.
 3. ✔ Permissões por usuário (`allowed_capabilities`) e capacidade por consulta.
 4. ✔ Raposas: catálogo, preferências (conta e usuário), regras por raposa, avatares SVG.
 5. ✔ Sugestão de mensagens (cartões `drafts`).

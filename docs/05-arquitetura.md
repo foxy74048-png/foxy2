@@ -1,6 +1,6 @@
 # Etapa 4 — Arquitetura concreta (Foxy AI + Platform mínima)
 
-> **Status:** v1.0 — C1–C4 aprovadas em 2026-10-28 (seção 11). Implementação em andamento (seção 10).
+> **Status:** v1.0 — C1–C4 aprovadas em 2026-10-28 (seção 11). Implementação concluída e em produção em https://ai.foxy.net.br (seção 10).
 > **Critério do responsável (2026-10-28):** melhor desempenho e menor custo no início, com tudo preparado para crescer em grande escala.
 > **Base:** `02-foxy-ai.md` v1.0 e `04-recorte-platform.md` v1.0.
 
@@ -160,7 +160,7 @@ Cada fatia é entregue com testes e commit próprio:
 6. ✔ **Host de demonstração + console de testes** (`app/Demo`, `/console`): negócio fictício, tools de leitura, tela que mostra resposta, tools pedidas, tokens e custo, com comparação entre modelos.
 7. ✔ **Operação:** retenção de 30 dias (`foxy:ai:purge-conversations`, diário às 03:00), relatório de uso (`foxy:ai:usage` e `GET /usage`), exclusão por `user_ref` (`DELETE /conversations`).
 
-**Ações que só você pode fazer** (ficam para o fim, conforme combinado): criar o repositório privado no GitHub, criar a conta/chave na Anthropic (com o limite de gasto mensal definido no painel deles), apontar o subdomínio e liberar o deploy no servidor.
+**Ações do responsável — concluídas em 2026-11-01:** repositório privado no GitHub, chave da Anthropic com limite de gasto, subdomínio `ai.foxy.net.br` e deploy no servidor (EC2 compartilhada, com site, PHP-FPM, banco PostgreSQL e agendador próprios). Rotina de deploy no `README.md`.
 
 ## 11. Decisões (aprovadas em 2026-10-28)
 

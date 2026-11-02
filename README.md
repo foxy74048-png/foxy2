@@ -6,7 +6,7 @@ Projeto separado do sistema atual (`C:\Users\mdona\OneDrive\Desktop\Tarot\tarolo
 
 ## Estado
 
-Etapas 1–4 aprovadas; implementação da Foxy AI em andamento (Laravel 13, PHP 8.4). Testes: `php artisan test`.
+Foxy AI pronta e em produção em **https://ai.foxy.net.br** (Laravel 13, PHP 8.4, PostgreSQL). Próximo passo: ligá-la ao primeiro sistema real, a Foxy atual (decisão B7). Testes: `php artisan test`.
 
 | Etapa | Documento | Status |
 |---|---|---|
@@ -16,8 +16,9 @@ Etapas 1–4 aprovadas; implementação da Foxy AI em andamento (Laravel 13, PHP
 | — Foxy Commerce (segundo produto) | [docs/03-foxy-commerce.md](docs/03-foxy-commerce.md) | rascunho pausado — D6 decidida |
 | 3. Recorte da Platform | [docs/04-recorte-platform.md](docs/04-recorte-platform.md) | v1.0 — aprovado |
 | 4. Arquitetura concreta | [docs/05-arquitetura.md](docs/05-arquitetura.md) | v1.0 — C1–C4 aprovadas |
-| 5. Implementação | [docs/05-arquitetura.md](docs/05-arquitetura.md), seção 10 | em andamento — guia da API: [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md) |
-| 6. Planos, permissões, mascotes e widget | [docs/07-planos-permissoes-mascotes.md](docs/07-planos-permissoes-mascotes.md) | proposta v0.1 — decisões E1–E8 aguardando aprovação |
+| 5. Implementação | [docs/05-arquitetura.md](docs/05-arquitetura.md), seção 10 | concluída — guia da API: [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md) |
+| 6. Planos, permissões, mascotes e widget | [docs/07-planos-permissoes-mascotes.md](docs/07-planos-permissoes-mascotes.md) | v1.0 — E1–E8 aprovadas e implementadas |
+| 7. Primeiro sistema real: Foxy atual | [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md), seção 3.2 | próximo passo |
 
 Insumo de apoio: [docs/legado-insumos.md](docs/legado-insumos.md) — o que o sistema atual já resolve e o que pode ser aproveitado.
 
@@ -49,4 +50,20 @@ php artisan foxy:ai:purge-conversations     # apaga conversas vencidas (agendado
 ```
 
 O agendamento depende do cron do Laravel no servidor: `* * * * * php /caminho/artisan schedule:run`.
+
+## Produção
+
+`https://ai.foxy.net.br`, na mesma EC2 do sistema atual, mas com tudo próprio: pasta `/var/www/foxy2`, site nginx `foxy2`, pool PHP-FPM `foxy2`, banco PostgreSQL `foxy2` e agendador em `/etc/cron.d/foxy2` (fora do crontab do `www-data`, que o deploy do sistema atual reescreve).
+
+Deploy (feito pelo responsável):
+
+```bash
+cd /var/www/foxy2 && git pull --ff-only                    # como ubuntu
+composer dump-autoload -o --no-dev                          # só se o composer.json mudou
+sudo -u www-data php artisan package:discover               # idem
+sudo -u www-data php artisan migrate --force
+sudo -u www-data php artisan config:cache && sudo -u www-data php artisan view:cache
+```
+
+Nunca editar o `.env` do servidor com `sed -i` (perde a permissão de leitura do `www-data`). Depois de editar: `sudo chgrp www-data .env && chmod 640 .env` e `config:cache`.
 Limites padrão de uso em `config/foxy.php` (cada organização pode ter os seus em `organizations.limits`).

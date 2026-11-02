@@ -1,6 +1,6 @@
 # Foxy AI — Primeiro produto do ecossistema
 
-> **Status:** v1.0 — decisões B1–B8 aprovadas em 2026-10-28 (seção 13)
+> **Status:** v1.0 — decisões B1–B8 aprovadas em 2026-10-28 (seção 13); implementado e em produção desde 2026-11-01. Primeiro anfitrião real (B7): o sistema atual (Foxy).
 > **Etapa:** 2 de 5 (Core conceitual ✔ → **Foxy AI** → Recorte da Platform → Arquitetura concreta → Implementação)
 > **Decisão de ordem (2026-10-13):** a Foxy AI vem antes do Commerce, por ser útil a todos os produtos.
 > **Mudança de direção (2026-10-28):** a primeira capacidade deixa de ser "escrita assistida" e passa a ser o **assistente do sistema** (seção 3). A escrita assistida da v0.1 vira segunda capacidade (seção 10).
@@ -195,7 +195,7 @@ Sugestões de texto (`message.whatsapp`, `text.service_description`...) continua
 
 Um **console de testes interno** com um **anfitrião de demonstração**: um negócio fictício com clientes, atendimentos e pagamentos inventados, um manual curto e as tools de consulta implementadas sobre esses dados de mentira. O console chama a mesma API que um sistema real chamaria e mostra resposta, tools pedidas, uso e custo.
 
-Assim a Foxy AI é provada de ponta a ponta sem depender de nenhum sistema existente. Qual será o primeiro anfitrião real é decisão posterior (B7).
+Assim a Foxy AI é provada de ponta a ponta sem depender de nenhum sistema existente. O primeiro anfitrião real é o sistema atual (Foxy), decidido em 2026-11-02 (B7).
 
 ## 13. Decisões (aprovadas em 2026-10-28)
 
@@ -209,11 +209,11 @@ Critério dado pelo responsável: **o melhor em desempenho e o menor custo no in
 | **B4** | Provedor de modelo | Anthropic (Claude) — detalhado na etapa 4 (`docs/05-arquitetura.md`, seção 6). O modelo é configuração: trocar não muda código. |
 | **B5** | Guardar conversas? | Sim, **por 30 dias**, para continuidade e para melhorar o conhecimento; apagáveis por `user_ref`. Nunca usadas para treino. |
 | **B6** | Para onde vai o "falar com o suporte"? | A Foxy AI só devolve `escalate` com um resumo; o **anfitrião** decide o canal (WhatsApp, e-mail, chamado). |
-| **B7** | Primeiro anfitrião real | **Depois** da validação no console. Candidatos: o sistema atual (consumindo a API, como melhoria dele) ou o Commerce. |
+| **B7** | Primeiro anfitrião real | **Decidido em 2026-11-02: o sistema atual (Foxy)**, consumindo a API como melhoria dele — sem a Foxy AI ler o banco do legado. O Commerce entra depois. |
 | **B8** | Limite de uso | A IA mede uso e custo e aplica limite mensal por organização e `user_ref`; quem paga e quanto é decidido por cada anfitrião, depois de medir o custo real no console. |
 
 Decisões da v0.1 que continuam valendo: A3 (sistema externo — adiada) e A5 (a IA nunca envia nada sozinha). A1, A2, A4 e A6 foram substituídas por B1, B8, B4 e B5.
 
 ## 14. Próxima etapa
 
-Documento fechado. Seguem **etapa 3 — Recorte da Platform** (a tabela da seção 8 vira escopo fechado), depois **etapa 4 — Arquitetura concreta**. Código só após aprovação da etapa 4.
+Documento fechado; etapas 3, 4 e a implementação concluídas. Próximo: ligar a Foxy AI ao sistema atual (Foxy), o primeiro anfitrião real (B7).
