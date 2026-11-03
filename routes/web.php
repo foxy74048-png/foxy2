@@ -6,13 +6,15 @@ use App\Demo\Http\LoginController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// "/" depende do endereço: foxy.net.br = vitrine da marca; admin.foxy.net.br = Foxy Admin; ai.foxy.net.br = console.
+// "/" depende do endereço: foxy.net.br = vitrine da marca; admin.foxy.net.br = Foxy Admin;
+// ecommerce.foxy.net.br = vitrine (Commerce em breve); ai.foxy.net.br = console.
 Route::get('/', function (Request $request) {
     $host = strtolower($request->getHost());
 
     return match (true) {
         in_array($host, config('foxy.hosts.vitrine'), true) => response()->view('vitrine.index'),
         $host === config('foxy.hosts.admin') => redirect()->route('admin.dashboard'),
+        $host === config('foxy.hosts.commerce') => redirect()->away(rtrim(config('foxy.products.vitrine_url'), '/').'/#produtos'),
         default => redirect('/console'),
     };
 })->name('home');

@@ -29,11 +29,14 @@ return [
     'hosts' => [
         'vitrine' => array_filter(explode(',', (string) env('FOXY_VITRINE_HOSTS', 'foxy.net.br,www.foxy.net.br'))),
         'admin' => env('FOXY_ADMIN_HOST', 'admin.foxy.net.br'),
+        // Foxy Commerce ainda em construção: o endereço leva à vitrine, na parte dos produtos.
+        'commerce' => env('FOXY_COMMERCE_HOST', 'ecommerce.foxy.net.br'),
     ],
 
     // Links da vitrine para os produtos.
     'products' => [
         'studio_url' => env('FOXY_STUDIO_URL', 'https://studio.foxy.net.br'),
+        'vitrine_url' => env('FOXY_VITRINE_URL', 'https://foxy.net.br'),
     ],
 
     /*

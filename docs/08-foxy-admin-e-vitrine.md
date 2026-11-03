@@ -10,6 +10,7 @@
   **Foxy AI** (a raposa, `ai.foxy.net.br`) e **Foxy Commerce** (em breve).
 - **foxy.net.br** vira a **vitrine da marca**: página completa de venda, apresentando os produtos.
 - **admin.foxy.net.br** é o **Foxy Admin**: o administrativo da empresa, por cima de todos os produtos.
+- **ecommerce.foxy.net.br** fica reservado ao Foxy Commerce; até ele existir, leva à vitrine (`/#produtos`).
 
 ## 2. Vitrine (foxy.net.br)
 

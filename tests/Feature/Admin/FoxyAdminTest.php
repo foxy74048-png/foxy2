@@ -57,6 +57,7 @@ class FoxyAdminTest extends TestCase
         $this->get('http://foxy.net.br/')->assertOk()->assertSee('A Foxy cuida do resto')->assertSee('Foxy Studio')->assertSee('https://studio.foxy.net.br/cadastro');
         $this->get('http://www.foxy.net.br/')->assertOk()->assertSee('Foxy Commerce');
         $this->get('http://admin.foxy.net.br/')->assertRedirect(route('admin.dashboard'));
+        $this->get('http://ecommerce.foxy.net.br/')->assertRedirect('https://foxy.net.br/#produtos');
         $this->get('http://ai.foxy.net.br/')->assertRedirect('/console');
     }
 
