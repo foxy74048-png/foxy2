@@ -12,6 +12,11 @@ Leia `docs/00-contexto-estrategico.md` antes de decisões de arquitetura. Resumo
 - **Segurança/LGPD:** segredos fora do repositório, coletar só o necessário, auditar ações relevantes.
 - **Legado:** o sistema antigo não define a nova arquitetura.
 
+## Daqui para frente (decisão de 2026-11-03)
+
+- **Tudo o que for desenvolvido usa o Core da foxy2.** O Foxy Studio (legado, `tarologa`) só recebe melhorias e fala com o Core por API.
+- Foxy Admin (`admin.foxy.net.br`) e vitrine da marca (`foxy.net.br`) moram aqui — ver `docs/08-foxy-admin-e-vitrine.md`.
+
 ## Relação com o sistema legado (`C:\Users\mdona\OneDrive\Desktop\Tarot\tarologa`)
 
 - O legado **não é alterado** por este projeto. Repositórios, bancos e deploys separados.

@@ -33,6 +33,10 @@ class OrganizationController
 
         Audit::record($created ? 'platform.organization_created' : 'platform.organization_updated', 'ok', $organization);
 
+        if ($created) {
+            app(\App\Ai\Promotions\PromotionEngine::class)->apply();
+        }
+
         return response()->json($this->present($organization), $created ? 201 : 200);
     }
 

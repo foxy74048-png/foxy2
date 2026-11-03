@@ -18,6 +18,7 @@ Foxy AI pronta e em produção em **https://ai.foxy.net.br** (Laravel 13, PHP 8.
 | 4. Arquitetura concreta | [docs/05-arquitetura.md](docs/05-arquitetura.md) | v1.0 — C1–C4 aprovadas |
 | 5. Implementação | [docs/05-arquitetura.md](docs/05-arquitetura.md), seção 10 | concluída — guia da API: [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md) |
 | 6. Planos, permissões, mascotes e widget | [docs/07-planos-permissoes-mascotes.md](docs/07-planos-permissoes-mascotes.md) | v1.0 — E1–E8 aprovadas e implementadas |
+| 8. Foxy Admin + vitrine da marca | [docs/08-foxy-admin-e-vitrine.md](docs/08-foxy-admin-e-vitrine.md) | v1.0 aprovado (2026-11-03) — fase 1 em produção |
 | 7. Primeiro sistema real: Foxy Studio | [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md), seção 3.2 | ligado em 2026-11-02 (raposa no Foxy Studio) |
 
 Insumo de apoio: [docs/legado-insumos.md](docs/legado-insumos.md) — o que o sistema atual já resolve e o que pode ser aproveitado.

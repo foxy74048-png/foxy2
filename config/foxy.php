@@ -24,6 +24,19 @@ return [
     'limits' => [],
 
     /*
+    | Endereços (docs/08): "/" mostra a vitrine da marca em foxy.net.br e leva ao Foxy Admin em admin.foxy.net.br.
+    */
+    'hosts' => [
+        'vitrine' => array_filter(explode(',', (string) env('FOXY_VITRINE_HOSTS', 'foxy.net.br,www.foxy.net.br'))),
+        'admin' => env('FOXY_ADMIN_HOST', 'admin.foxy.net.br'),
+    ],
+
+    // Links da vitrine para os produtos.
+    'products' => [
+        'studio_url' => env('FOXY_STUDIO_URL', 'https://studio.foxy.net.br'),
+    ],
+
+    /*
     | Requisições por minuto por chave de API.
     */
     'api_rate_limit_per_minute' => (int) env('FOXY_API_RATE_LIMIT', 120),

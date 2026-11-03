@@ -7,6 +7,7 @@ use App\Ai\Http\HostProfileController;
 use App\Ai\Http\UsageController;
 use App\Platform\Context\ExecutionContext;
 use App\Platform\Http\OrganizationController;
+use App\Platform\Http\ProductSnapshotController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +32,9 @@ Route::prefix('v1')->middleware(['api.client', 'throttle:api-client'])->group(fu
         Route::put('/host-profiles/{slug}/knowledge', [HostProfileController::class, 'putKnowledge']);
         Route::put('/host-profiles/{slug}/tools', [HostProfileController::class, 'putTools']);
     });
+
+    // Retrato das contas de cada produto para o Foxy Admin (docs/08, seção 3).
+    Route::post('/product-snapshot', [ProductSnapshotController::class, 'store'])->middleware('api.scope:products.snapshot');
 
     Route::middleware('api.scope:organizations')->group(function () {
         Route::post('/organizations', [OrganizationController::class, 'store']);
