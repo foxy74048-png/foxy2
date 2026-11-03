@@ -97,12 +97,12 @@ O catálogo continua aceitando planos com menos capacidades ou modos (ajuste só
 
 Cada raposa tem **nome unissex, visual próprio e um jeito de falar**. As regras de segurança e a precisão são as mesmas para todas — muda só a personalidade.
 
-| Raposa | Visual (proposta) | Jeito |
+| Raposa | Visual (2026-11-03) | Jeito |
 |---|---|---|
-| **Chico** | ruivo clássico, óculos | Objetivo e direto, respostas curtas |
-| **Lud** | ártica (branca), cachecol | Acolhedora e paciente, explica passo a passo |
-| **Lobinho** | cinza-prata, fone de ouvido | Animado, usa emoji com moderação |
-| **Ayla** | dourada, lenço no pescoço | Formal e cuidadosa, linguagem mais séria |
+| **Chico** | ruivo, dentinho para fora | Objetivo e direto, respostas curtas |
+| **Lud** | branca e delicada, cílios, sorriso sem dentes | Acolhedora e paciente, explica passo a passo |
+| **Lobinho** | cinza e rajadinho | Animado, usa emoji com moderação |
+| **Ayla** | caramelo, bebê brincalhona (linguinha de fora) | Formal e cuidadosa, linguagem mais séria |
 
 Nomes definidos em 2026-11-01. Qualquer pessoa pode **renomear** a sua raposa depois (em todos os planos).
 
@@ -119,7 +119,7 @@ Estilo visual: ilustração plana, traço limpo, adulta e profissional (nada inf
 
 ### 4.3 Imagens
 
-Proposta: começo com avatares **SVG simples** feitos aqui, no estilo acima, para validar a ideia; depois, se quiser, um ilustrador refaz no mesmo formato (os sistemas não mudam).
+Desde 2026-11-03 as quatro têm a **geometria idêntica à da logo** (mesmas facetas e contorno, extraídos do PNG da logo), cada uma nas suas cores e com o seu traço, em três estilos (facetas, linhas, neon). Como gerar: `design/raposas/LEIAME.md`. Os sistemas recebem o endereço da imagem pela API; trocar o desenho não muda nenhum sistema.
 
 ## 5. O assistente dentro dos sistemas (layout)
 

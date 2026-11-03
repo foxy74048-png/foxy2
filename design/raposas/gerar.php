@@ -1,135 +1,205 @@
 <?php
 /*
- * Gera os desenhos das raposas da Foxy AI: 4 raposas × 3 estilos (escolhidos em 2026-11-02).
- *   facetas — "de cristal", irmã do logo (padrão)
- *   linhas  — traços geométricos claros (tecnologia premium)
- *   neon    — linhas luminosas sobre fundo escuro (mais tecnológico)
+ * Gera os desenhos das raposas da Foxy AI: 4 raposas × 3 estilos.
+ *
+ * Geometria IDÊNTICA à da logo (decisão de 2026-11-03): as 87 facetas, os 13 tons e o contorno vêm de
+ * design/raposas/logo/geometria.json, extraídos do próprio PNG da logo (public/core/brand/logo.png) por
+ * design/raposas/logo/{extrair,montar}.php. Cada raposa troca só as cores (tom a tom) e ganha o rosto e o
+ * traço dela:
+ *   Chico   — ruivo, com um dentinho para fora
+ *   Lud     — raposinha clássica e delicada, sorriso sem dentes (com cílios)
+ *   Lobinho — cinza e rajadinho (listras na testa e nas bochechas)
+ *   Ayla    — caramelo, bebê brincalhona (olhos grandes, bochechas coradas e linguinha de fora)
+ *
+ * Estilos: facetas (padrão, igual à logo) · linhas (traços claros) · neon (linhas luminosas no escuro).
  *
  * Uso:  php design/raposas/gerar.php public/core/assistants
  * Saída: {estilo}/{raposa}.svg e {raposa}.svg (= estilo padrão, para endereços antigos).
  */
 $out = rtrim($argv[1] ?? 'public/core/assistants', '/\\');
+$geo = json_decode(file_get_contents(__DIR__.'/logo/geometria.json'), true);
 
-const INK = '#221a33';
-const PURPLE = '#5b3fd1';
-const VIOLET = '#8b6cf5';
 const DEFAULT_STYLE = 'facetas';
+const VIEW = '-38 -28 576 576';
+const CX = 250;
+const CY = 260;
+const CR = 286;
 
+/*
+ * Cores: tons da logo (0 = mais escuro … 12 = mais claro) → escuro/médio/claro de cada raposa.
+ * ink = contorno e rosto; rim = filete claro do contorno (o lilás da logo); neon = cor das linhas no escuro.
+ */
 $foxes = [
-    'chico' => ['nome' => 'Chico', 'acc' => 'oculos',
-        'facetas' => ['#f39a5e', '#e0662a', '#b8481c', '#7e2f10'], 'linhas' => ['#f08a3e', '#b8481c'], 'neon' => ['#ffc061', '#f06a1d', '#ffe0a3']],
-    'lud' => ['nome' => 'Lud', 'acc' => 'cachecol',
-        'facetas' => ['#ffffff', '#eef1f7', '#d3d9e6', '#9aa4ba'], 'linhas' => ['#7cc4ec', '#3a7db0'], 'neon' => ['#f2fbff', '#6fd3ff', '#c8f3ff']],
-    'lobinho' => ['nome' => 'Lobinho', 'acc' => 'fone',
-        'facetas' => ['#c3c8d1', '#9aa1ad', '#737a86', '#4a505b'], 'linhas' => ['#9aa6b8', '#4f5a6b'], 'neon' => ['#e3e8f0', '#8aa0c4', '#a8ecff']],
-    'ayla' => ['nome' => 'Ayla', 'acc' => 'lenco',
-        'facetas' => ['#f5d58c', '#dfb058', '#bb8b33', '#86621f'], 'linhas' => ['#e9b64e', '#a8761f'], 'neon' => ['#fff0a8', '#e3a634', '#fff3c4']],
+    'chico' => ['nome' => 'Chico', 'dark' => '#4a1606', 'mid' => '#e0662a', 'light' => '#ffd9b8', 'ink' => '#3a1205', 'rim' => '#ffd2a8', 'neon' => '#ff9a4d'],
+    'lud' => ['nome' => 'Lud', 'dark' => '#3b4a68', 'mid' => '#b8c4da', 'light' => '#ffffff', 'ink' => '#232c45', 'rim' => '#eef2fa', 'neon' => '#8fe0ff'],
+    'lobinho' => ['nome' => 'Lobinho', 'dark' => '#23272f', 'mid' => '#8b93a1', 'light' => '#e6e9ee', 'ink' => '#1b1e24', 'rim' => '#e9ecf1', 'neon' => '#c9d6ea'],
+    'ayla' => ['nome' => 'Ayla', 'dark' => '#5a300c', 'mid' => '#c4823a', 'light' => '#f8ddb0', 'ink' => '#3d2008', 'rim' => '#fbe3bd', 'neon' => '#ffc46b'],
 ];
 
-const OUTLINE = 'M34 16 L50 40 L64 32 L78 40 L94 16 L102 52 L110 72 L88 96 L64 110 L40 96 L18 72 L26 52 Z';
-const FACET_LINES = [[26, 52, 46, 62], [46, 62, 64, 46], [64, 46, 82, 62], [82, 62, 102, 52], [18, 72, 46, 62], [82, 62, 110, 72], [46, 62, 52, 80], [82, 62, 76, 80], [52, 80, 64, 92], [76, 80, 64, 92], [40, 96, 52, 80], [88, 96, 76, 80], [64, 32, 64, 46]];
+function mix(string $a, string $b, float $t): string
+{
+    $ca = sscanf($a, '#%02x%02x%02x'); $cb = sscanf($b, '#%02x%02x%02x');
+
+    return sprintf('#%02x%02x%02x', ...array_map(fn ($i) => (int) round($ca[$i] + ($cb[$i] - $ca[$i]) * $t), [0, 1, 2]));
+}
+
+function tone(array $fox, int $level, int $levels): string
+{
+    $t = $levels > 1 ? $level / ($levels - 1) : 0.5;
+
+    return $t < 0.5 ? mix($fox['dark'], $fox['mid'], $t * 2) : mix($fox['mid'], $fox['light'], ($t - 0.5) * 2);
+}
+
+function pts(array $points): string
+{
+    return implode(' ', array_map(fn ($p) => $p[0].','.$p[1], $points));
+}
 
 function svg(string $uid, string $title, string $defs, string $body): string
 {
-    return "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 128 128\" role=\"img\" aria-label=\"$title\">\n<title>$title</title>\n"
-        ."<defs><clipPath id=\"c-$uid\"><circle cx=\"64\" cy=\"64\" r=\"62\"/></clipPath>$defs</defs>\n$body\n</svg>\n";
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'.VIEW."\" role=\"img\" aria-label=\"$title\">\n<title>$title</title>\n"
+        ."<defs><clipPath id=\"c-$uid\"><circle cx=\"".CX.'" cy="'.CY.'" r="'.CR."\"/></clipPath>$defs</defs>\n$body\n</svg>\n";
 }
 
-function lines(): string
+// ---------- rosto e traço de cada raposa (mesmas posições em todos os estilos) ----------
+function face(string $id, string $ink, string $mode): string
 {
-    return implode('', array_map(fn ($l) => "<line x1=\"{$l[0]}\" y1=\"{$l[1]}\" x2=\"{$l[2]}\" y2=\"{$l[3]}\"/>", FACET_LINES));
+    $glow = $mode === 'neon' ? ' filter="url(#glow)"' : '';
+    $eyeFill = $ink;
+    $big = $id === 'ayla';
+    // Rosto grande o bastante para ler em 40–48 px (tamanho do botão e do topo da janela).
+    [$rx, $ry] = $big ? [28, 33] : [22, 27];
+    $g = '';
+
+    // Olhos
+    foreach ([186, 313] as $x) {
+        $g .= "<ellipse cx=\"$x\" cy=\"288\" rx=\"$rx\" ry=\"$ry\" fill=\"$eyeFill\"$glow/>";
+        if ($mode !== 'neon') {
+            $g .= '<circle cx="'.($x + 8).'" cy="'.(288 - ($big ? 12 : 9)).'" r="'.($big ? 10 : 8).'" fill="#fff"/>';
+            $g .= '<circle cx="'.($x - 7).'" cy="'.(288 + ($big ? 12 : 9)).'" r="'.($big ? 4.5 : 3.4).'" fill="#fff" opacity="0.85"/>';
+        }
+    }
+    if ($id === 'lud') { // cílios: raposinha delicada
+        $g .= "<g stroke=\"$ink\" stroke-width=\"6\" stroke-linecap=\"round\" fill=\"none\"$glow><path d=\"M167 272 l-16 -10\"/><path d=\"M174 264 l-9 -15\"/><path d=\"M332 272 l16 -10\"/><path d=\"M325 264 l9 -15\"/></g>";
+    }
+
+    // Focinho e boca (e o dentinho/linguinha): 35% maiores, em volta do focinho
+    $g .= '<g transform="translate(249.5 400) scale(1.35) translate(-249.5 -400)">';
+    $g .= "<path d=\"M229 386 L270 386 Q272 388 270 392 L258 406 Q249.5 413 241 406 L229 392 Q227 388 229 386 Z\" fill=\"$ink\"$glow/>";
+    if ($mode !== 'neon') {
+        $g .= '<ellipse cx="241" cy="391" rx="6" ry="3" fill="#fff" opacity="0.45"/>';
+    }
+    $g .= "<path d=\"M249.5 409 L249.5 417 M226 414 Q237 428 249.5 417 Q262 428 273 414\" fill=\"none\" stroke=\"$ink\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"$glow/>";
+
+    if ($id === 'chico') { // um dentinho para fora
+        $tooth = $mode === 'neon' ? 'none' : '#ffffff';
+        $g .= "<path d=\"M243 419 L257 419 L256.5 433 Q250 437 243.5 433 Z\" fill=\"$tooth\" stroke=\"$ink\" stroke-width=\"3.2\" stroke-linejoin=\"round\"$glow/>";
+    }
+    if ($id === 'ayla') { // bebê brincalhona: linguinha de fora e bochechas coradas
+        $g .= "<path d=\"M240 421 L259 421 L259 431 Q249.5 446 240 431 Z\" fill=\"#ff8fa3\" stroke=\"$ink\" stroke-width=\"3.2\" stroke-linejoin=\"round\"$glow/><path d=\"M249.5 424 L249.5 434\" stroke=\"#d9546f\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>";
+        if ($mode !== 'neon') {
+            // bochechas fora do grupo ampliado do focinho
+            $g .= '</g><g fill="#ff7f9b" opacity="0.5"><ellipse cx="146" cy="345" rx="28" ry="15"/><ellipse cx="353" cy="345" rx="28" ry="15"/></g><g>';
+        }
+    }
+
+    return $g.'</g>';
 }
 
-function accessory(string $acc, string $stroke, string $fill, float $width, string $extra = ''): string
+/** Lobinho: listras (testa em "V" e três nas bochechas), recortadas pela cabeça. */
+function stripes(string $color, string $mode): string
 {
-    $s = "stroke=\"$stroke\" stroke-width=\"$width\" stroke-linejoin=\"round\" fill=\"$fill\" $extra";
-
-    return match ($acc) {
-        'oculos' => "<g $s><polygon points=\"37,57 43,52.5 56,52.5 59,59 55,68 41,68\"/><polygon points=\"91,57 85,52.5 72,52.5 69,59 73,68 87,68\"/></g><path d=\"M59 58 L69 58\" stroke=\"$stroke\" stroke-width=\"$width\" $extra/>",
-        'cachecol' => "<path d=\"M30 100 L64 116 L98 100 L101 109 L64 125 L27 109 Z\" $s/><path d=\"M80 117 L87 130 L95 126 L89 113 Z\" $s/>",
-        'fone' => "<path d=\"M14 66 L16 30 L36 10 L92 10 L112 30 L114 66\" fill=\"none\" stroke=\"$stroke\" stroke-width=\"".($width + 1)."\" stroke-linejoin=\"round\" $extra/><rect x=\"8\" y=\"56\" width=\"11\" height=\"22\" rx=\"3\" $s/><rect x=\"109\" y=\"56\" width=\"11\" height=\"22\" rx=\"3\" $s/>",
-        'lenco' => "<path d=\"M42 104 L86 104 L64 126 Z\" $s/><path d=\"M58 103 L70 103 L67 112 L61 112 Z\" $s/>",
+    $shapes = [
+        [[214, 160], [249.5, 196], [285, 160], [285, 176], [249.5, 212], [214, 176]],
+        [[226, 196], [249.5, 220], [273, 196], [273, 209], [249.5, 233], [226, 209]],
+        [[50, 262], [118, 252], [120, 264], [52, 276]], [[64, 292], [124, 278], [127, 290], [68, 306]], [[88, 322], [132, 306], [136, 317], [93, 334]],
+        [[449, 262], [381, 252], [379, 264], [447, 276]], [[435, 292], [375, 278], [372, 290], [431, 306]], [[411, 322], [367, 306], [363, 317], [406, 334]],
+    ];
+    $attr = match ($mode) {
+        'facetas' => "fill=\"$color\" opacity=\"0.55\"",
+        'linhas' => "fill=\"$color\" opacity=\"0.35\"",
+        'neon' => "fill=\"none\" stroke=\"$color\" stroke-width=\"3\" stroke-linejoin=\"round\" filter=\"url(#glow)\"",
     };
+
+    return '<g clip-path="url(#head)">'.implode('', array_map(fn ($s) => '<polygon points="'.pts($s)."\" $attr/>", $shapes)).'</g>';
 }
 
-function friendlyFace(string $eye): string
+function sparkle(string $fill): string
 {
-    return "<g fill=\"$eye\"><ellipse cx=\"48\" cy=\"63\" rx=\"5.6\" ry=\"6.4\"/><ellipse cx=\"80\" cy=\"63\" rx=\"5.6\" ry=\"6.4\"/></g>"
-        .'<g fill="#fff"><circle cx="50" cy="60.5" r="2"/><circle cx="82" cy="60.5" r="2"/></g>';
+    return "<path d=\"M133 223 L136.5 239.5 L153 243 L136.5 246.5 L133 263 L129.5 246.5 L113 243 L129.5 239.5 Z\" fill=\"$fill\"/>";
 }
 
-// ---------- facetas: "de cristal", irmã do logo ----------
-function facetas(string $id, array $f): string
+// ---------- facetas: igual à logo, nas cores da raposa ----------
+function facetas(string $id, array $fox, array $geo): string
 {
-    [$light, $mid, $dark, $deep] = $f['facetas'];
-    $P = fn ($pts, $c) => '<polygon points="'.implode(' ', array_map(fn ($p) => $p[0].','.$p[1], $pts))."\" fill=\"$c\" stroke=\"$c\" stroke-width=\"0.5\" stroke-linejoin=\"round\"/>";
-    $T1 = [34, 16]; $E1 = [50, 40]; $H = [64, 32]; $E2 = [78, 40]; $T2 = [94, 16]; $B2 = [102, 52]; $C2 = [110, 72]; $J2 = [88, 96]; $X = [64, 110]; $J1 = [40, 96]; $C1 = [18, 72]; $B1 = [26, 52];
-    $F = [64, 46]; $Le = [46, 62]; $Re = [82, 62]; $M1 = [52, 80]; $M2 = [76, 80]; $N = [64, 92];
-    $w = $id === 'lud' ? '#ffffff' : '#fffaf4';
-    $w2 = $id === 'lud' ? '#e4e9f2' : '#f3ebe2';
-    $g = $P([$T1, $E1, $B1], $mid).$P([$T1, [45, 35], [33, 40]], $deep).$P([$T2, $E2, $B2], $dark).$P([$T2, [83, 35], [95, 40]], $deep)
-        .$P([$E1, $H, $F], $light).$P([$H, $E2, $F], $mid).$P([$B1, $E1, $Le], $dark).$P([$E1, $F, $Le], $mid)
-        .$P([$B2, $E2, $Re], $mid).$P([$E2, $F, $Re], $dark).$P([$F, $Le, $M1], $mid).$P([$F, $Re, $M2], $dark)
-        .$P([$F, $M1, $N], $light).$P([$F, $M2, $N], $mid).$P([$B1, $Le, $C1], $mid).$P([$B2, $Re, $C2], $dark)
-        .$P([$C1, $Le, $M1], $w).$P([$C1, $M1, $J1], $w2).$P([$C2, $Re, $M2], $w2).$P([$C2, $M2, $J2], $w)
-        .$P([$J1, $M1, $N], $w).$P([$J2, $M2, $N], $w2).$P([$J1, $N, $X], $w2).$P([$J2, $N, $X], $w);
-    $g .= '<path d="'.OUTLINE.'" fill="none" stroke="'.INK.'" stroke-width="3" stroke-linejoin="round"/>';
-    $g .= friendlyFace(INK).'<polygon points="59.5,89 68.5,89 66,95 62,95" fill="'.INK.'"/><path d="M58 99 Q64 103 70 99" fill="none" stroke="'.INK.'" stroke-width="1.8" stroke-linecap="round"/>';
-    $g .= '<path d="M30 66 l1.4 3.8 3.8 1.4 -3.8 1.4 -1.4 3.8 -1.4 -3.8 -3.8 -1.4 3.8 -1.4z" fill="#fff"/>';
-    $g .= accessory($f['acc'], INK, $f['acc'] === 'oculos' ? 'rgba(255,255,255,0.25)' : PURPLE, 2.6);
     $uid = "facetas-$id";
+    $head = pts($geo['outline']);
+    $g = '';
+    foreach ([...$geo['under'], ...$geo['facets']] as $f) {
+        $c = tone($fox, $f['level'], $geo['levels']);
+        $g .= '<polygon points="'.pts($f['pts'])."\" fill=\"$c\" stroke=\"$c\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/>";
+    }
+    foreach ($geo['facets'] as $f) {
+        $g .= '<polygon points="'.pts($f['pts']).'" fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="1.2" stroke-linejoin="round"/>';
+    }
+    $body = "<circle cx=\"".CX.'" cy="'.CY.'" r="'.(CR - 2).'" fill="#f5f5f8" stroke="#e6e1f5" stroke-width="5"/>'
+        ."<g clip-path=\"url(#head)\">$g</g>"
+        .($id === 'lobinho' ? stripes($fox['ink'], 'facetas') : '')
+        ."<polygon points=\"$head\" fill=\"none\" stroke=\"{$fox['ink']}\" stroke-width=\"15\" stroke-linejoin=\"round\"/>"
+        ."<polygon points=\"$head\" fill=\"none\" stroke=\"{$fox['rim']}\" stroke-width=\"5\" stroke-linejoin=\"round\"/>"
+        .sparkle('#ffffff').face($id, $fox['ink'], 'facetas');
 
-    return svg($uid, $f['nome'], '', "<circle cx=\"64\" cy=\"64\" r=\"62\" fill=\"#f5f5f8\" stroke=\"#e6e1f5\" stroke-width=\"2\"/>\n<g clip-path=\"url(#c-$uid)\">$g</g>");
+    return svg($uid, $fox['nome'], "<clipPath id=\"head\"><polygon points=\"$head\"/></clipPath>", "<g clip-path=\"url(#c-$uid)\">$body</g>");
 }
 
-// ---------- linhas: traços geométricos claros ----------
-function linhas(string $id, array $f): string
+// ---------- linhas: a mesma malha só em traços, sobre fundo claro ----------
+function linhas(string $id, array $fox, array $geo): string
 {
-    [$c1, $c2] = $f['linhas'];
     $uid = "linhas-$id";
-    $line = "url(#l-$uid)";
-    $defs = "<linearGradient id=\"l-$uid\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"$c1\"/><stop offset=\"1\" stop-color=\"$c2\"/></linearGradient>";
-    $g = '<g stroke="'.VIOLET.'" stroke-width="1.6" opacity="0.6">'.lines().'</g>'
-        ."<g fill=\"$line\" opacity=\"0.9\"><polygon points=\"61,35 64,33.5 67,35 65.5,50 62.5,50\"/><polygon points=\"36,23 45,35 39,36\"/><polygon points=\"92,23 83,35 89,36\"/></g>"
-        .'<polygon points="32,86 64,74 96,86 64,108" fill="'.VIOLET.'" opacity="0.08"/>'
-        .'<path d="'.OUTLINE."\" fill=\"none\" stroke=\"$line\" stroke-width=\"3.6\" stroke-linejoin=\"round\"/>"
-        .'<g fill="'.PURPLE.'"><circle cx="64" cy="46" r="2.4"/><circle cx="26" cy="52" r="2"/><circle cx="102" cy="52" r="2"/><circle cx="64" cy="110" r="2"/></g>'
-        .friendlyFace($c2)
-        ."<polygon points=\"59.5,89 68.5,89 66,95 62,95\" fill=\"$line\"/><path d=\"M58 99 Q64 103 70 99\" fill=\"none\" stroke=\"$c2\" stroke-width=\"2\" stroke-linecap=\"round\"/>"
-        .accessory($f['acc'], $line, $f['acc'] === 'oculos' ? 'none' : 'rgba(91,63,209,0.18)', 2.8);
+    $head = pts($geo['outline']);
+    $edges = '';
+    foreach ($geo['facets'] as $f) {
+        $edges .= '<polygon points="'.pts($f['pts']).'"/>';
+    }
+    $tint = mix($fox['light'], '#ffffff', 0.55);
+    $body = "<circle cx=\"".CX.'" cy="'.CY.'" r="'.(CR - 2).'" fill="#ffffff" stroke="#e6e1f5" stroke-width="5"/>'
+        ."<polygon points=\"$head\" fill=\"$tint\"/>"
+        ."<g clip-path=\"url(#head)\" fill=\"none\" stroke=\"".mix($fox['mid'], $fox['dark'], 0.35)."\" stroke-width=\"2.4\" stroke-linejoin=\"round\" opacity=\"0.8\">$edges</g>"
+        .($id === 'lobinho' ? stripes($fox['ink'], 'linhas') : '')
+        ."<polygon points=\"$head\" fill=\"none\" stroke=\"{$fox['ink']}\" stroke-width=\"11\" stroke-linejoin=\"round\"/>"
+        .sparkle($fox['mid']).face($id, $fox['ink'], 'linhas');
 
-    return svg($uid, $f['nome'], $defs, "<circle cx=\"64\" cy=\"64\" r=\"62\" fill=\"#ffffff\" stroke=\"#e6e1f5\" stroke-width=\"2\"/>\n<g clip-path=\"url(#c-$uid)\">$g</g>");
+    return svg($uid, $fox['nome'], "<clipPath id=\"head\"><polygon points=\"$head\"/></clipPath>", "<g clip-path=\"url(#c-$uid)\">$body</g>");
 }
 
-// ---------- neon: linhas luminosas sobre fundo escuro ----------
-function neon(string $id, array $f): string
+// ---------- neon: a mesma malha em linhas luminosas no escuro ----------
+function neon(string $id, array $fox, array $geo): string
 {
-    [$c1, $c2, $eye] = $f['neon'];
     $uid = "neon-$id";
-    $line = "url(#l-$uid)";
-    $glow = "filter=\"url(#g-$uid)\"";
-    $defs = "<radialGradient id=\"bg-$uid\" cx=\"50%\" cy=\"42%\" r=\"65%\"><stop offset=\"0\" stop-color=\"#2c2147\"/><stop offset=\"1\" stop-color=\"#120d1c\"/></radialGradient>"
-        ."<linearGradient id=\"l-$uid\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"$c1\"/><stop offset=\"1\" stop-color=\"$c2\"/></linearGradient>"
-        ."<filter id=\"g-$uid\" x=\"-40%\" y=\"-40%\" width=\"180%\" height=\"180%\"><feGaussianBlur stdDeviation=\"1.5\" result=\"b\"/><feMerge><feMergeNode in=\"b\"/><feMergeNode in=\"SourceGraphic\"/></feMerge></filter>";
-    $nodes = implode('', array_map(fn ($p) => "<circle cx=\"{$p[0]}\" cy=\"{$p[1]}\" r=\"2\"/>", [[64, 46], [46, 62], [82, 62], [52, 80], [76, 80], [26, 52], [102, 52], [18, 72], [110, 72], [64, 110]]));
-    $g = '<g stroke="'.VIOLET.'" stroke-width="1.2" fill="none" opacity="0.85"><path d="M110 72 L118 72 L122 66"/><path d="M18 72 L10 72 L7 78"/><path d="M64 110 L64 118"/><path d="M94 16 L102 10 L110 12"/><path d="M34 16 L26 10 L18 12"/><polygon points="64,4 68,6.3 68,10.7 64,13 60,10.7 60,6.3"/></g>'
-        .'<g fill="'.VIOLET.'" opacity="0.9"><circle cx="122" cy="66" r="1.8"/><circle cx="7" cy="78" r="1.8"/><circle cx="64" cy="118" r="1.8"/><rect x="112" y="80" width="3" height="3"/><rect x="13" y="84" width="3" height="3"/></g>'
-        .'<g stroke="'.VIOLET."\" stroke-width=\"1.3\" opacity=\"0.9\" $glow>".lines().'<line x1="50" y1="40" x2="46" y2="62"/><line x1="78" y1="40" x2="82" y2="62"/></g>'
-        ."<g fill=\"$line\" opacity=\"0.9\"><polygon points=\"61,35 64,33.5 67,35 65.5,50 62.5,50\"/><polygon points=\"53,43 57,40 59,52 56,55\"/><polygon points=\"75,43 71,40 69,52 72,55\"/><polygon points=\"36,23 45,35 39,36\"/><polygon points=\"34,32 43,41 36,43\"/><polygon points=\"92,23 83,35 89,36\"/><polygon points=\"94,32 85,41 92,43\"/><polygon points=\"27,67 38,69 30,74\"/><polygon points=\"101,67 90,69 98,74\"/></g>"
-        .'<polygon points="58,66 70,66 67.5,88 60.5,88" fill="'.VIOLET.'" opacity="0.35"/>'
-        .'<path d="'.OUTLINE."\" fill=\"none\" stroke=\"$line\" stroke-width=\"2.8\" stroke-linejoin=\"round\" $glow/>"
-        ."<g fill=\"$line\" $glow>$nodes</g>"
-        ."<g fill=\"$eye\" $glow><polygon points=\"40,62 49,57 56,63 47,66.5\"/><polygon points=\"88,62 79,57 72,63 81,66.5\"/></g>"
-        ."<polygon points=\"59.5,90 68.5,90 66.5,96 61.5,96\" fill=\"$line\" $glow/>"
-        .accessory($f['acc'], $line, 'none', 2.4, $glow);
+    $head = pts($geo['outline']);
+    $c = $fox['neon'];
+    $edges = '';
+    foreach ($geo['facets'] as $f) {
+        $edges .= '<polygon points="'.pts($f['pts']).'"/>';
+    }
+    $defs = "<clipPath id=\"head\"><polygon points=\"$head\"/></clipPath>"
+        .'<radialGradient id="bg" cx="50%" cy="42%" r="65%"><stop offset="0" stop-color="#2c2147"/><stop offset="1" stop-color="#120d1c"/></radialGradient>'
+        .'<filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+    $body = '<circle cx="'.CX.'" cy="'.CY.'" r="'.CR.'" fill="url(#bg)"/>'
+        ."<polygon points=\"$head\" fill=\"#15101f\"/>"
+        ."<g clip-path=\"url(#head)\" fill=\"none\" stroke=\"$c\" stroke-width=\"2\" stroke-linejoin=\"round\" opacity=\"0.55\" filter=\"url(#glow)\">$edges</g>"
+        .($id === 'lobinho' ? stripes($c, 'neon') : '')
+        ."<polygon points=\"$head\" fill=\"none\" stroke=\"$c\" stroke-width=\"7\" stroke-linejoin=\"round\" filter=\"url(#glow)\"/>"
+        .sparkle('#ffffff').face($id, $c, 'neon')
+        .'<circle cx="'.CX.'" cy="'.CY.'" r="'.(CR - 3).'" fill="none" stroke="#8b6cf5" stroke-width="4" opacity="0.6"/>';
 
-    return svg($uid, $f['nome'], $defs, "<circle cx=\"64\" cy=\"64\" r=\"63\" fill=\"url(#bg-$uid)\"/>\n<g clip-path=\"url(#c-$uid)\">$g</g>\n<circle cx=\"64\" cy=\"64\" r=\"62.5\" fill=\"none\" stroke=\"".VIOLET.'" stroke-width="1.5" opacity="0.6"/>');
+    return svg($uid, $fox['nome'], $defs, "<g clip-path=\"url(#c-$uid)\">$body</g>");
 }
 
 foreach (['facetas', 'linhas', 'neon'] as $style) {
     @mkdir("$out/$style", 0775, true);
-    foreach ($foxes as $id => $f) {
-        $svg = $style($id, $f);
+    foreach ($foxes as $id => $fox) {
+        $svg = $style($id, $fox, $geo);
         file_put_contents("$out/$style/$id.svg", $svg);
 
         if ($style === DEFAULT_STYLE) {
