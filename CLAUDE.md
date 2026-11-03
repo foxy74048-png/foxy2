@@ -26,7 +26,7 @@ Leia `docs/00-contexto-estrategico.md` antes de decisões de arquitetura. Resumo
 3. Recorte mínimo da Platform a implementar junto com a Foxy AI — `docs/04-recorte-platform.md`
 4. Arquitetura concreta (módulos, tenancy, banco, APIs, eventos, auth, infra, stack) — `docs/05-arquitetura.md`
 5. Implementação — concluída (`docs/05-arquitetura.md` seção 10 e `docs/07-planos-permissoes-mascotes.md` seção 8); em produção em https://ai.foxy.net.br
-6. Primeiro anfitrião real: o sistema atual (Foxy), consumindo a API pelo pacote `packages/foxy-ai-client` (decisão B7)
+6. Primeiro anfitrião real: o Foxy Studio (o sistema atual, studio.foxy.net.br), consumindo a API pelo pacote `packages/foxy-ai-client` (decisão B7)
 
 Princípio: definir o Core conceitualmente, implementar só o Core necessário para o primeiro produto, boundaries preparados para evolução.
 
