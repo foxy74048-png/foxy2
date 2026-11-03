@@ -34,9 +34,10 @@ const CR = 286;
  */
 $foxes = [
     'chico' => ['nome' => 'Chico', 'dark' => '#0b0b0e', 'mid' => '#26262c', 'light' => '#5a5b63', 'ink' => '#050507', 'rim' => '#a7a6b2', 'neon' => '#d4d6e2',
-        'iris' => '#6b4325', 'mouth' => '#d9d5e0', 'ring' => '#d9d5e0', 'muzzle' => null, 'tooth' => true],
-    'lud' => ['nome' => 'Lud', 'dark' => '#120f0c', 'mid' => '#33291f', 'light' => '#6a5c4e', 'ink' => '#0a0806', 'rim' => '#c9c2b8', 'neon' => '#e6ded2',
-        'iris' => '#5a3418', 'mouth' => '#1a130d', 'ring' => '#d8d0c4', 'muzzle' => ['#cfc8bf', 0.9], 'tongue' => true, 'brindle' => ['#5c4a36', 0.35]],
+        'iris' => '#a06a3a', 'mouth' => '#cfcad8', 'ring' => null, 'muzzle' => null, 'tooth' => true],
+    'lud' => ['nome' => 'Lud', 'dark' => '#17110d', 'mid' => '#3d3026', 'light' => '#7a695a', 'ink' => '#0d0907', 'rim' => '#e6d6c8', 'neon' => '#e6ded2',
+        'iris' => '#8a5428', 'mouth' => '#1a130d', 'ring' => null, 'muzzle' => ['#d9d2ca', 0.75], 'muzzle_small' => true, 'tongue' => true, 'small_tongue' => true, 'brindle' => ['#5c4a36', 0.22],
+        'lashes' => true, 'blush' => true, 'tiara' => true, 'sparkly' => true],
     'lobinho' => ['nome' => 'Lobinho', 'dark' => '#20130a', 'mid' => '#6b4627', 'light' => '#b78a58', 'ink' => '#160d06', 'rim' => '#e3c79f', 'neon' => '#f0b36a',
         'iris' => '#c08a2e', 'mouth' => '#140b05', 'ring' => null, 'muzzle' => ['#1a1009', 0.55], 'tongue' => true, 'brindle' => ['#140b05', 0.5]],
     'ayla' => ['nome' => 'Ayla', 'dark' => '#7a4719', 'mid' => '#d29a52', 'light' => '#f6dcae', 'ink' => '#3d2008', 'rim' => '#fbe6c4', 'neon' => '#ffc46b',
@@ -77,7 +78,10 @@ function markings(array $fox, string $mode): string
     if ($fox['muzzle'] && $mode !== 'neon') {
         [$color, $opacity] = $fox['muzzle'];
         $opacity = $mode === 'linhas' ? $opacity * 0.6 : $opacity;
-        $g .= "<path d=\"M176 352 Q205 320 249.5 326 Q294 320 323 352 L336 392 Q318 440 249.5 470 Q181 440 163 392 Z\" fill=\"$color\" opacity=\"$opacity\"/>";
+        $shape = ! empty($fox['muzzle_small'])
+            ? 'M200 362 Q249.5 342 299 362 L307 394 Q296 428 249.5 448 Q203 428 192 394 Z'
+            : 'M176 352 Q205 320 249.5 326 Q294 320 323 352 L336 392 Q318 440 249.5 470 Q181 440 163 392 Z';
+        $g .= "<path d=\"$shape\" fill=\"$color\" opacity=\"$opacity\"/>";
         if ($fox['nome'] === 'Lud') { // sobrancelhas grisalhas
             $g .= "<g fill=\"$color\" opacity=\"0.8\"><ellipse cx=\"190\" cy=\"246\" rx=\"20\" ry=\"8\" transform=\"rotate(-12 190 246)\"/><ellipse cx=\"309\" cy=\"246\" rx=\"20\" ry=\"8\" transform=\"rotate(12 309 246)\"/></g>";
         }
@@ -125,8 +129,16 @@ function face(array $fox, string $mode): string
         }
         $g .= "<ellipse cx=\"$x\" cy=\"288\" rx=\"$rx\" ry=\"$ry\" fill=\"{$fox['iris']}\" stroke=\"{$fox['ink']}\" stroke-width=\"4.5\"/>";
         $g .= '<ellipse cx="'.$x.'" cy="291" rx="'.($rx * 0.55).'" ry="'.($ry * 0.6)."\" fill=\"#0a0705\"/>";
-        $g .= '<circle cx="'.($x + 8).'" cy="'.(288 - ($big ? 11 : 9)).'" r="'.($big ? 9.5 : 7.5).'" fill="#fff"/>';
+        $sparkly = ! empty($fox['sparkly']);
+        $g .= '<circle cx="'.($x + 8).'" cy="'.(288 - ($big ? 11 : 9)).'" r="'.($big || $sparkly ? 9.5 : 8.5).'" fill="#fff"/>';
+        if ($sparkly) {
+            $g .= '<circle cx="'.($x - 6).'" cy="283" r="3.2" fill="#fff" opacity="0.9"/>';
+        }
         $g .= '<circle cx="'.($x - 8).'" cy="'.(288 + ($big ? 11 : 9)).'" r="'.($big ? 4.5 : 3.4).'" fill="#fff" opacity="0.85"/>';
+    }
+
+    if (! empty($fox['lashes'])) { // cílios (princesinha)
+        $g .= "<g stroke=\"".($neon ? $line : $fox['ink'])."\" stroke-width=\"5.5\" stroke-linecap=\"round\" fill=\"none\"$glow><path d=\"M166 270 l-15 -9\"/><path d=\"M172 263 l-8 -14\"/><path d=\"M333 270 l15 -9\"/><path d=\"M327 263 l8 -14\"/></g>";
     }
 
     // Focinho, boca, língua e dente: 35% maiores, em volta do focinho
@@ -139,18 +151,27 @@ function face(array $fox, string $mode): string
 
     if (! empty($fox['tongue'])) { // boca aberta, língua de fora (sem dentes à mostra)
         $g .= "<path d=\"M226 413 Q249.5 432 273 413 Q262 422 249.5 422 Q237 422 226 413 Z\" fill=\"".($neon ? 'none' : '#2a0f12')."\" stroke=\"$mouth\" stroke-width=\"4\" stroke-linejoin=\"round\"$glow/>";
-        $g .= '<path d="M238 420 L261 420 L261 433 Q249.5 450 238 433 Z" fill="'.($neon ? 'none' : '#ff8fa3')."\" stroke=\"".($neon ? '#ff8fa3' : $fox['ink'])."\" stroke-width=\"3\" stroke-linejoin=\"round\"$glow/>";
+        $tongue = ! empty($fox['small_tongue']) ? 'M242 420 L257 420 L257 428 Q249.5 439 242 428 Z' : 'M238 420 L261 420 L261 433 Q249.5 450 238 433 Z';
+        $g .= '<path d="'.$tongue.'" fill="'.($neon ? 'none' : '#ff8fa3')."\" stroke=\"".($neon ? '#ff8fa3' : $fox['ink'])."\" stroke-width=\"3\" stroke-linejoin=\"round\"$glow/>";
         if (! $neon) {
-            $g .= '<path d="M249.5 423 L249.5 436" stroke="#d9546f" stroke-width="2.4" stroke-linecap="round"/>';
+            $g .= '<path d="M249.5 423 L249.5 '.(! empty($fox['small_tongue']) ? 431 : 436).'" stroke="#d9546f" stroke-width="2.2" stroke-linecap="round"/>';
         }
     } else {
         $g .= "<path d=\"M249.5 409 L249.5 417 M226 414 Q237 428 249.5 417 Q262 428 273 414\" fill=\"none\" stroke=\"$mouth\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"$glow/>";
     }
 
     if (! empty($fox['tooth'])) { // dentinho de baixo para fora, subindo por cima da boca
-        $g .= '<path d="M253 434 L278 434 L275 405 Q265.5 393 256 405 Z" fill="'.($neon ? 'none' : '#ffffff')."\" stroke=\"".($neon ? $line : $fox['ink'])."\" stroke-width=\"3.4\" stroke-linejoin=\"round\"$glow/>";
+        $g .= '<path d="M257 427 L270 427 L269 414 Q263.5 407 258 414 Z" fill="'.($neon ? 'none' : '#ffffff')."\" stroke=\"".($neon ? $line : $fox['ink'])."\" stroke-width=\"2.6\" stroke-linejoin=\"round\"$glow/>";
     }
     $g .= '</g>';
+
+    if (! empty($fox['tiara'])) { // tiarinha no alto da cabeça (princesinha)
+        $gold = $neon ? 'none' : '#f2c94c';
+        $edge = $neon ? '#f2c94c' : '#9a7412';
+        $g .= "<path d=\"M214 190 L220 162 L235 178 L249.5 148 L264 178 L279 162 L285 190 Q249.5 182 214 190 Z\" fill=\"$gold\" stroke=\"$edge\" stroke-width=\"3.5\" stroke-linejoin=\"round\"$glow/>";
+        $g .= '<circle cx="249.5" cy="172" r="6" fill="'.($neon ? 'none' : '#ff8fb1').'" stroke="'.($neon ? '#ff8fb1' : '#b8426b').'" stroke-width="2.5"'.$glow.'/>';
+        $g .= '<g fill="'.($neon ? '#f2c94c' : '#fff6d6').'"><circle cx="220" cy="160" r="4"/><circle cx="249.5" cy="146" r="4.5"/><circle cx="279" cy="160" r="4"/></g>';
+    }
 
     if (! empty($fox['blush']) && ! $neon) {
         $g .= '<g fill="#ff7f9b" opacity="0.45"><ellipse cx="146" cy="345" rx="28" ry="15"/><ellipse cx="353" cy="345" rx="28" ry="15"/></g>';
@@ -262,7 +283,7 @@ function neon(string $id, array $fox, array $geo): string
 foreach (['facetas', 'linhas', 'neon'] as $style) {
     @mkdir("$out/$style", 0775, true);
     foreach ($foxes as $id => $fox) {
-        $fox += ['tongue' => false, 'tooth' => false, 'brindle' => null, 'bandana' => null, 'blush' => false, 'big' => false];
+        $fox += ['tongue' => false, 'tooth' => false, 'brindle' => null, 'bandana' => null, 'blush' => false, 'big' => false, 'lashes' => false, 'tiara' => false, 'sparkly' => false, 'small_tongue' => false, 'muzzle_small' => false];
         $svg = $style($id, $fox, $geo);
         file_put_contents("$out/$style/$id.svg", $svg);
 

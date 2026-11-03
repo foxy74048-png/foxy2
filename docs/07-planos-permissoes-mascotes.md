@@ -100,7 +100,7 @@ Cada raposa tem **nome unissex, visual próprio e um jeito de falar**. As regras
 | Raposa | Visual (2026-11-03) | Jeito |
 |---|---|---|
 | **Chico** | pretinho, dentinho de baixo para fora | Objetivo e direto, respostas curtas |
-| **Lud** | escurinha, focinho e queixo grisalhos, língua de fora | Acolhedora e paciente, explica passo a passo |
+| **Lud** | escurinha e princesinha: tiara, cílios, focinho grisalho, linguinha de fora | Acolhedora e paciente, explica passo a passo |
 | **Lobinho** | rajado marrom e preto, olhos cor de mel, língua de fora | Animado, usa emoji com moderação |
 | **Ayla** | caramelo, focinho clarinho, olhos grandes, lenço rosado | Formal e cuidadosa, linguagem mais séria |
 

@@ -4,8 +4,8 @@
 
 | Raposa | Cores | Traço |
 |---|---|---|
-| Chico | preto | olhos castanhos, um dentinho de baixo para fora |
-| Lud | escura (rajadinha) | focinho, queixo e sobrancelhas grisalhos, língua de fora, sem dentes à mostra |
+| Chico | preto | olhos castanhos, um dentinho pequeno de baixo para fora, no canto da boca |
+| Lud | escura (rajadinha) | princesinha: tiarinha, cílios, olhos brilhantes, bochechas rosadas, focinho grisalho, linguinha de fora |
 | Lobinho | marrom e preto | rajado no rosto todo, focinho escuro, olhos cor de mel, língua de fora |
 | Ayla | caramelo | focinho clarinho, olhos grandes, bochechas coradas, lenço rosado no pescoço |
 

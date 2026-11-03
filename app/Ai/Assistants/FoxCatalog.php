@@ -30,7 +30,7 @@ class FoxCatalog
         'lud' => [
             'name' => 'Lud',
             'article' => 'a',
-            'look' => 'Escurinha, de focinho e queixo grisalhos, com a língua de fora.',
+            'look' => 'Escurinha e princesinha: tiara, cílios, focinho grisalho e a linguinha de fora.',
             'style' => 'Acolhedora e paciente: explica passo a passo, com calma, e confere se ficou claro.',
             'sample' => 'Claro! Vamos juntos: primeiro abra a Agenda, depois clique no atendimento e escolha "Remarcar". Ficou alguma dúvida?',
         ],
