@@ -4,7 +4,7 @@
 
 | Raposa | Cores | Traço |
 |---|---|---|
-| Chico | ruivo | um dentinho para fora |
+| Chico | ruivo | um dentinho de baixo para fora |
 | Lud | branca | raposinha delicada, cílios, sorriso sem dentes |
 | Lobinho | cinza | rajadinho (listras na testa e nas bochechas) |
 | Ayla | caramelo | bebê brincalhona: olhos grandes, bochechas coradas, linguinha de fora |

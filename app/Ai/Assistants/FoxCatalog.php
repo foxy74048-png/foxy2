@@ -23,7 +23,7 @@ class FoxCatalog
         'chico' => [
             'name' => 'Chico',
             'article' => 'o',
-            'look' => 'Raposo ruivo, com um dentinho para fora.',
+            'look' => 'Raposo ruivo, com um dentinho de baixo para fora.',
             'style' => 'Objetivo e direto: vai ao ponto, com respostas curtas e sem rodeios.',
             'sample' => 'Agenda › clique no atendimento › Remarcar › escolha o horário › Confirmar. Pronto.',
         ],

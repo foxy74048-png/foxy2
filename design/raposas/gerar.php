@@ -91,9 +91,9 @@ function face(string $id, string $ink, string $mode): string
     }
     $g .= "<path d=\"M249.5 409 L249.5 417 M226 414 Q237 428 249.5 417 Q262 428 273 414\" fill=\"none\" stroke=\"$ink\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"$glow/>";
 
-    if ($id === 'chico') { // um dentinho para fora
+    if ($id === 'chico') { // um dentinho de baixo para fora, subindo por cima da boca
         $tooth = $mode === 'neon' ? 'none' : '#ffffff';
-        $g .= "<path d=\"M243 419 L257 419 L256.5 433 Q250 437 243.5 433 Z\" fill=\"$tooth\" stroke=\"$ink\" stroke-width=\"3.2\" stroke-linejoin=\"round\"$glow/>";
+        $g .= "<path d=\"M253 434 L278 434 L275 405 Q265.5 393 256 405 Z\" fill=\"$tooth\" stroke=\"$ink\" stroke-width=\"3.4\" stroke-linejoin=\"round\"$glow/>";
     }
     if ($id === 'ayla') { // bebê brincalhona: linguinha de fora e bochechas coradas
         $g .= "<path d=\"M240 421 L259 421 L259 431 Q249.5 446 240 431 Z\" fill=\"#ff8fa3\" stroke=\"$ink\" stroke-width=\"3.2\" stroke-linejoin=\"round\"$glow/><path d=\"M249.5 424 L249.5 434\" stroke=\"#d9546f\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>";
