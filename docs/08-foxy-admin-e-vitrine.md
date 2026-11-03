@@ -1,6 +1,6 @@
 # Foxy Admin e vitrine da marca
 
-> **Status:** v1.0 — aprovado em 2026-11-03 pelo responsável. Fase 1 em implementação (seção 6).
+> **Status:** v1.0 — aprovado em 2026-11-03 pelo responsável. Fases 1 e 2 em produção (seção 6).
 > **Regra a partir de agora:** tudo que for desenvolvido usa o **Core da foxy2**. O Foxy Studio (sistema atual,
 > repositório `tarologa`) só recebe melhorias e conversa com o Core **por API** — o Core nunca lê o banco dele.
 
@@ -52,14 +52,27 @@ entram. Aplicação idempotente (`ai_promotion_grants` único por promoção + c
 quando um cliente novo aparece na Foxy AI e todo dia (`foxy:promocoes:aplicar`). Tudo registrado: quem ganhou,
 quanto e por quê. Obs.: o brinde só é usado por contas que têm a raposa ligada no produto.
 
-## 5. Comunicados (fase 2)
+## 5. Comunicados e ideias/dúvidas (fase 2)
 
-E-mail e WhatsApp para clientes dos produtos (público por produto, plano e situação), com prévia, envio aos poucos,
-histórico e **descadastro** (LGPD); avisos obrigatórios continuam saindo sempre. Exige que os produtos enviem
-contato com consentimento — entra na fase 2.
+**Comunicados** (`/admin/comunicados`): e-mail e/ou WhatsApp para o **dono de cada conta** dos produtos — novidades e
+melhorias. Fluxo: escrever (com `{nome}`, `{conta}`, `{produto}`) → conferir quem recebe e a prévia → **teste para você**
+→ enviar. Público: produto, situações e planos. Sai aos poucos pelo agendador (`foxy:comunicados:enviar`, a cada
+minuto: até 20 e-mails e 5 WhatsApps, com pausa de 6–10 s entre WhatsApps). Histórico por envio (enviado, falhou, não
+enviado). Cancelar para o que ainda está na fila.
+
+- **Contato:** o produto envia no retrato o nome, e-mail e WhatsApp do dono (`contact_name`, `email`, `whatsapp`).
+- **Descadastro (LGPD):** cada mensagem traz um link assinado (`/comunicados/sair/{envio}`); a pessoa confirma num botão
+  (abrir o link não descadastra). Fica guardado **só no Core**, por canal — o retrato do produto nunca reinscreve. Avisos
+  obrigatórios da conta (pagamento, segurança) continuam saindo pelos produtos.
+- **Envio:** e-mail pelo SMTP da Foxy (`MAIL_*` da foxy2); WhatsApp pelo número da Foxy, a mesma Evolution API do Studio
+  (`FOXY_WHATSAPP_API_URL`, `FOXY_WHATSAPP_API_KEY`, `FOXY_WHATSAPP_INSTANCE`).
+
+**Ideias e dúvidas** (`/admin/ideias`): tudo que a raposa anota (`feature_request` → ideia; `knowledge_gap` → dúvida)
+fica também no Core (`ai_insights`, só o resumo), de **todos os produtos**, com produto e conta e situação (nova,
+avaliando, vai ser feita, feita, descartada).
 
 ## 6. Fases
 
-1. **Vitrine + Admin (painel, contas) + promoções de IA + envio do retrato pelo Studio.** ← em implementação
-2. Comunicados (e-mail, depois WhatsApp pelo número da Foxy); ideias/dúvidas da raposa de todos os produtos no Admin.
+1. ✔ Vitrine + Admin (painel, contas) + promoções de IA + envio do retrato pelo Studio.
+2. ✔ Comunicados (e-mail e WhatsApp pelo número da Foxy, com descadastro); ideias/dúvidas da raposa de todos os produtos no Admin.
 3. Assinaturas controladas pelo Admin e login único (Identity do Core), junto com o Commerce.

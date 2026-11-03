@@ -7,3 +7,6 @@ Schedule::command('foxy:ai:purge-conversations')->dailyAt('03:00');
 
 // Promoções de IA do Foxy Admin (docs/08): entrega as do mês (as mensais renovam no dia 1º).
 Schedule::command('foxy:promocoes:aplicar')->dailyAt('06:00');
+
+// Comunicados do Foxy Admin (docs/08, fase 2): uma leva por minuto (e-mail e WhatsApp com pausa).
+Schedule::command('foxy:comunicados:enviar')->everyMinute()->withoutOverlapping(10);

@@ -3,6 +3,7 @@
 namespace App\Ai\Assistant;
 
 use App\Ai\Assistants\AssistantPreference;
+use App\Ai\Insights\AiInsight;
 use App\Ai\Conversations\Conversation;
 use App\Ai\HostProfiles\HostProfile;
 use App\Ai\HostProfiles\ToolSchema;
@@ -246,12 +247,12 @@ class Assistant
             Audit::record('ai.escalated', 'ok', $conversation, ['reason' => $effects['escalate']['reason']]);
         }
 
-        if ($effects['feature_request'] ?? null) {
-            Audit::record('ai.feature_requested', 'ok', $conversation);
-        }
-
-        if ($effects['knowledge_gap'] ?? null) {
-            Audit::record('ai.knowledge_gap', 'ok', $conversation);
+        // Ideias e dúvidas vão para o Foxy Admin (de todos os produtos), além de voltarem ao sistema.
+        foreach (['ideia' => 'feature_request', 'duvida' => 'knowledge_gap'] as $kind => $effect) {
+            if ($summary = $effects[$effect]['summary'] ?? null) {
+                AiInsight::create(['organization_id' => $conversation->organization_id, 'kind' => $kind, 'summary' => mb_substr($summary, 0, 500)]);
+                Audit::record($kind === 'ideia' ? 'ai.feature_requested' : 'ai.knowledge_gap', 'ok', $conversation);
+            }
         }
 
         if ($effects['drafts'] !== []) {

@@ -33,6 +33,18 @@ return [
         'commerce' => env('FOXY_COMMERCE_HOST', 'ecommerce.foxy.net.br'),
     ],
 
+    // Comunicados do Foxy Admin (docs/08, fase 2): WhatsApp pelo número da Foxy e ritmo do envio (por minuto).
+    'messaging' => [
+        'whatsapp' => [
+            'api_url' => env('FOXY_WHATSAPP_API_URL'),
+            'api_key' => env('FOXY_WHATSAPP_API_KEY'),
+            'instance' => env('FOXY_WHATSAPP_INSTANCE'),
+        ],
+        'emails_per_minute' => (int) env('FOXY_ANNOUNCEMENT_EMAILS_PER_MINUTE', 20),
+        'whatsapps_per_minute' => (int) env('FOXY_ANNOUNCEMENT_WHATSAPPS_PER_MINUTE', 5),
+        'whatsapp_pause_seconds' => [6, 10],
+    ],
+
     // Links da vitrine para os produtos.
     'products' => [
         'studio_url' => env('FOXY_STUDIO_URL', 'https://studio.foxy.net.br'),

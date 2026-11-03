@@ -1,6 +1,9 @@
 <?php
 
 use App\Admin\Http\AdminController;
+use App\Admin\Http\AnnouncementController;
+use App\Admin\Http\InsightController;
+use App\Platform\Http\AnnouncementUnsubscribeController;
 use App\Demo\Http\ConsoleController;
 use App\Demo\Http\LoginController;
 use Illuminate\Http\Request;
@@ -40,4 +43,19 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/promocoes', [AdminController::class, 'promotions'])->name('promotions');
     Route::post('/promocoes', [AdminController::class, 'storePromotion'])->name('promotions.store');
     Route::post('/promocoes/{promotion}/situacao', [AdminController::class, 'promotionStatus'])->name('promotions.status');
+    Route::get('/comunicados', [AnnouncementController::class, 'index'])->name('announcements');
+    Route::post('/comunicados', [AnnouncementController::class, 'store'])->name('announcements.store');
+    Route::get('/comunicados/{announcement}', [AnnouncementController::class, 'show'])->name('announcements.show');
+    Route::post('/comunicados/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update');
+    Route::post('/comunicados/{announcement}/teste', [AnnouncementController::class, 'test'])->middleware('throttle:10,1')->name('announcements.test');
+    Route::post('/comunicados/{announcement}/enviar', [AnnouncementController::class, 'send'])->name('announcements.send');
+    Route::post('/comunicados/{announcement}/cancelar', [AnnouncementController::class, 'cancel'])->name('announcements.cancel');
+    Route::get('/ideias', [InsightController::class, 'index'])->name('insights');
+    Route::post('/ideias/{insight}', [InsightController::class, 'update'])->name('insights.update');
+});
+
+// Link de cada comunicado para sair da lista (público, assinado; confirma por POST).
+Route::middleware(['signed', 'throttle:30,1'])->group(function () {
+    Route::get('/comunicados/sair/{delivery}', [AnnouncementUnsubscribeController::class, 'show'])->name('announcements.unsubscribe');
+    Route::post('/comunicados/sair/{delivery}', [AnnouncementUnsubscribeController::class, 'confirm']);
 });

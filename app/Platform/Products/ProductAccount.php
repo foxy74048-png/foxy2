@@ -29,7 +29,7 @@ class ProductAccount extends Model
     /** Situações em que a conta está usando o produto (recebe promoções "todas as contas"). */
     public const LIVE = ['active', 'trial', 'founder'];
 
-    protected $fillable = ['integration_id', 'external_ref', 'name', 'plan', 'status', 'mrr', 'signed_up_at', 'trial_ends_at', 'last_activity_at', 'seen_at'];
+    protected $fillable = ['integration_id', 'external_ref', 'name', 'plan', 'status', 'mrr', 'signed_up_at', 'trial_ends_at', 'last_activity_at', 'seen_at', 'contact_name', 'email', 'whatsapp'];
 
     protected function casts(): array
     {
@@ -39,6 +39,8 @@ class ProductAccount extends Model
             'trial_ends_at' => 'datetime',
             'last_activity_at' => 'datetime',
             'seen_at' => 'datetime',
+            'email_opt_out_at' => 'datetime',
+            'whatsapp_opt_out_at' => 'datetime',
         ];
     }
 
