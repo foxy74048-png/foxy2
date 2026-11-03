@@ -7,6 +7,7 @@ use App\Ai\Http\HostProfileController;
 use App\Ai\Http\UsageController;
 use App\Platform\Context\ExecutionContext;
 use App\Platform\Http\OrganizationController;
+use App\Platform\Http\ProductCommandController;
 use App\Platform\Http\ProductSnapshotController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,11 @@ Route::prefix('v1')->middleware(['api.client', 'throttle:api-client'])->group(fu
 
     // Retrato das contas de cada produto para o Foxy Admin (docs/08, seção 3).
     Route::post('/product-snapshot', [ProductSnapshotController::class, 'store'])->middleware('api.scope:products.snapshot');
+    // O que o Foxy Admin pediu para o produto (o produto busca, executa e devolve o resultado).
+    Route::middleware('api.scope:products.commands')->group(function () {
+        Route::get('/product-commands', [ProductCommandController::class, 'index']);
+        Route::post('/product-commands/{id}/result', [ProductCommandController::class, 'result']);
+    });
 
     Route::middleware('api.scope:organizations')->group(function () {
         Route::post('/organizations', [OrganizationController::class, 'store']);

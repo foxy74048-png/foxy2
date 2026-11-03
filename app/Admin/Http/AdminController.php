@@ -59,6 +59,13 @@ class AdminController
                 'clients' => AiPromotionGrant::where('created_at', '>=', now()->startOfMonth())->distinct('organization_id')->count('organization_id'),
             ],
             'month' => $month,
+            'attention' => [
+                'problems' => ProductAccount::where('status', '!=', 'removed')->whereNotNull('problems')->get()->filter(fn ($a) => ! empty($a->problems))->take(8),
+                'tickets' => \App\Platform\Products\ProductTicket::where('status', 'open')->count(),
+                'idlePaying' => ProductAccount::where('status', 'active')->where('mrr', '>', 0)->whereIn('health', ['idle', 'never'])->count(),
+                'trialsEnding' => ProductAccount::where('status', 'trial')->whereBetween('trial_ends_at', [now(), now()->addDays(3)])->count(),
+                'failedCommands' => \App\Platform\Products\ProductCommand::where('status', 'falhou')->where('created_at', '>=', now()->subDays(7))->count(),
+            ],
         ]);
     }
 

@@ -1,6 +1,8 @@
 <?php
 
+use App\Admin\Http\AccountAdminController;
 use App\Admin\Http\AdminController;
+use App\Admin\Http\SupportAdminController;
 use App\Admin\Http\AnnouncementController;
 use App\Admin\Http\InsightController;
 use App\Platform\Http\AnnouncementUnsubscribeController;
@@ -40,6 +42,12 @@ Route::middleware('auth')->prefix('console')->group(function () {
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/contas', [AdminController::class, 'accounts'])->name('accounts');
+    Route::get('/contas/{account}', [AccountAdminController::class, 'show'])->name('accounts.show');
+    Route::post('/contas/{account}/acao', [AccountAdminController::class, 'command'])->middleware('throttle:30,1')->name('accounts.command');
+    Route::post('/contas/{account}/presente', [AccountAdminController::class, 'gift'])->middleware('throttle:30,1')->name('accounts.gift');
+    Route::post('/contas/{account}/ajuda', [AccountAdminController::class, 'help'])->middleware('throttle:20,1')->name('accounts.help');
+    Route::get('/suporte', [SupportAdminController::class, 'index'])->name('support');
+    Route::post('/suporte/{ticket}', [SupportAdminController::class, 'reply'])->middleware('throttle:30,1')->name('support.reply');
     Route::get('/promocoes', [AdminController::class, 'promotions'])->name('promotions');
     Route::post('/promocoes', [AdminController::class, 'storePromotion'])->name('promotions.store');
     Route::post('/promocoes/{promotion}/situacao', [AdminController::class, 'promotionStatus'])->name('promotions.status');

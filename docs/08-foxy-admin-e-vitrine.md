@@ -38,6 +38,26 @@ atividade). Sem dados de contato nesta fase (LGPD: só o necessário). O Studio 
 (`foxy-admin:enviar`). A conta do produto e o cliente da Foxy AI se ligam pelo mesmo `external_ref`
 (`foxy-ws-{id}` no Studio).
 
+### 3.1 Centralizado no Admin (2026-11-04)
+
+Pedido do responsável: centralizar no Foxy Admin tudo o que der antes do Commerce.
+
+- **Ficha da conta** (`/admin/contas/{conta}`): situação, plano, MRR, teste, saúde de uso, números do produto, contato,
+  problemas (com a mensagem de ajuda pronta), raposa (uso, extras, liberação), brindes, comunicados, chamados e o histórico
+  de ações — e um atalho para a conta no admin do produto.
+- **Ações que o produto executa** — **comandos** (`product_commands`): estender teste, suspender/reativar, Parceiro
+  Fundador, liberar a raposa, responder chamado. O Admin registra; o produto busca (`GET /api/v1/product-commands`,
+  escopo `products.commands`), executa com as regras dele e devolve (`POST .../{id}/result`). Pedido sem resposta em 10
+  min volta à fila. O Core nunca mexe no banco do produto.
+- **Ações do próprio Core:** perguntas de presente (promoção "uma vez" só daquela conta) e mensagem de ajuda pelo
+  WhatsApp da Foxy.
+- **Suporte central** (`/admin/suporte`): chamados de todos os produtos (o produto envia no retrato); a resposta vira o
+  comando `support.reply`.
+- **Pede atenção** no painel: chamados abertos, pagantes parados, testes acabando e contas com problema.
+- **Ficam no produto** (atalho no menu do Admin): planos e preços, site/termos, parcerias universitárias, conexão do
+  WhatsApp e "acessar como" (precisa do login do próprio produto).
+- O Studio envia o retrato a cada 10 minutos e logo depois de executar comandos.
+
 ## 4. Promoções de IA
 
 Perguntas extras de brinde, criadas e controladas no Admin. Cada promoção tem:

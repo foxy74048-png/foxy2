@@ -32,7 +32,7 @@
                 <tbody>
                     @foreach ($accounts as $a)
                         <tr>
-                            <td><strong>{{ $a->name }}</strong></td>
+                            <td><a href="{{ route('admin.accounts.show', $a) }}"><strong>{{ $a->name }}</strong></a>@if (! empty($a->problems))<div class="helper" style="color:#b91c1c;">⚠️ {{ collect($a->problems)->pluck('label')->implode(' · ') }}</div>@endif @if ($a->healthLabel())<div class="helper">{{ $a->healthLabel() }}</div>@endif</td>
                             <td>{{ $a->integration?->name }}</td>
                             <td>{{ $a->plan ?? '—' }}</td>
                             <td><span @class(['badge', 'success' => $a->status === 'active', 'danger' => in_array($a->status, ['canceled', 'expired', 'suspended'], true)])>{{ $a->statusLabel() }}</span>@if ($a->status === 'trial' && $a->trial_ends_at)<div class="helper">até {{ $a->trial_ends_at->format('d/m') }}</div>@endif</td>

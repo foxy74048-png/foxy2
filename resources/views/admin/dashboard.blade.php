@@ -11,6 +11,22 @@
         <div class="card"><div class="muted">Promoções de IA valendo</div><h2>{{ $promotions['running'] }}</h2><div class="helper">{{ $n($promotions['granted']) }} perguntas de brinde para {{ $promotions['clients'] }} cliente(s) neste mês</div></div>
     </div>
 
+    <h3 style="margin-top:24px;">Pede atenção</h3>
+    <div class="grid cards">
+        <a class="card" href="{{ route('admin.support') }}" style="text-decoration:none;"><div class="muted">Chamados abertos</div><h2>{{ $attention['tickets'] }}</h2></a>
+        <div class="card"><div class="muted">Pagantes parados</div><h2>{{ $attention['idlePaying'] }}</h2><div class="helper">pagam e não usam — risco de cancelar</div></div>
+        <div class="card"><div class="muted">Testes acabando (3 dias)</div><h2>{{ $attention['trialsEnding'] }}</h2></div>
+        @if ($attention['failedCommands'])<div class="card" style="border-color:#fca5a5;"><div class="muted">Ações que não deram certo (7 dias)</div><h2>{{ $attention['failedCommands'] }}</h2></div>@endif
+    </div>
+    @if ($attention['problems']->isNotEmpty())
+        <div class="card" style="margin-top:12px;">
+            <strong>⚠️ Contas com problema</strong>
+            @foreach ($attention['problems'] as $a)
+                <div class="helper"><a href="{{ route('admin.accounts.show', $a) }}">{{ $a->name }}</a> — {{ collect($a->problems)->pluck('label')->implode(' · ') }}</div>
+            @endforeach
+        </div>
+    @endif
+
     <h3 style="margin-top:24px;">Produtos</h3>
     <div class="grid cards">
         @forelse ($products as $p)
