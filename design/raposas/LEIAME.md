@@ -1,13 +1,13 @@
 # Desenhos das raposas
 
-**Geometria idêntica à da logo** (decidido em 2026-11-03): as quatro raposas usam as mesmas facetas, tons e contorno da logo da Foxy; muda só a cor (tom a tom) e o rosto/traço de cada uma:
+**Geometria idêntica à da logo** (decidido em 2026-11-03; aparência a partir das fotos de referência dos cachorros do responsável): as quatro raposas usam as mesmas facetas, tons e contorno da logo da Foxy; muda só a cor (tom a tom) e o rosto/traço de cada uma:
 
 | Raposa | Cores | Traço |
 |---|---|---|
-| Chico | ruivo | um dentinho de baixo para fora |
-| Lud | branca | raposinha delicada, cílios, sorriso sem dentes |
-| Lobinho | cinza | rajadinho (listras na testa e nas bochechas) |
-| Ayla | caramelo | bebê brincalhona: olhos grandes, bochechas coradas, linguinha de fora |
+| Chico | preto | olhos castanhos, um dentinho de baixo para fora |
+| Lud | escura (rajadinha) | focinho, queixo e sobrancelhas grisalhos, língua de fora, sem dentes à mostra |
+| Lobinho | marrom e preto | rajado no rosto todo, focinho escuro, olhos cor de mel, língua de fora |
+| Ayla | caramelo | focinho clarinho, olhos grandes, bochechas coradas, lenço rosado no pescoço |
 
 Três estilos à escolha de cada pessoa: **facetas** (padrão, igual à logo), **linhas** (só os traços da malha, fundo claro) e **neon** (malha luminosa no escuro).
 

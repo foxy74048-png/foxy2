@@ -99,10 +99,10 @@ Cada raposa tem **nome unissex, visual próprio e um jeito de falar**. As regras
 
 | Raposa | Visual (2026-11-03) | Jeito |
 |---|---|---|
-| **Chico** | ruivo, dentinho para fora | Objetivo e direto, respostas curtas |
-| **Lud** | branca e delicada, cílios, sorriso sem dentes | Acolhedora e paciente, explica passo a passo |
-| **Lobinho** | cinza e rajadinho | Animado, usa emoji com moderação |
-| **Ayla** | caramelo, bebê brincalhona (linguinha de fora) | Formal e cuidadosa, linguagem mais séria |
+| **Chico** | pretinho, dentinho de baixo para fora | Objetivo e direto, respostas curtas |
+| **Lud** | escurinha, focinho e queixo grisalhos, língua de fora | Acolhedora e paciente, explica passo a passo |
+| **Lobinho** | rajado marrom e preto, olhos cor de mel, língua de fora | Animado, usa emoji com moderação |
+| **Ayla** | caramelo, focinho clarinho, olhos grandes, lenço rosado | Formal e cuidadosa, linguagem mais séria |
 
 Nomes definidos em 2026-11-01. Qualquer pessoa pode **renomear** a sua raposa depois (em todos os planos).
 
