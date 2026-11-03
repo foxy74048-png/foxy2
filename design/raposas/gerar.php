@@ -34,7 +34,7 @@ const CR = 286;
  */
 $foxes = [
     'chico' => ['nome' => 'Chico', 'dark' => '#0b0b0e', 'mid' => '#26262c', 'light' => '#5a5b63', 'ink' => '#050507', 'rim' => '#a7a6b2', 'neon' => '#d4d6e2',
-        'iris' => '#a06a3a', 'mouth' => '#cfcad8', 'ring' => null, 'muzzle' => null, 'tooth' => true],
+        'iris' => '#a06a3a', 'mouth' => '#8d8996', 'ring' => null, 'muzzle' => null, 'tooth' => true],
     'lud' => ['nome' => 'Lud', 'dark' => '#17110d', 'mid' => '#3d3026', 'light' => '#7a695a', 'ink' => '#0d0907', 'rim' => '#e6d6c8', 'neon' => '#e6ded2',
         'iris' => '#8a5428', 'mouth' => '#1a130d', 'ring' => null, 'muzzle' => ['#d9d2ca', 0.75], 'muzzle_small' => true, 'tongue' => true, 'small_tongue' => true, 'brindle' => ['#5c4a36', 0.22],
         'lashes' => true, 'blush' => true, 'tiara' => true, 'sparkly' => true],
@@ -156,12 +156,14 @@ function face(array $fox, string $mode): string
         if (! $neon) {
             $g .= '<path d="M249.5 423 L249.5 '.(! empty($fox['small_tongue']) ? 431 : 436).'" stroke="#d9546f" stroke-width="2.2" stroke-linecap="round"/>';
         }
+    } elseif (! empty($fox['tooth'])) {
+        $g .= "<path d=\"M230 413 Q249.5 430 269 413\" fill=\"none\" stroke=\"$mouth\" stroke-width=\"4\" stroke-linecap=\"round\"$glow/>";
     } else {
         $g .= "<path d=\"M249.5 409 L249.5 417 M226 414 Q237 428 249.5 417 Q262 428 273 414\" fill=\"none\" stroke=\"$mouth\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"$glow/>";
     }
 
-    if (! empty($fox['tooth'])) { // dentinho de baixo para fora, subindo por cima da boca
-        $g .= '<path d="M257 427 L270 427 L269 414 Q263.5 407 258 414 Z" fill="'.($neon ? 'none' : '#ffffff')."\" stroke=\"".($neon ? $line : $fox['ink'])."\" stroke-width=\"2.6\" stroke-linejoin=\"round\"$glow/>";
+    if (! empty($fox['tooth'])) { // dentinho de baixo, no meio do sorriso
+        $g .= '<path d="M244 428 L255 428 L254.5 417 Q249.5 411 244.5 417 Z" fill="'.($neon ? 'none' : '#ffffff')."\" stroke=\"".($neon ? $line : '#2e2e34')."\" stroke-width=\"2.2\" stroke-linejoin=\"round\"$glow/>";
     }
     $g .= '</g>';
 
