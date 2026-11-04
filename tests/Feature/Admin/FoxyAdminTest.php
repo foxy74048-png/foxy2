@@ -84,6 +84,19 @@ class FoxyAdminTest extends TestCase
         $this->get('/admin/contas')->assertOk()->assertSee('Conta ws-1')->assertDontSee('Conta ws-2');
     }
 
+    public function test_mrr_counts_what_the_product_sends_even_for_founders_paying_by_agreement(): void
+    {
+        // Parceiro Fundador que paga R$ 30 por fora (ex.: GAAF) entra no faturamento; teste e expirada valem 0.
+        $this->snapshot([
+            $this->account('ws-gaaf', 'founder', ['mrr' => 30]),
+            $this->account('ws-teste', 'trial'),
+            $this->account('ws-velha', 'expired'),
+        ])->assertOk();
+
+        $this->actingAs(User::factory()->create());
+        $this->get('/admin')->assertOk()->assertSee('R$ 30,00')->assertDontSee('R$ 59,90');
+    }
+
     public function test_snapshot_needs_the_scope_and_stays_in_its_own_product(): void
     {
         [, $limited] = $this->integrationWithKey('Outro sistema', ['ai.conversations']);

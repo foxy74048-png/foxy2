@@ -38,6 +38,10 @@ atividade). Sem dados de contato nesta fase (LGPD: só o necessário). O Studio 
 (`foxy-admin:enviar`). A conta do produto e o cliente da Foxy AI se ligam pelo mesmo `external_ref`
 (`foxy-ws-{id}` no Studio).
 
+O **MRR** de cada conta é o que o produto envia (o produto decide quem paga: no Studio, Stripe não isento ou
+valor mensal combinado por fora). O painel soma o MRR de todas as contas não removidas, sem filtrar pela
+situação — um Parceiro Fundador que paga por fora (ex.: GAAF, R$ 30) entra no faturamento.
+
 ### 3.1 Centralizado no Admin (2026-11-04)
 
 Pedido do responsável: centralizar no Foxy Admin tudo o que der antes do Commerce.

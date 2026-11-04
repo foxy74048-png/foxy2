@@ -38,7 +38,9 @@ class AdminController
                 'integration' => $integration,
                 'snapshot' => ProductSnapshot::where('integration_id', $integration->id)->latest('taken_at')->first(),
                 'by_status' => $accounts->countBy('status'),
-                'mrr' => (float) $accounts->where('status', 'active')->sum('mrr'),
+                // O produto já manda o MRR certo de cada conta (0 para teste/isenta; valor combinado por fora conta mesmo
+                // em Parceiro Fundador, ex.: GAAF). Por isso soma tudo que não foi removido, sem filtrar pela situação.
+                'mrr' => (float) $accounts->where('status', '!=', 'removed')->sum('mrr'),
                 'ai_clients' => $orgIds->count(),
                 'ai_messages' => $ai->sum('messages'),
                 'ai_credits' => $ai->sum('credits'),
@@ -62,7 +64,7 @@ class AdminController
             'attention' => [
                 'problems' => ProductAccount::where('status', '!=', 'removed')->whereNotNull('problems')->get()->filter(fn ($a) => ! empty($a->problems))->take(8),
                 'tickets' => \App\Platform\Products\ProductTicket::where('status', 'open')->count(),
-                'idlePaying' => ProductAccount::where('status', 'active')->where('mrr', '>', 0)->whereIn('health', ['idle', 'never'])->count(),
+                'idlePaying' => ProductAccount::where('status', '!=', 'removed')->where('mrr', '>', 0)->whereIn('health', ['idle', 'never'])->count(),
                 'trialsEnding' => ProductAccount::where('status', 'trial')->whereBetween('trial_ends_at', [now(), now()->addDays(3)])->count(),
                 'failedCommands' => \App\Platform\Products\ProductCommand::where('status', 'falhou')->where('created_at', '>=', now()->subDays(7))->count(),
             ],
