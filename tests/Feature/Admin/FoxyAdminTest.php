@@ -125,9 +125,11 @@ class FoxyAdminTest extends TestCase
         app(PromotionEngine::class)->apply();
         $this->assertSame(100, $this->extraCredits($new), 'aplicar de novo não repete');
 
-        // Cliente que aparece depois na Foxy AI já ganha na hora.
+        // Conta nova que aparece depois no produto já ganha na hora (o cliente da Foxy AI nasce na entrega,
+        // e o 1º uso no produto reaproveita o mesmo cliente).
         $this->snapshot([$this->account('ws-velha'), $this->account('ws-nova'), $this->account('ws-recente')]);
-        $this->withToken($this->key)->postJson('/api/v1/organizations', ['name' => 'Conta ws-recente', 'external_ref' => 'ws-recente'])->assertCreated();
+        $this->withToken($this->key)->postJson('/api/v1/organizations', ['name' => 'Conta ws-recente', 'external_ref' => 'ws-recente'])->assertSuccessful();
+        $this->assertSame(1, Organization::where('external_ref', 'ws-recente')->count());
         $this->assertSame(100, $this->extraCredits(Organization::where('external_ref', 'ws-recente')->first()));
     }
 
@@ -162,6 +164,34 @@ class FoxyAdminTest extends TestCase
         app(PromotionEngine::class)->apply();
 
         $this->withToken($this->key)->getJson("/api/v1/organizations/{$org->id}/ai-subscription")->assertOk()->assertJsonPath('credits_extra', 100);
+    }
+
+    public function test_promotion_reaches_accounts_that_never_used_the_fox_and_the_product_learns_it(): void
+    {
+        // Conta do produto sem cliente na Foxy AI (nunca abriu a raposa): a promoção cria o cliente e entrega.
+        $this->snapshot([$this->account('ws-nova', 'trial'), $this->account('ws-cancelada', 'canceled')])
+            ->assertOk()->assertJsonPath('ai_extra.credits', []);
+        AiPromotion::create(['name' => 'Boas-vindas', 'audience' => 'todas', 'recurrence' => 'uma_vez', 'credits' => 100, 'status' => 'ativa']);
+
+        app(PromotionEngine::class)->apply();
+
+        $org = Organization::where('external_ref', 'ws-nova')->first();
+        $this->assertNotNull($org, 'cliente criado com o mesmo external_ref que o produto usa no 1º uso');
+        $this->assertSame(100, $this->extraCredits($org));
+        $this->assertNull(Organization::where('external_ref', 'ws-cancelada')->first(), 'cancelada não entra em "todas"');
+
+        // No próximo retrato, o produto fica sabendo quem ganhou perguntas no mês (para mostrar a raposa).
+        $this->snapshot([$this->account('ws-nova', 'trial'), $this->account('ws-cancelada', 'canceled')])
+            ->assertOk()
+            ->assertJsonPath('ai_extra.period', now()->format('Y-m'))
+            ->assertJsonPath('ai_extra.credits', ['ws-nova' => 100]);
+
+        // O 1º uso no produto reaproveita o mesmo cliente e o plano "só extras" deixa usar o presente.
+        $this->withToken($this->key)->postJson('/api/v1/organizations', ['name' => 'Conta ws-nova', 'external_ref' => 'ws-nova'])
+            ->assertSuccessful()->assertJsonPath('id', $org->id);
+        $this->withToken($this->key)->putJson("/api/v1/organizations/{$org->id}/ai-subscription", ['plan' => 'ia-0'])->assertSuccessful();
+        $this->withToken($this->key)->getJson("/api/v1/organizations/{$org->id}/ai-subscription")->assertOk()
+            ->assertJsonPath('credits_included', 0)->assertJsonPath('credits_extra', 100)->assertJsonPath('credits_available', 100);
     }
 
     public function test_trial_and_canceled_follow_the_audience(): void

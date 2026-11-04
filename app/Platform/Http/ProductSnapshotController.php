@@ -121,6 +121,17 @@ class ProductSnapshotController
         // Conta nova pode entrar numa promoção de IA na hora (ex.: "1º mês ganha +100").
         $granted = $promotions->apply();
 
-        return response()->json(['accounts' => count($refs), 'promotion_grants' => $granted]);
+        // Perguntas extras de cada conta no mês (promoções, presentes, pacotes): o produto mostra a raposa para quem
+        // ganhou, mesmo sem perguntas no plano. Só contas com extra; quem não aparece não tem.
+        $organizations = \App\Platform\Organizations\Organization::where('integration_id', $integrationId)->whereIn('external_ref', $refs)->pluck('external_ref', 'id');
+        $aiExtra = \App\Ai\Plans\AiCreditGrant::withoutGlobalScopes()
+            ->whereIn('organization_id', $organizations->keys())
+            ->where('period', now()->format('Y-m'))
+            ->selectRaw('organization_id, sum(credits) as credits')->groupBy('organization_id')
+            ->pluck('credits', 'organization_id')
+            ->mapWithKeys(fn ($credits, $orgId) => [$organizations[$orgId] => (int) $credits])
+            ->filter(fn (int $credits) => $credits > 0);
+
+        return response()->json(['accounts' => count($refs), 'promotion_grants' => $granted, 'ai_extra' => ['period' => now()->format('Y-m'), 'credits' => (object) $aiExtra->all()]]);
     }
 }

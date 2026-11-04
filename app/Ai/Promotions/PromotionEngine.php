@@ -40,34 +40,36 @@ class PromotionEngine
 
     /**
      * Clientes da Foxy AI que têm direito agora. A conta do produto (product_accounts) e o cliente se ligam pelo
-     * external_ref; sem conta conhecida, o cliente só entra em "contas escolhidas".
+     * external_ref. Conta do produto que ainda não usou a raposa ganha o cliente aqui (mesmo external_ref que o
+     * produto usa no 1º uso), para a promoção chegar a todas as contas — não só a quem já conversou.
      *
      * @return Collection<int, Organization>
      */
     public function eligible(AiPromotion $promotion): Collection
     {
-        $organizations = Organization::query()
-            ->where('status', 'active')
-            ->whereNotNull('external_ref')
+        $accounts = ProductAccount::query()
             ->when($promotion->integration_id, fn ($q) => $q->where('integration_id', $promotion->integration_id))
+            ->when($promotion->audience === 'contas', fn ($q) => $q->whereIn('external_ref', $promotion->account_refs ?? []))
+            ->when($promotion->audience !== 'contas', fn ($q) => $q->whereIn('status', ProductAccount::LIVE))
+            ->when($promotion->audience !== 'contas' && $promotion->plans, fn ($q) => $q->whereIn('plan', $promotion->plans))
+            ->when($promotion->audience === 'novas_contas', fn ($q) => $q->where('signed_up_at', '>=', now()->subDays($promotion->new_account_days ?: 30)))
             ->get();
 
-        if ($promotion->audience === 'contas') {
-            $refs = $promotion->account_refs ?? [];
+        $organizations = Organization::query()
+            ->whereNotNull('external_ref')
+            ->when($promotion->integration_id, fn ($q) => $q->where('integration_id', $promotion->integration_id))
+            ->get()
+            ->keyBy(fn (Organization $o) => $o->integration_id.'|'.$o->external_ref);
 
-            return $organizations->filter(fn (Organization $o) => in_array($o->external_ref, $refs, true))->values();
+        $eligible = $accounts->map(fn (ProductAccount $a) => $organizations->get($a->integration_id.'|'.$a->external_ref)
+            ?? Organization::create(['integration_id' => $a->integration_id, 'name' => $a->name, 'external_ref' => $a->external_ref]));
+
+        // "Contas escolhidas" também vale para cliente da Foxy AI sem conta no produto (ex.: o de demonstração).
+        if ($promotion->audience === 'contas') {
+            $eligible = $eligible->merge($organizations->filter(fn (Organization $o) => in_array($o->external_ref, $promotion->account_refs ?? [], true)));
         }
 
-        $accounts = ProductAccount::query()
-            ->whereIn('integration_id', $organizations->pluck('integration_id')->unique()->values())
-            ->whereIn('external_ref', $organizations->pluck('external_ref'))
-            ->whereIn('status', ProductAccount::LIVE)
-            ->when($promotion->plans, fn ($q) => $q->whereIn('plan', $promotion->plans))
-            ->when($promotion->audience === 'novas_contas', fn ($q) => $q->where('signed_up_at', '>=', now()->subDays($promotion->new_account_days ?: 30)))
-            ->get()
-            ->keyBy(fn (ProductAccount $a) => $a->integration_id.'|'.$a->external_ref);
-
-        return $organizations->filter(fn (Organization $o) => $accounts->has($o->integration_id.'|'.$o->external_ref))->values();
+        return $eligible->filter(fn (Organization $o) => $o->status === 'active')->unique(fn (Organization $o) => $o->getKey())->values();
     }
 
     private function grant(AiPromotion $promotion, Organization $organization): bool

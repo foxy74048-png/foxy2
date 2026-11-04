@@ -81,6 +81,9 @@ return [
         // Pacotes extras em múltiplos de 250 (ex.: 250, 1.000, 3.000), somados à franquia do mês.
         'extra_credits_step' => 250,
         'plans' => [
+            // Sem franquia: só o que a conta ganha (promoção, presente) ou compra no mês. O produto usa quando
+            // a conta não tem perguntas no plano, mas recebeu um presente/promoção do Foxy Admin.
+            'ia-0' => ['name' => 'IA só extras'] + $plan(0, $full, $allTiers, 7, 10),
             'ia-250' => $plan(250, $full, $allTiers, 7, 10),
             'ia-1000' => $plan(1000, $full, $allTiers, 15, 20),
             'ia-1500' => $plan(1500, $full, $allTiers, 15, 20),

@@ -83,10 +83,10 @@ class FeatureRequestsAndHistoryTest extends TestCase
     public function test_plan_decides_how_long_history_is_kept_and_how_long_a_conversation_can_be(): void
     {
         $this->withToken($this->key)->getJson('/api/v1/ai/plans')->assertOk()
-            ->assertJsonPath('data.0.code', 'ia-250')
-            ->assertJsonPath('data.0.retention_days', 7)
-            ->assertJsonPath('data.0.max_user_messages', 10)
-            ->assertJsonPath('data.7.retention_days', 30);
+            ->assertJsonPath('data.1.code', 'ia-250')
+            ->assertJsonPath('data.1.retention_days', 7)
+            ->assertJsonPath('data.1.max_user_messages', 10)
+            ->assertJsonPath('data.8.retention_days', 30);
 
         config(['foxy.ai.default_plan' => 'ia-250']);
         $this->travelTo(now()->startOfDay());

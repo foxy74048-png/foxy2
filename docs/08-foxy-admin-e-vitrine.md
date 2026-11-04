@@ -74,7 +74,13 @@ Perguntas extras de brinde, criadas e controladas no Admin. Cada promoção tem:
 As perguntas viram créditos extras da Foxy AI (`ai_credit_grants`, referência `promo-{id}`), valendo no mês em que
 entram. Aplicação idempotente (`ai_promotion_grants` único por promoção + cliente + período): ao salvar a promoção,
 quando um cliente novo aparece na Foxy AI e todo dia (`foxy:promocoes:aplicar`). Tudo registrado: quem ganhou,
-quanto e por quê. Obs.: o brinde só é usado por contas que têm a raposa ligada no produto.
+quanto e por quê.
+
+**Chega a todas as contas, não só a quem já usou a raposa:** a promoção parte das contas do produto (`product_accounts`)
+e cria o cliente da Foxy AI que ainda não existe, com o mesmo `external_ref` que o produto usa no 1º uso. A resposta do
+retrato (`POST /api/v1/product-snapshot`) traz `ai_extra` (`period` + perguntas extras do mês por `external_ref`) e o
+produto liga a raposa para quem ganhou, mesmo sem perguntas no plano (no Studio: `User::foxyAiExtraCreditsThisMonth`).
+Sem franquia no plano, o produto põe o cliente no plano **`ia-0`** ("IA só extras": 0 incluídas + extras do mês).
 
 ## 5. Comunicados e ideias/dúvidas (fase 2)
 
