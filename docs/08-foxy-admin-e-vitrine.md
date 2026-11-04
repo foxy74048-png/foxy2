@@ -98,8 +98,9 @@ enviado). Cancelar para o que ainda está na fila.
   (`FOXY_WHATSAPP_API_URL`, `FOXY_WHATSAPP_API_KEY`, `FOXY_WHATSAPP_INSTANCE`).
 
 **Ideias e dúvidas** (`/admin/ideias`): tudo que a raposa anota (`feature_request` → ideia; `knowledge_gap` → dúvida)
-fica também no Core (`ai_insights`, só o resumo), de **todos os produtos**, com produto e conta e situação (nova,
-avaliando, vai ser feita, feita, descartada).
+fica no Core (`ai_insights`: resumo e a tela de onde veio a pergunta — `conversations.last_page`), de **todos os
+produtos**, com produto e conta e situação (nova, avaliando, vai ser feita, feita, descartada). É o **único lugar**: o
+Studio deixou de guardar a própria cópia (a tela do Studio leva para cá).
 
 ## 6. Fases
 

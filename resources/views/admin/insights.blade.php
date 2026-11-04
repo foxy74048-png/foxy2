@@ -31,7 +31,7 @@
                         @php $account = $accountOf($item->organization); @endphp
                         <tr>
                             <td>{{ $item->created_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') }}</td>
-                            <td><strong>{{ $item->summary }}</strong></td>
+                            <td><strong>{{ $item->summary }}</strong>@if ($item->page)<div class="helper">Na tela: {{ $item->page }}</div>@endif</td>
                             <td>{{ $item->organization?->integration?->name ?? '—' }}<div class="helper">{{ $account?->name ?? $item->organization?->name }}</div></td>
                             <td>
                                 <form method="POST" action="{{ route('admin.insights.update', $item) }}" style="display:flex; gap:6px; align-items:center;">

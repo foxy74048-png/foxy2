@@ -118,6 +118,9 @@ class Assistant
                 throw AssistantException::conversationBusy();
             }
 
+            // Tela de onde veio a última pergunta: vai junto com a ideia/dúvida anotada para o Foxy Admin.
+            $conversation->forceFill(['last_page' => $page !== null && trim($page) !== '' ? mb_substr(trim($page), 0, 200) : null])->save();
+
             $userMessage = ['role' => 'user', 'content' => [
                 ['type' => 'text', 'text' => $this->contextBlock($page, in_array('erros', $conversation->capabilities ?? AiPlan::CAPABILITIES, true) ? $error : null)],
                 ['type' => 'text', 'text' => $text],
@@ -250,7 +253,7 @@ class Assistant
         // Ideias e dúvidas vão para o Foxy Admin (de todos os produtos), além de voltarem ao sistema.
         foreach (['ideia' => 'feature_request', 'duvida' => 'knowledge_gap'] as $kind => $effect) {
             if ($summary = $effects[$effect]['summary'] ?? null) {
-                AiInsight::create(['organization_id' => $conversation->organization_id, 'kind' => $kind, 'summary' => mb_substr($summary, 0, 500)]);
+                AiInsight::create(['organization_id' => $conversation->organization_id, 'kind' => $kind, 'summary' => mb_substr($summary, 0, 500), 'page' => $conversation->last_page]);
                 Audit::record($kind === 'ideia' ? 'ai.feature_requested' : 'ai.knowledge_gap', 'ok', $conversation);
             }
         }

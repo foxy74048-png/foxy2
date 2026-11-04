@@ -135,10 +135,10 @@ class AnnouncementsAndInsightsTest extends TestCase
         $conversation = $this->withToken($this->key)->withHeaders(['X-Foxy-Organization' => $org->id])->postJson('/api/v1/conversations', ['host_profile' => 'agenda-demo', 'user_ref' => 'u-1'])->json('conversation_id');
 
         $this->ai->pushToolUse([['id' => 'toolu_1', 'name' => 'foxy_registrar_sugestao', 'input' => ['pedido' => 'Emitir nota fiscal.']]])->pushText('Anotei.');
-        $this->withToken($this->key)->withHeaders(['X-Foxy-Organization' => $org->id])->postJson("/api/v1/conversations/{$conversation}/messages", ['text' => 'nota fiscal?'])->assertOk();
+        $this->withToken($this->key)->withHeaders(['X-Foxy-Organization' => $org->id])->postJson("/api/v1/conversations/{$conversation}/messages", ['text' => 'nota fiscal?', 'page' => 'Financeiro'])->assertOk();
 
-        $this->assertDatabaseHas('ai_insights', ['organization_id' => $org->id, 'kind' => 'ideia', 'summary' => 'Emitir nota fiscal.']);
-        $this->get('/admin/ideias')->assertOk()->assertSee('Emitir nota fiscal.')->assertSee('Foxy Studio')->assertSee('Studio ws-x');
+        $this->assertDatabaseHas('ai_insights', ['organization_id' => $org->id, 'kind' => 'ideia', 'summary' => 'Emitir nota fiscal.', 'page' => 'Financeiro']);
+        $this->get('/admin/ideias')->assertOk()->assertSee('Emitir nota fiscal.')->assertSee('Na tela: Financeiro')->assertSee('Foxy Studio')->assertSee('Studio ws-x');
 
         $insight = AiInsight::first();
         $this->post("/admin/ideias/{$insight->id}", ['status' => 'planejada'])->assertRedirect();

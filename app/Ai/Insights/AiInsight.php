@@ -17,7 +17,7 @@ class AiInsight extends Model
 
     public const STATUSES = ['nova' => 'Nova', 'avaliando' => 'Avaliando', 'planejada' => 'Vai ser feita', 'feita' => 'Feita', 'descartada' => 'Descartada'];
 
-    protected $fillable = ['organization_id', 'kind', 'summary', 'status'];
+    protected $fillable = ['organization_id', 'kind', 'summary', 'status', 'page'];
 
     public function organization(): BelongsTo
     {
