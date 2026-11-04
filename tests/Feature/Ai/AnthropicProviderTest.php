@@ -139,4 +139,18 @@ class AnthropicProviderTest extends TestCase
         $this->expectException(ProviderUnavailable::class);
         (new AnthropicProvider('k', null, 30, $http))->send($this->request());
     }
+    public function test_out_of_credit_is_told_apart_from_the_provider_being_down(): void
+    {
+        $http = $this->transporter(400, ['type' => 'error', 'error' => ['type' => 'invalid_request_error', 'message' => 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.']]);
+
+        try {
+            (new AnthropicProvider('k', null, 30, $http))->send($this->request());
+            $this->fail('deveria recusar');
+        } catch (\App\Ai\Providers\ProviderOutOfCredit) {
+            $this->addToAssertionCount(1);
+        }
+
+        $this->assertTrue(AnthropicProvider::isOutOfCredit('You have reached your specified API usage limits. You will regain access on 2026-12-01.'));
+        $this->assertFalse(AnthropicProvider::isOutOfCredit('Overloaded'));
+    }
 }

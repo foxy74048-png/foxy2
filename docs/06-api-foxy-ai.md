@@ -216,3 +216,4 @@ GET    /api/v1/usage?month=2026-10            → { "month", "messages", "cost_u
 | 403 | `no_ai_plan` / `tier_not_in_plan` | Cliente sem plano de IA ativo, ou faixa de modelo fora do plano. |
 | 429 | `credit_limit` / `rate_limited` | Créditos do mês acabaram (compre extras) ou excesso de mensagens por minuto. |
 | 503 | `ai_unavailable` | IA fora do ar: tente de novo. Nada foi gravado; reenviar é seguro. |
+| 503 | `ai_out_of_credit` | O saldo ou o limite de gasto do provedor de IA (Anthropic) acabou: só volta quando a Foxy recarregar ou subir o limite. Nada foi gravado. O sistema deve avisar o dono (não a pessoa). |

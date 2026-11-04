@@ -110,6 +110,16 @@ class ConversationApiTest extends TestCase
         $this->assertCount(0, $this->ai->requests);
     }
 
+    public function test_provider_out_of_credit_has_its_own_code(): void
+    {
+        $id = $this->openConversation($this->key);
+        $this->ai->push(new \App\Ai\Providers\ProviderOutOfCredit('sem crédito'))->pushText('Voltou.');
+
+        $this->send($id)->assertStatus(503)->assertJsonPath('error.code', 'ai_out_of_credit');
+        $this->assertDatabaseCount('usage_records', 0);
+        $this->send($id)->assertOk()->assertJsonPath('reply', 'Voltou.');
+    }
+
     public function test_provider_failure_returns_503_and_keeps_conversation_usable(): void
     {
         $id = $this->openConversation($this->key);

@@ -231,10 +231,10 @@ class Assistant
 
                 $newMessages[] = ['role' => 'user', 'content' => array_column($pending, 'result')];
             }
-        } catch (ProviderUnavailable) {
+        } catch (ProviderUnavailable $e) {
             $conversation->refresh()->release($statusOnFailure, $conversation->pending_tool_calls);
 
-            throw AssistantException::providerUnavailable();
+            throw $e instanceof \App\Ai\Providers\ProviderOutOfCredit ? AssistantException::providerOutOfCredit() : AssistantException::providerUnavailable();
         }
 
         $this->persist($conversation, $newMessages, $startsWithUserMessage, ['tool_rounds' => 0]);

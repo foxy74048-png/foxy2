@@ -89,4 +89,10 @@ class AssistantException extends RuntimeException
     {
         return new self('ai_unavailable', 'A IA está indisponível no momento. Tente de novo em instantes.', 503);
     }
+
+    /** Saldo/limite do provedor de IA acabou: o sistema avisa o dono (a pessoa vê a mesma mensagem de indisponível). */
+    public static function providerOutOfCredit(): self
+    {
+        return new self('ai_out_of_credit', 'A IA está indisponível no momento. Tente de novo mais tarde.', 503);
+    }
 }

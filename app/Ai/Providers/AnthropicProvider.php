@@ -69,6 +69,10 @@ class AnthropicProvider implements ModelProvider
         } catch (APIException $e) {
             Log::error('Falha ao chamar a Anthropic', ['exception' => $e::class, 'message' => $e->getMessage()]);
 
+            if (self::isOutOfCredit($e->getMessage())) {
+                throw new ProviderOutOfCredit('O crédito ou o limite de gasto do provedor de IA acabou.', previous: $e);
+            }
+
             throw new ProviderUnavailable('O provedor de IA não respondeu.', previous: $e);
         }
 
@@ -123,5 +127,14 @@ class AnthropicProvider implements ModelProvider
         }
 
         return $tool;
+    }
+
+    /**
+     * Recusa por saldo/limite da conta na Anthropic ("credit balance is too low", "reached your specified API usage
+     * limits"...): não adianta tentar de novo até recarregar ou subir o limite.
+     */
+    public static function isOutOfCredit(string $message): bool
+    {
+        return (bool) preg_match('/credit balance|billing|usage limit|spend(ing)? limit|purchase credits/i', $message);
     }
 }
