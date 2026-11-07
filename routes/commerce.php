@@ -2,8 +2,10 @@
 
 use App\Commerce\Http\AuthController;
 use App\Commerce\Http\BillingController;
+use App\Commerce\Http\CategoryController;
 use App\Commerce\Http\DashboardController;
 use App\Commerce\Http\InvitationController;
+use App\Commerce\Http\ProductController;
 use App\Commerce\Http\StoreController;
 use App\Commerce\Http\TeamController;
 use App\Commerce\Http\VerificationController;
@@ -63,6 +65,27 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/assinatura/assinar', [BillingController::class, 'checkout'])->middleware('throttle:10,1')->name('billing.checkout');
             Route::post('/assinatura/gerenciar', [BillingController::class, 'portal'])->middleware('throttle:10,1')->name('billing.portal');
             Route::get('/assinatura/obrigado', [BillingController::class, 'thanks'])->name('billing.thanks');
+        });
+
+        // Catálogo (fatia 3)
+        Route::middleware('commerce.can:commerce.catalog.view')->group(function () {
+            Route::get('/produtos', [ProductController::class, 'index'])->name('products');
+            Route::get('/categorias', [CategoryController::class, 'index'])->name('categories');
+        });
+        Route::middleware('commerce.can:commerce.catalog.manage')->group(function () {
+            Route::get('/produtos/novo', [ProductController::class, 'create'])->name('products.create');
+            Route::post('/produtos', [ProductController::class, 'store'])->name('products.store');
+            Route::get('/produtos/{product}', [ProductController::class, 'edit'])->name('products.edit');
+            Route::post('/produtos/{product}', [ProductController::class, 'update'])->name('products.update');
+            Route::post('/produtos/{product}/variantes', [ProductController::class, 'updateVariants'])->name('products.variants');
+            Route::post('/produtos/{product}/grade', [ProductController::class, 'extendGrid'])->name('products.grid');
+            Route::post('/produtos/{product}/kit', [ProductController::class, 'updateComponents'])->name('products.kit');
+            Route::post('/produtos/{product}/arquivar', [ProductController::class, 'archive'])->name('products.archive');
+            Route::post('/produtos/{product}/fotos', [ProductController::class, 'uploadImages'])->middleware('throttle:30,1')->name('products.images');
+            Route::post('/produtos/{product}/fotos/{image}/apagar', [ProductController::class, 'deleteImage'])->name('products.images.delete');
+            Route::post('/categorias', [CategoryController::class, 'store'])->name('categories.store');
+            Route::post('/categorias/{category}', [CategoryController::class, 'update'])->name('categories.update');
+            Route::post('/categorias/{category}/apagar', [CategoryController::class, 'destroy'])->name('categories.destroy');
         });
 
         Route::get('/equipe', [TeamController::class, 'index'])->middleware('commerce.can:commerce.team.view')->name('team');

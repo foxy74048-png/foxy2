@@ -14,6 +14,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -40,6 +41,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $isCommerce = fn (Request $request) => strtolower($request->getHost()) === config('foxy.hosts.commerce');
         $middleware->redirectGuestsTo(fn (Request $request) => $isCommerce($request) ? route('commerce.login') : route('login'));
         $middleware->redirectUsersTo(fn (Request $request) => $isCommerce($request) ? route('commerce.dashboard') : '/console');
+
+        // A loja (contexto) precisa existir antes de carregar o model da rota: o escopo da loja filtra a busca.
+        $middleware->prependToPriorityList(SubstituteBindings::class, ResolveStore::class);
 
         // O Stripe não manda token de formulário; o webhook confere a assinatura dele.
         $middleware->validateCsrfTokens(except: ['stripe/webhook']);

@@ -1,6 +1,10 @@
 {{-- Menu do app do lojista. Os módulos entram aqui conforme as fatias de docs/09 (seção 11). --}}
 <div class="core-nav-title">{{ $currentStore->name }}</div>
 <x-core::nav-link href="{{ route('commerce.dashboard') }}" :active="request()->routeIs('commerce.dashboard')" icon="home">Painel</x-core::nav-link>
+@if (\App\Commerce\Access::allows($currentMembership, 'commerce.catalog.view'))
+    <x-core::nav-link href="{{ route('commerce.products') }}" :active="request()->routeIs('commerce.products*')" icon="copy">Produtos</x-core::nav-link>
+    <x-core::nav-link href="{{ route('commerce.categories') }}" :active="request()->routeIs('commerce.categories*')" icon="settings">Categorias</x-core::nav-link>
+@endif
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.team.view'))
     <x-core::nav-link href="{{ route('commerce.team') }}" :active="request()->routeIs('commerce.team*')" icon="users">Equipe</x-core::nav-link>
 @endif

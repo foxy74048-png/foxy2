@@ -10,6 +10,9 @@ return [
 
     'trial_days' => 14,
 
+    // Onde ficam as fotos de produto: "public" (servidor, exige storage:link) ou "s3" quando o bucket existir (F4).
+    'images_disk' => env('COMMERCE_IMAGES_DISK', 'public'),
+
     /*
     | Planos (docs/09, fatia 2). PREÇOS E LIMITES PROVISÓRIOS até a decisão D-C4 — mudar aqui e no Stripe.
     | stripe_price = id do preço mensal no Stripe (price_...). Limite null = sem limite.
@@ -43,7 +46,7 @@ return [
     'roles' => [
         'owner' => ['label' => 'Dono(a)', 'permissions' => ['*']],
         'manager' => ['label' => 'Gerente', 'permissions' => [
-            'commerce.team.view', 'commerce.store.manage', 'commerce.catalog.manage', 'commerce.stock.adjust',
+            'commerce.team.view', 'commerce.store.manage', 'commerce.catalog.view', 'commerce.catalog.manage', 'commerce.stock.view', 'commerce.stock.adjust',
             'commerce.orders.manage', 'commerce.orders.cancel', 'commerce.channels.manage', 'commerce.reports.view',
         ]],
         'attendant' => ['label' => 'Atendente', 'permissions' => [
