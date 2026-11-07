@@ -21,7 +21,7 @@ class ConsoleTest extends TestCase
 
     private function loggedIn(): self
     {
-        return $this->actingAs(User::factory()->create());
+        return $this->actingAs(User::factory()->staff()->create());
     }
 
     private function setupDemo(): void

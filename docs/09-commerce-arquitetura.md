@@ -1,6 +1,6 @@
 # Foxy Commerce — Recorte do Core e arquitetura concreta
 
-> **Status:** v0.1 (2026-11-07). Proposta para aprovação (decisões F1–F10, seção 12). **Código só depois da aprovação.**
+> **Status:** v1.0. F1–F10 aprovadas em 2026-11-07. Fatia 1 implementada (seção 11).
 > **Base:** `03-foxy-commerce.md` v1.0, `01-core-conceitual.md`, `05-arquitetura.md` (stack, padrões e infraestrutura já em produção).
 > **Critério:** mesmo da Foxy AI: menor custo no início e tudo preparado para crescer; o domínio já nasce multicanal.
 
@@ -159,7 +159,8 @@ A loja própria e o pedido manual também são canais (`storefront`, `manual`), 
 
 ## 11. Ordem de implementação (fatias, cada uma com testes e commit)
 
-1. **Identity e equipe:** `is_staff` (os usuários atuais viram staff), cadastro, login e recuperação no endereço do Commerce, memberships, convites, contexto `forUser`, permissões, loja (Store), ProductAccount no Admin.
+1. ✔ **Identity e equipe:** `is_staff` (os usuários atuais viram staff), cadastro, login e recuperação no endereço do Commerce, memberships, convites, contexto `forUser`, permissões, loja (Store), ProductAccount no Admin.
+   Feito em 2026-11-07: `users.is_staff` (quem já tinha login virou staff; `foxy:console-user:create` cria staff; console e Admin com middleware `staff` e login do console só para staff), `memberships`, `invitations` (token só no e-mail, hash no banco, 7 dias), `ExecutionContext::forUser`, middlewares `commerce.store` (loja da sessão ou a única) e `commerce.can:permissão`, papéis em `config/commerce.php`, `commerce_stores` (slug sem repetição nem palavra reservada), `OpenStore` (organização + loja + dono + conta no Admin via `AccountSync`). Rotas em `routes/commerce.php`, presas a `ecommerce.foxy.net.br`: `/entrar`, `/cadastro`, `/senha`, `/verificar-email`, `/convite/{token}`, `/app`, `/app/equipe`, `/app/lojas`, `/app/nova-loja`. **Cadastro público fechado** até o lançamento (`FOXY_COMMERCE_SIGNUP_OPEN=false`); com ele fechado, só a equipe Foxy abre loja (pelo `/app/nova-loja`) e funcionários entram por convite. Pendente para a fatia 2: as ações da ficha da conta no Admin (estender teste, suspender...) ainda não são lidas pelo Commerce.
 2. **Assinatura:** `subscriptions`, Stripe Checkout + portal + webhook (testes com Stripe falso), planos e limites, modo leitura, MRR do Commerce no Admin.
 3. **Catálogo:** categorias, produtos, gerador de grade, variantes, kits, imagens (Files).
 4. **Estoque:** StockService, entradas e ajustes, disponível de kit, alerta de estoque baixo.

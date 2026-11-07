@@ -16,10 +16,11 @@ class CreateConsoleUser extends Command
     {
         $password = Str::password(16, symbols: false);
 
-        User::updateOrCreate(
+        $user = User::updateOrCreate(
             ['email' => $this->argument('email')],
             ['name' => $this->option('name'), 'password' => $password],
         );
+        $user->forceFill(['is_staff' => true, 'email_verified_at' => $user->email_verified_at ?? now()])->save();
 
         $this->info('Acesso ao console criado. Guarde a senha agora — ela não será mostrada de novo:');
         $this->line($password);

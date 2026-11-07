@@ -14,7 +14,7 @@ class Integration extends Model
 {
     use HasUlids;
 
-    protected $fillable = ['name', 'status'];
+    protected $fillable = ['name', 'status', 'slug'];
 
     protected $attributes = ['status' => 'active'];
 

@@ -33,7 +33,7 @@ class AnnouncementsAndInsightsTest extends TestCase
             'foxy.messaging.whatsapp' => ['api_url' => 'https://whats.exemplo.test', 'api_key' => 'k', 'instance' => 'foxy_tenant_1'],
         ]);
         Http::fake(['whats.exemplo.test/*' => Http::response(['key' => ['id' => 'x']], 201)]);
-        $this->actingAs(User::factory()->create(['email' => 'equipe@foxy.test']));
+        $this->actingAs(User::factory()->staff()->create(['email' => 'equipe@foxy.test']));
     }
 
     private function snapshot(array $accounts)

@@ -38,6 +38,14 @@ final readonly class ExecutionContext
         return new self($integration, $organization, self::PRINCIPAL_API_CLIENT, $apiClientId, 'api', (string) Str::ulid());
     }
 
+    /**
+     * Uma pessoa logada agindo numa organização em que tem vínculo ativo (quem chama já conferiu o vínculo).
+     */
+    public static function forUser(Organization $organization, int|string $userId, string $source = 'web'): self
+    {
+        return new self($organization->integration, $organization, self::PRINCIPAL_USER, (string) $userId, $source, (string) Str::ulid());
+    }
+
     public static function forSystem(Organization $organization, string $source = 'job'): self
     {
         return new self($organization->integration, $organization, self::PRINCIPAL_SYSTEM, null, $source, (string) Str::ulid());

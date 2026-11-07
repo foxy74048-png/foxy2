@@ -2,24 +2,26 @@
 
 use App\Admin\Http\AccountAdminController;
 use App\Admin\Http\AdminController;
-use App\Admin\Http\SupportAdminController;
 use App\Admin\Http\AnnouncementController;
 use App\Admin\Http\InsightController;
-use App\Platform\Http\AnnouncementUnsubscribeController;
+use App\Admin\Http\SupportAdminController;
 use App\Demo\Http\ConsoleController;
 use App\Demo\Http\LoginController;
+use App\Platform\Http\AnnouncementUnsubscribeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// "/" depende do endereço: foxy.net.br = vitrine da marca; admin.foxy.net.br = Foxy Admin;
-// ecommerce.foxy.net.br = vitrine (Commerce em breve); ai.foxy.net.br = console.
+// Foxy Commerce (docs/09): tudo em ecommerce.foxy.net.br. Registrado antes das rotas sem endereço, para que
+// "/" do Commerce não caia no "/" geral.
+Route::domain(config('foxy.hosts.commerce'))->name('commerce.')->group(base_path('routes/commerce.php'));
+
+// "/" depende do endereço: foxy.net.br = vitrine da marca; admin.foxy.net.br = Foxy Admin; ai.foxy.net.br = console.
 Route::get('/', function (Request $request) {
     $host = strtolower($request->getHost());
 
     return match (true) {
         in_array($host, config('foxy.hosts.vitrine'), true) => response()->view('vitrine.index'),
         $host === config('foxy.hosts.admin') => redirect()->route('admin.dashboard'),
-        $host === config('foxy.hosts.commerce') => redirect()->away(rtrim(config('foxy.products.vitrine_url'), '/').'/#produtos'),
         default => redirect('/console'),
     };
 })->name('home');
@@ -29,7 +31,7 @@ Route::get('/console/login', [LoginController::class, 'show'])->name('login');
 Route::post('/console/login', [LoginController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/console/logout', [LoginController::class, 'logout'])->name('logout');
 
-Route::middleware('auth')->prefix('console')->group(function () {
+Route::middleware(['auth', 'staff'])->prefix('console')->group(function () {
     Route::get('/', [ConsoleController::class, 'index'])->name('console');
     // Endpoints da janela da raposa (o console faz o papel do servidor do sistema).
     Route::post('/assistant/messages', [ConsoleController::class, 'message']);
@@ -39,7 +41,7 @@ Route::middleware('auth')->prefix('console')->group(function () {
 });
 
 // Foxy Admin (docs/08): administrativo da empresa, por cima de todos os produtos.
-Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/contas', [AdminController::class, 'accounts'])->name('accounts');
     Route::get('/contas/{account}', [AccountAdminController::class, 'show'])->name('accounts.show');

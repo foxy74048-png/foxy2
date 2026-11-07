@@ -29,7 +29,7 @@ class CentralAdminTest extends TestCase
         [, $this->key] = $this->integrationWithKey('Foxy Studio');
         config(['foxy.messaging.whatsapp' => ['api_url' => 'https://whats.exemplo.test', 'api_key' => 'k', 'instance' => 'foxy_tenant_1']]);
         Http::fake(['whats.exemplo.test/*' => Http::response([], 201)]);
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->staff()->create());
     }
 
     private function snapshot(array $extra = [])

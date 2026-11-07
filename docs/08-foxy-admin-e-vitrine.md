@@ -106,4 +106,4 @@ Studio deixou de guardar a própria cópia (a tela do Studio leva para cá).
 
 1. ✔ Vitrine + Admin (painel, contas) + promoções de IA + envio do retrato pelo Studio.
 2. ✔ Comunicados (e-mail e WhatsApp pelo número da Foxy, com descadastro); ideias/dúvidas da raposa de todos os produtos no Admin.
-3. Assinaturas controladas pelo Admin e login único (Identity do Core), junto com o Commerce.
+3. Assinaturas controladas pelo Admin e login único (Identity do Core), junto com o Commerce. Login único começou em 2026-11-07 (docs/09, fatia 1): o Admin e o console agora exigem `is_staff`; clientes dos produtos têm login no mesmo Core e não entram aqui. As lojas do Commerce aparecem em Contas sozinhas (sem retrato por HTTP).

@@ -1,10 +1,13 @@
 <?php
 
 use App\Ai\Assistant\AssistantException;
+use App\Commerce\Http\Middleware\RequirePermission;
+use App\Commerce\Http\Middleware\ResolveStore;
 use App\Platform\ApiClients\AuthenticateApiClient;
 use App\Platform\ApiClients\RequireOrganization;
 use App\Platform\ApiClients\RequireScope;
 use App\Platform\Http\ApiError;
+use App\Platform\Identity\RequireStaff;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -26,7 +29,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.client' => AuthenticateApiClient::class,
             'api.scope' => RequireScope::class,
             'api.organization' => RequireOrganization::class,
+            'staff' => RequireStaff::class,
+            'commerce.store' => ResolveStore::class,
+            'commerce.can' => RequirePermission::class,
         ]);
+
+        // Cada produto tem o seu login: no endereço do Commerce, o do Commerce; no resto, o da equipe Foxy.
+        $isCommerce = fn (Request $request) => strtolower($request->getHost()) === config('foxy.hosts.commerce');
+        $middleware->redirectGuestsTo(fn (Request $request) => $isCommerce($request) ? route('commerce.login') : route('login'));
+        $middleware->redirectUsersTo(fn (Request $request) => $isCommerce($request) ? route('commerce.dashboard') : '/console');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Situações esperadas (limite, conversa expirada...) viram resposta da API, não erro no log.

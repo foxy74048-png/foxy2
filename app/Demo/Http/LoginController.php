@@ -22,7 +22,8 @@ class LoginController
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, remember: false)) {
+        // Só a equipe Foxy entra por aqui; clientes dos produtos entram pelo login do produto.
+        if (! Auth::attempt([...$credentials, 'is_staff' => true], remember: false)) {
             throw ValidationException::withMessages(['email' => 'E-mail ou senha incorretos.']);
         }
 

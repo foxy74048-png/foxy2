@@ -65,7 +65,7 @@ class FoxyAdminTest extends TestCase
     {
         $this->get('/admin')->assertRedirect(route('login'));
 
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->staff()->create());
         $this->get('/admin')->assertOk()->assertSee('Faturamento mensal');
         $this->get('/admin/contas')->assertOk();
         $this->get('/admin/promocoes')->assertOk()->assertSee('Nova promoção');
@@ -79,7 +79,7 @@ class FoxyAdminTest extends TestCase
         $this->assertSame('active', ProductAccount::where('external_ref', 'ws-1')->value('status'));
         $this->assertSame('removed', ProductAccount::where('external_ref', 'ws-2')->value('status'));
 
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->staff()->create());
         $this->get('/admin')->assertOk()->assertSee('R$ 59,90');
         $this->get('/admin/contas')->assertOk()->assertSee('Conta ws-1')->assertDontSee('Conta ws-2');
     }
@@ -93,7 +93,7 @@ class FoxyAdminTest extends TestCase
             $this->account('ws-velha', 'expired'),
         ])->assertOk();
 
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->staff()->create());
         $this->get('/admin')->assertOk()->assertSee('R$ 30,00')->assertDontSee('R$ 59,90');
     }
 
@@ -115,7 +115,7 @@ class FoxyAdminTest extends TestCase
         $new = $this->aiClient('ws-nova');
         $this->snapshot([$this->account('ws-velha', 'active', ['signed_up_at' => now()->subDays(90)->toIso8601String()]), $this->account('ws-nova')]);
 
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->staff()->create());
         $this->post('/admin/promocoes', ['name' => 'Boas-vindas', 'audience' => 'novas_contas', 'recurrence' => 'uma_vez', 'credits' => 100, 'new_account_days' => 30])
             ->assertRedirect(route('admin.promotions'))->assertSessionHas('status');
 
@@ -137,7 +137,7 @@ class FoxyAdminTest extends TestCase
     {
         $partner = $this->aiClient('ws-parceira');
         $this->aiClient('ws-outra');
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->staff()->create());
 
         $this->post('/admin/promocoes', ['name' => 'Parceria DA', 'audience' => 'contas', 'account_refs' => ['ws-parceira'], 'recurrence' => 'mensal', 'credits' => 500]);
         $promotion = AiPromotion::first();
