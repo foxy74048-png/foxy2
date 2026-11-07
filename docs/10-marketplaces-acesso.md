@@ -6,7 +6,7 @@
 
 ## O que vale para todos
 
-- **CNPJ da Foxy**, com os dados da empresa (razão social, endereço, telefone). A conta de desenvolvedor é da Foxy, não de uma pessoa.
+- **CNPJ da Foxy**, com os dados da empresa (razão social, endereço, telefone). A conta de desenvolvedor é da Foxy, não de uma pessoa. Hoje a Foxy é **MEI** (o responsável pretende passar a ME); a inscrição estadual depende da atividade registrada no MEI. Ponto para o contador: desenvolvimento de software/SaaS (CNAE 62xx) não aparece entre as atividades permitidas ao MEI segundo várias fontes.
 - **Endereços (já existem com HTTPS):**
   - retorno da autorização: `https://ecommerce.foxy.net.br/app/canais/{canal}/retorno`
   - notificações: `https://ecommerce.foxy.net.br/webhooks/commerce/{canal}`
