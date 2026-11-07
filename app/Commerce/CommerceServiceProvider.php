@@ -3,6 +3,7 @@
 namespace App\Commerce;
 
 use App\Commerce\Accounts\AccountSync;
+use App\Commerce\Inventory\StockService;
 use App\Platform\Billing\SubscriptionChanged;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -13,6 +14,12 @@ use Illuminate\Support\ServiceProvider;
 
 class CommerceServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        // Um por requisição/job: junta as mudanças de estoque e avisa uma vez só (StockChanged).
+        $this->app->scoped(StockService::class);
+    }
+
     public function boot(): void
     {
         // Assinatura mudou (Stripe, Foxy Admin): a conta da loja no Admin acompanha.

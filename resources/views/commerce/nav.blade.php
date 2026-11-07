@@ -5,6 +5,9 @@
     <x-core::nav-link href="{{ route('commerce.products') }}" :active="request()->routeIs('commerce.products*')" icon="copy">Produtos</x-core::nav-link>
     <x-core::nav-link href="{{ route('commerce.categories') }}" :active="request()->routeIs('commerce.categories*')" icon="settings">Categorias</x-core::nav-link>
 @endif
+@if (\App\Commerce\Access::allows($currentMembership, 'commerce.stock.view'))
+    <x-core::nav-link href="{{ route('commerce.stock') }}" :active="request()->routeIs('commerce.stock*')" icon="calendar">Estoque</x-core::nav-link>
+@endif
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.team.view'))
     <x-core::nav-link href="{{ route('commerce.team') }}" :active="request()->routeIs('commerce.team*')" icon="users">Equipe</x-core::nav-link>
 @endif

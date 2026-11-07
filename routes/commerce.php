@@ -6,6 +6,7 @@ use App\Commerce\Http\CategoryController;
 use App\Commerce\Http\DashboardController;
 use App\Commerce\Http\InvitationController;
 use App\Commerce\Http\ProductController;
+use App\Commerce\Http\StockController;
 use App\Commerce\Http\StoreController;
 use App\Commerce\Http\TeamController;
 use App\Commerce\Http\VerificationController;
@@ -86,6 +87,17 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/categorias', [CategoryController::class, 'store'])->name('categories.store');
             Route::post('/categorias/{category}', [CategoryController::class, 'update'])->name('categories.update');
             Route::post('/categorias/{category}/apagar', [CategoryController::class, 'destroy'])->name('categories.destroy');
+        });
+
+        // Estoque (fatia 4)
+        Route::middleware('commerce.can:commerce.stock.view')->group(function () {
+            Route::get('/estoque', [StockController::class, 'index'])->name('stock');
+            Route::get('/estoque/{variant}', [StockController::class, 'show'])->name('stock.show');
+        });
+        Route::middleware('commerce.can:commerce.stock.adjust')->group(function () {
+            Route::post('/estoque/entrada', [StockController::class, 'receive'])->name('stock.receive');
+            Route::post('/estoque/{variant}/ajuste', [StockController::class, 'adjust'])->name('stock.adjust');
+            Route::post('/estoque/{variant}/minimo', [StockController::class, 'minimum'])->name('stock.minimum');
         });
 
         Route::get('/equipe', [TeamController::class, 'index'])->middleware('commerce.can:commerce.team.view')->name('team');

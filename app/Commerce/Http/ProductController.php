@@ -9,6 +9,7 @@ use App\Commerce\Catalog\Money;
 use App\Commerce\Catalog\Product;
 use App\Commerce\Catalog\ProductImage;
 use App\Commerce\Catalog\Variant;
+use App\Commerce\Inventory\StockService;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
 use App\Platform\Files\File;
@@ -87,6 +88,7 @@ class ProductController
             'product' => $product,
             'categories' => Category::with('parent')->orderBy('name')->get(),
             'pieces' => $product->isKit() ? $this->pieces() : collect(),
+            'available' => app(StockService::class)->availability($product->variants),
         ]);
     }
 

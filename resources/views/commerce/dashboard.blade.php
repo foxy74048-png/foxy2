@@ -20,6 +20,13 @@
             </h2>
             @if (\App\Commerce\Access::allows($currentMembership, 'commerce.billing.manage'))<a href="{{ route('commerce.billing') }}">Ver assinatura</a>@endif
         </div>
+        @if (\App\Commerce\Access::allows($currentMembership, 'commerce.stock.view'))
+            <div class="card">
+                <div class="muted">Estoque baixo ou negativo</div>
+                <h2 @style(['margin:4px 0', 'color:var(--danger-text)' => $lowStock > 0])>{{ $lowStock }}</h2>
+                <a href="{{ route('commerce.stock', ['filtro' => 'baixo']) }}">Ver estoque</a>
+            </div>
+        @endif
         <div class="card">
             <div class="muted">Equipe</div>
             <h2 style="margin:4px 0;">{{ $teamCount }} {{ $teamCount === 1 ? 'pessoa' : 'pessoas' }}</h2>

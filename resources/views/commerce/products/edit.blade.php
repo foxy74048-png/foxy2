@@ -12,7 +12,7 @@
         @csrf
         <h3 style="margin-top:0;">{{ $product->isKit() ? 'Kit' : 'Variantes' }} <span class="muted">({{ $product->variants->count() }})</span></h3>
         <div class="table-wrap"><table>
-            <thead><tr>@if ($product->hasGrid())<th>Variante</th>@endif<th>SKU</th><th>Preço (R$)</th>@unless ($product->isKit())<th>Custo (R$)</th>@endunless<th>Código de barras</th><th>Ativa</th></tr></thead>
+            <thead><tr>@if ($product->hasGrid())<th>Variante</th>@endif<th>SKU</th><th>Preço (R$)</th>@unless ($product->isKit())<th>Custo (R$)</th>@endunless<th>Código de barras</th><th>Ativa</th><th>Disponível</th></tr></thead>
             <tbody>
                 @foreach ($product->variants as $v)
                     <tr>
@@ -27,6 +27,7 @@
                                 <option value="inactive" @selected($v->status === 'inactive')>Não</option>
                             </select>
                         </td>
+                        <td><a href="{{ route('commerce.stock.show', $v) }}">{{ $available[$v->id] ?? 0 }}</a></td>
                     </tr>
                 @endforeach
             </tbody>
