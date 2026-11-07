@@ -180,7 +180,7 @@ Depois: conectores Shopee e Magalu (fase 3), emissão de NF-e própria (fase 4).
 
 | # | Decisão | Recomendação |
 |---|---|---|
-| **F1** | Usuários | Uma tabela `users` para todos (base do login único), com `is_staff`; console e Admin exigem staff. |
+| **F1** ✔ | Usuários | Cada pessoa tem o próprio login; uma empresa (loja) tem vários logins, um por funcionário, convidados pelo dono com papel (gerente/atendente). Uma tabela `users` para todos, com `is_staff`; console e Admin exigem staff. Aprovado em 2026-11-07. |
 | **F2** | Loja no Core | Loja = Organization da integração "Foxy Commerce"; dados em `commerce_*` com `BelongsToOrganization`. |
 | **F3** | Assinatura | `stripe/stripe-php` direto (sem Cashier), Checkout + portal; teste grátis de 14 dias sem cartão. |
 | **F4** | Imagens | S3 com leitura pública só da pasta de imagens de produto (os marketplaces e a loja precisam da URL); local nos testes. |
