@@ -1,6 +1,6 @@
 # Foxy Commerce — Definição de Produto e Domínio
 
-> **Status:** v0.2 (2026-11-07). Retomado porque há lojistas interessados. Respostas do responsável já incorporadas; faltam as decisões da seção 10.
+> **Status:** v1.0 (2026-11-07). Recomendações D-C2 a D-C5 aprovadas; D-C1 só define a ordem das fatias e não trava o início. Arquitetura: `09-commerce-arquitetura.md`.
 > **Ordem:** segundo produto, sobre o Core da foxy2 (mesmo app de `ai.foxy.net.br` e do Foxy Admin). Endereço reservado: `ecommerce.foxy.net.br`.
 > **Mudança em relação à v0.1:** o produto deixou de ser "uma loja online com estoque" e passou a ser um **hub multicanal**: um cadastro, um estoque e uma fila de pedidos para todos os lugares onde o lojista vende (marketplaces, loja própria, WhatsApp e balcão).
 
@@ -190,11 +190,11 @@ placed ──► awaiting_payment ──► paid ──► in_fulfillment ──
 | D9 | Stack: a mesma do Core (Laravel 13, PHP 8.4, PostgreSQL), no app foxy2. |
 | D10 | Nota fiscal: primeiro importar a emitida pelo canal; emissão própria depois (fase 4). |
 
-## 10. Decisões pendentes
+## 10. Decisões da v1.0 (aprovadas em 2026-11-07, salvo D-C1)
 
 | # | Decisão | Recomendação |
 |---|---|---|
-| **D-C1** | Ordem das fases 1 e 2: loja própria primeiro ou Mercado Livre primeiro? | Depende de onde os clientes interessados já vendem. Se a maior parte do faturamento vem do Mercado Livre, inverter (hub primeiro, loja depois). |
+| **D-C1** (em aberto) | Ordem das fases 1 e 2: loja própria primeiro ou Mercado Livre primeiro? | Depende de onde os clientes interessados já vendem. Se a maior parte do faturamento vem do Mercado Livre, inverter (hub primeiro, loja depois). |
 | **D-C2** | Quais marketplaces, em que ordem | Mercado Livre → Shopee → Magalu → demais. |
 | **D-C3** | Endereço da loja própria | `ecommerce.foxy.net.br/{loja}` no início (sem DNS/certificado curinga); subdomínio por loja depois. |
 | **D-C4** | Preço e planos do Commerce | Definir com base em nº de produtos/canais; proposta na etapa de planos. |
@@ -204,4 +204,4 @@ placed ──► awaiting_payment ──► paid ──► in_fulfillment ──
 
 ## 11. Próxima etapa
 
-Com D-C1 a D-C5 respondidas, este documento vira v1.0 e passamos ao **recorte do Core** (o que entra de Identity/Membership/Billing) e à **arquitetura do Commerce** (módulos, tabelas, contrato de canal, filas, rotas). Código só depois da aprovação da arquitetura.
+Próximo passo: aprovar o **recorte do Core** (o que entra de Identity/Membership/Billing) e a **arquitetura do Commerce** (módulos, tabelas, contrato de canal, filas, rotas) em `09-commerce-arquitetura.md`. Código só depois dessa aprovação.

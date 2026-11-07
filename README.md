@@ -13,12 +13,13 @@ Foxy AI pronta e em produção em **https://ai.foxy.net.br** (Laravel 13, PHP 8.
 | 0. Contexto estratégico | [docs/00-contexto-estrategico.md](docs/00-contexto-estrategico.md) | v0.1 |
 | 1. Core conceitual | [docs/01-core-conceitual.md](docs/01-core-conceitual.md) | v0.1 aprovado |
 | 2. Foxy AI (primeiro produto: assistente do sistema) | [docs/02-foxy-ai.md](docs/02-foxy-ai.md) | v1.0 — B1–B8 aprovadas |
-| — Foxy Commerce (segundo produto) | [docs/03-foxy-commerce.md](docs/03-foxy-commerce.md) | v0.2 — hub multicanal + loja própria; faltam D-C1 a D-C5 |
+| — Foxy Commerce (segundo produto) | [docs/03-foxy-commerce.md](docs/03-foxy-commerce.md) | v1.0 — hub multicanal + loja própria |
 | 3. Recorte da Platform | [docs/04-recorte-platform.md](docs/04-recorte-platform.md) | v1.0 — aprovado |
 | 4. Arquitetura concreta | [docs/05-arquitetura.md](docs/05-arquitetura.md) | v1.0 — C1–C4 aprovadas |
 | 5. Implementação | [docs/05-arquitetura.md](docs/05-arquitetura.md), seção 10 | concluída — guia da API: [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md) |
 | 6. Planos, permissões, mascotes e widget | [docs/07-planos-permissoes-mascotes.md](docs/07-planos-permissoes-mascotes.md) | v1.0 — E1–E8 aprovadas e implementadas |
 | 8. Foxy Admin + vitrine da marca | [docs/08-foxy-admin-e-vitrine.md](docs/08-foxy-admin-e-vitrine.md) | v1.0 aprovado (2026-11-03) — fase 1 em produção |
+| 9. Foxy Commerce: recorte do Core e arquitetura | [docs/09-commerce-arquitetura.md](docs/09-commerce-arquitetura.md) | v0.1 — F1–F10 aguardando aprovação |
 | 7. Primeiro sistema real: Foxy Studio | [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md), seção 3.2 | ligado em 2026-11-02 (raposa no Foxy Studio) |
 
 Insumo de apoio: [docs/legado-insumos.md](docs/legado-insumos.md) — o que o sistema atual já resolve e o que pode ser aproveitado.
