@@ -1,6 +1,6 @@
 # Foxy Commerce — Definição de Produto e Domínio
 
-> **Status:** v1.0 (2026-11-07). Recomendações D-C2 a D-C5 aprovadas; D-C1 só define a ordem das fatias e não trava o início. Arquitetura: `09-commerce-arquitetura.md`.
+> **Status:** v1.1 (2026-11-07). Todas as decisões tomadas. Os clientes vendem hoje no Mercado Livre, Shopee, Magalu e Shein: **marketplaces antes da loja própria**. Arquitetura: `09-commerce-arquitetura.md`.
 > **Ordem:** segundo produto, sobre o Core da foxy2 (mesmo app de `ai.foxy.net.br` e do Foxy Admin). Endereço reservado: `ecommerce.foxy.net.br`.
 > **Mudança em relação à v0.1:** o produto deixou de ser "uma loja online com estoque" e passou a ser um **hub multicanal**: um cadastro, um estoque e uma fila de pedidos para todos os lugares onde o lojista vende (marketplaces, loja própria, WhatsApp e balcão).
 
@@ -101,9 +101,9 @@ Painel mostra vendas por canal e estoque
 
 | Fase | Entrega | Por quê |
 |---|---|---|
-| **1 — Base + loja própria** | Login único e equipe (Identity/Membership do Core), assinatura Stripe pelo Foxy Admin, catálogo com variações e kits, estoque único, pedidos manuais (balcão/WhatsApp), loja própria em `ecommerce.foxy.net.br/{loja}` com carrinho, "finalizar pelo WhatsApp" e Pix do lojista, link de produto/catálogo para mandar no WhatsApp, painel, a raposa como assistente | Os clientes já podem usar e pagar; prepara o domínio que o hub precisa |
+| **1 — Base** | Login único e equipe (Identity/Membership do Core), assinatura Stripe pelo Foxy Admin, catálogo com variações e kits, estoque único, pedidos manuais (balcão/WhatsApp), painel, a raposa como assistente | Prepara o domínio que o hub precisa |
 | **2 — Hub: primeiro marketplace** | Contrato de canal + conector **Mercado Livre**: conectar conta (OAuth), criar e publicar anúncio, sincronizar estoque e preço, importar pedidos, importar a nota emitida pelo canal quando a API permitir | É o maior marketplace do país e tem a API mais aberta; valida o contrato de canal |
-| **3 — Mais canais** | Conectores Shopee, Magalu (e outros, como Amazon), na ordem que os clientes pedirem | Cada um depende de aprovação de app parceiro pelo marketplace (passo do responsável) |
+| **3 — Mais canais + loja própria** | Conectores Shopee, Magalu e Shein (nessa ordem; outros, como Amazon, se os clientes pedirem); depois a **loja própria** em `ecommerce.foxy.net.br/{loja}` com carrinho, "finalizar pelo WhatsApp" e Pix do lojista | Cada um depende de aprovação de app parceiro pelo marketplace (passo do responsável) |
 | **4 — Fiscal próprio** | Emissão de NF-e pelo sistema via provedor fiscal (com o certificado A1 do lojista) e envio da nota a cada canal; etiquetas e frete | Mais complexo e regulado; entra quando o hub estiver estável |
 
 A raposa, desde a fase 1: assistente do sistema (já existe) + **gerar título e descrição de anúncio** a partir do produto/foto (D7 da v0.1).
@@ -190,12 +190,12 @@ placed ──► awaiting_payment ──► paid ──► in_fulfillment ──
 | D9 | Stack: a mesma do Core (Laravel 13, PHP 8.4, PostgreSQL), no app foxy2. |
 | D10 | Nota fiscal: primeiro importar a emitida pelo canal; emissão própria depois (fase 4). |
 
-## 10. Decisões da v1.0 (aprovadas em 2026-11-07, salvo D-C1)
+## 10. Decisões da v1.x (aprovadas em 2026-11-07)
 
 | # | Decisão | Recomendação |
 |---|---|---|
-| **D-C1** (em aberto) | Ordem das fases 1 e 2: loja própria primeiro ou Mercado Livre primeiro? | Depende de onde os clientes interessados já vendem. Se a maior parte do faturamento vem do Mercado Livre, inverter (hub primeiro, loja depois). |
-| **D-C2** | Quais marketplaces, em que ordem | Mercado Livre → Shopee → Magalu → demais. |
+| **D-C1** ✔ | Ordem: loja própria ou marketplaces primeiro? | **Marketplaces primeiro.** Os clientes vendem hoje no Mercado Livre, Shopee, Magalu e Shein. A loja própria vem depois dos conectores. |
+| **D-C2** ✔ | Quais marketplaces, em que ordem | Mercado Livre → Shopee → Magalu → Shein (a Shein ainda precisa ter o acesso à API de vendedor confirmado). |
 | **D-C3** | Endereço da loja própria | `ecommerce.foxy.net.br/{loja}` no início (sem DNS/certificado curinga); subdomínio por loja depois. |
 | **D-C4** | Preço e planos do Commerce | Definir com base em nº de produtos/canais; proposta na etapa de planos. |
 | **D-C5** | Armazenamento de imagens | S3 (barato e escala) em vez do disco do EC2. |

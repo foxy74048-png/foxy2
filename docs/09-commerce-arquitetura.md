@@ -172,10 +172,12 @@ A loja própria e o pedido manual também são canais (`storefront`, `manual`), 
 10. **Raposa no Commerce:** manual, tools de leitura, gerar título e descrição.
 11. **Painel completo (Insights):** vendas por canal, mais vendidos, ticket médio, estoque parado.
 
-Depois: conectores Shopee e Magalu (fase 3), emissão de NF-e própria (fase 4).
-**D-C1:** se os clientes interessados vendem mais no Mercado Livre do que pelo WhatsApp/Instagram, as fatias 7–8 vêm antes da 6. As fatias 1–5 servem às duas ordens.
+Depois da fatia 11: conectores Shopee, Magalu e Shein (fase 3), nessa ordem, e então a loja própria (fatia 6); emissão de NF-e própria (fase 4).
+**Ordem decidida (D-C1, 2026-11-07):** os clientes vendem hoje no Mercado Livre, Shopee, Magalu e Shein, então os marketplaces vêm antes da loja própria: 1 ✔ → 2 → 3 → 4 → 5 → 7 → 8 → 9 → 10 → 11 → Shopee → Magalu → Shein → 6.
 
 **Passos do responsável (no fim, sem travar as fatias):** produto e preços do Commerce no Stripe + webhook + chaves no `.env` da foxy2; bucket S3 + usuário IAM; app de desenvolvedor no Mercado Livre (client id/secret + URL de retorno); worker de fila no servidor (F5); planos e preços do Commerce (D-C4).
+
+**Exceção sugerida:** os acessos de desenvolvedor da Shopee, da Magalu e da Shein dependem de aprovação do marketplace, que pode levar semanas. Vale pedir cedo para não travar a fase 3. O do Mercado Livre costuma sair na hora. Os requisitos de cada um serão confirmados na documentação oficial antes do pedido.
 
 ## 12. Decisões para aprovação
 
@@ -190,4 +192,4 @@ Depois: conectores Shopee e Magalu (fase 3), emissão de NF-e própria (fase 4).
 | **F7** | Estoque | Reserva na loja própria (48 h padrão), baixa direta no marketplace, saldo negativo permitido e sinalizado. |
 | **F8** | Raposa | Commerce como anfitrião pela API (`foxy-ai-client` + `InternalApi`), sem atalho para dentro da Foxy AI. |
 | **F9** | Endereços | App em `ecommerce.foxy.net.br/app`, loja em `ecommerce.foxy.net.br/{slug}`; subdomínio por loja depois. |
-| **F10** | Ordem | Fatias 1–5 já; 6 ou 7–8 primeiro conforme D-C1. |
+| **F10** ✔ | Ordem | Marketplaces antes da loja própria (D-C1): 1–5, 7–11, Shopee, Magalu, Shein e então a 6. |
