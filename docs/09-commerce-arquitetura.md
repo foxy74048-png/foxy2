@@ -1,6 +1,6 @@
 # Foxy Commerce — Recorte do Core e arquitetura concreta
 
-> **Status:** v0.1 (2026-11-07). Proposta para aprovação (decisões E1–F10, seção 12). **Código só depois da aprovação.**
+> **Status:** v0.1 (2026-11-07). Proposta para aprovação (decisões F1–F10, seção 12). **Código só depois da aprovação.**
 > **Base:** `03-foxy-commerce.md` v1.0, `01-core-conceitual.md`, `05-arquitetura.md` (stack, padrões e infraestrutura já em produção).
 > **Critério:** mesmo da Foxy AI: menor custo no início e tudo preparado para crescer; o domínio já nasce multicanal.
 
