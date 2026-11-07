@@ -13,7 +13,7 @@ Foxy AI pronta e em produção em **https://ai.foxy.net.br** (Laravel 13, PHP 8.
 | 0. Contexto estratégico | [docs/00-contexto-estrategico.md](docs/00-contexto-estrategico.md) | v0.1 |
 | 1. Core conceitual | [docs/01-core-conceitual.md](docs/01-core-conceitual.md) | v0.1 aprovado |
 | 2. Foxy AI (primeiro produto: assistente do sistema) | [docs/02-foxy-ai.md](docs/02-foxy-ai.md) | v1.0 — B1–B8 aprovadas |
-| — Foxy Commerce (segundo produto) | [docs/03-foxy-commerce.md](docs/03-foxy-commerce.md) | rascunho pausado — D6 decidida |
+| — Foxy Commerce (segundo produto) | [docs/03-foxy-commerce.md](docs/03-foxy-commerce.md) | v0.2 — hub multicanal + loja própria; faltam D-C1 a D-C5 |
 | 3. Recorte da Platform | [docs/04-recorte-platform.md](docs/04-recorte-platform.md) | v1.0 — aprovado |
 | 4. Arquitetura concreta | [docs/05-arquitetura.md](docs/05-arquitetura.md) | v1.0 — C1–C4 aprovadas |
 | 5. Implementação | [docs/05-arquitetura.md](docs/05-arquitetura.md), seção 10 | concluída — guia da API: [docs/06-api-foxy-ai.md](docs/06-api-foxy-ai.md) |
