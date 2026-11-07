@@ -2,9 +2,12 @@
 
 namespace App\Commerce;
 
+use App\Commerce\Accounts\AccountSync;
+use App\Platform\Billing\SubscriptionChanged;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,6 +15,13 @@ class CommerceServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        // Assinatura mudou (Stripe, Foxy Admin): a conta da loja no Admin acompanha.
+        Event::listen(function (SubscriptionChanged $event) {
+            if ($event->subscription->product === Commerce::SLUG) {
+                AccountSync::sync($event->subscription->organization);
+            }
+        });
+
         // Hoje só clientes do Commerce confirmam e-mail e trocam senha pelo Core: os links levam ao endereço
         // do Commerce. Quando outro produto usar o login único, o link passa a depender do produto da pessoa.
         VerifyEmail::createUrlUsing(fn ($user) => URL::temporarySignedRoute(

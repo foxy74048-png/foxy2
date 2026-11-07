@@ -1,7 +1,7 @@
 <x-core::layout title="Painel" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
 
-    @if (session('status'))<div class="alert success" style="margin-bottom:16px;">{{ session('status') }}</div>@endif
+    @include('commerce.status')
 
     <div class="grid cards">
         <div class="card">
@@ -10,8 +10,15 @@
             <div class="helper">Endereço da loja própria: ecommerce.foxy.net.br/{{ $currentStore->slug }}</div>
         </div>
         <div class="card">
-            <div class="muted">Teste grátis</div>
-            <h2 style="margin:4px 0;">até {{ $trialEndsAt->format('d/m/Y') }}</h2>
+            <div class="muted">Assinatura</div>
+            <h2 style="margin:4px 0;">
+                @if ($currentSubscription?->isFounder()) Parceiro Fundador
+                @elseif ($currentSubscription?->isPaying()) {{ \App\Commerce\Billing\Plans::name($currentSubscription->plan) }}
+                @elseif ($currentSubscription?->inTrial()) Teste grátis até {{ $currentSubscription->trial_ends_at->format('d/m') }}
+                @else Só consulta
+                @endif
+            </h2>
+            @if (\App\Commerce\Access::allows($currentMembership, 'commerce.billing.manage'))<a href="{{ route('commerce.billing') }}">Ver assinatura</a>@endif
         </div>
         <div class="card">
             <div class="muted">Equipe</div>

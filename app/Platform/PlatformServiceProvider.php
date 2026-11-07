@@ -2,6 +2,8 @@
 
 namespace App\Platform;
 
+use App\Platform\Billing\BillingGateway;
+use App\Platform\Billing\StripeGateway;
 use App\Platform\Context\ContextStore;
 use App\Platform\Entitlements\Entitlements;
 use App\Platform\Entitlements\MeteredEntitlements;
@@ -18,6 +20,7 @@ class PlatformServiceProvider extends ServiceProvider
     {
         $this->app->scoped(ContextStore::class);
         $this->app->bind(Entitlements::class, MeteredEntitlements::class);
+        $this->app->bind(BillingGateway::class, StripeGateway::class);
     }
 
     public function boot(): void

@@ -10,3 +10,7 @@ Schedule::command('foxy:promocoes:aplicar')->dailyAt('06:00');
 
 // Comunicados do Foxy Admin (docs/08, fase 2): uma leva por minuto (e-mail e WhatsApp com pausa).
 Schedule::command('foxy:comunicados:enviar')->everyMinute()->withoutOverlapping(10);
+
+// Foxy Commerce (docs/09): ações do Foxy Admin nas lojas e situação das contas (o teste vence sozinho).
+Schedule::command('commerce:comandos')->everyMinute()->withoutOverlapping(10);
+Schedule::command('commerce:contas')->hourly();

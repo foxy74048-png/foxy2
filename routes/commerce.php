@@ -1,11 +1,13 @@
 <?php
 
 use App\Commerce\Http\AuthController;
+use App\Commerce\Http\BillingController;
 use App\Commerce\Http\DashboardController;
 use App\Commerce\Http\InvitationController;
 use App\Commerce\Http\StoreController;
 use App\Commerce\Http\TeamController;
 use App\Commerce\Http\VerificationController;
+use App\Platform\Billing\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,6 +35,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/senha-nova', [AuthController::class, 'reset'])->middleware('throttle:5,1')->name('password.update');
 });
 
+// Webhook do Stripe (público, sem CSRF; confere a assinatura do Stripe).
+Route::post('/stripe/webhook', StripeWebhookController::class)->middleware('throttle:120,1')->name('stripe.webhook');
+
 // Convite de equipe: público (o token é a prova); funciona logado ou não.
 Route::get('/convite/{token}', [InvitationController::class, 'show'])->name('invitation.show');
 Route::post('/convite/{token}', [InvitationController::class, 'accept'])->middleware('throttle:10,1')->name('invitation.accept');
@@ -50,8 +55,15 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
     Route::get('/nova-loja', [StoreController::class, 'create'])->name('stores.new');
     Route::post('/nova-loja', [StoreController::class, 'store'])->middleware('throttle:5,1')->name('stores.create');
 
-    Route::middleware('commerce.store')->group(function () {
+    Route::middleware(['commerce.store', 'commerce.subscription'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::middleware('commerce.can:commerce.billing.manage')->group(function () {
+            Route::get('/assinatura', [BillingController::class, 'show'])->name('billing');
+            Route::post('/assinatura/assinar', [BillingController::class, 'checkout'])->middleware('throttle:10,1')->name('billing.checkout');
+            Route::post('/assinatura/gerenciar', [BillingController::class, 'portal'])->middleware('throttle:10,1')->name('billing.portal');
+            Route::get('/assinatura/obrigado', [BillingController::class, 'thanks'])->name('billing.thanks');
+        });
 
         Route::get('/equipe', [TeamController::class, 'index'])->middleware('commerce.can:commerce.team.view')->name('team');
         Route::middleware('commerce.can:commerce.team.manage')->group(function () {

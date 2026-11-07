@@ -1,8 +1,7 @@
 <x-core::layout title="Equipe" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
 
-    @if (session('status'))<div class="alert success" style="margin-bottom:16px;">{{ session('status') }}</div>@endif
-    @if ($errors->any())<div class="alert error" style="margin-bottom:16px;">{{ $errors->first() }}</div>@endif
+    @include('commerce.status')
 
     @if ($canManage)
         <form class="card form-grid" method="POST" action="{{ route('commerce.team.invite') }}" style="align-items:end;">

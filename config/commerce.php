@@ -10,6 +10,31 @@ return [
 
     'trial_days' => 14,
 
+    /*
+    | Planos (docs/09, fatia 2). PREÇOS E LIMITES PROVISÓRIOS até a decisão D-C4 — mudar aqui e no Stripe.
+    | stripe_price = id do preço mensal no Stripe (price_...). Limite null = sem limite.
+    | No teste grátis valem os limites de "trial_limits".
+    */
+    'plans' => [
+        'inicial' => [
+            'name' => 'Inicial', 'price_cents' => 7900,
+            'stripe_price' => env('COMMERCE_STRIPE_PRICE_INICIAL'),
+            'limits' => ['users' => 2, 'products' => 300, 'channels' => 1],
+        ],
+        'profissional' => [
+            'name' => 'Profissional', 'price_cents' => 14900,
+            'stripe_price' => env('COMMERCE_STRIPE_PRICE_PROFISSIONAL'),
+            'limits' => ['users' => 5, 'products' => 2000, 'channels' => 3],
+        ],
+        'completo' => [
+            'name' => 'Completo', 'price_cents' => 24900,
+            'stripe_price' => env('COMMERCE_STRIPE_PRICE_COMPLETO'),
+            'limits' => ['users' => 15, 'products' => null, 'channels' => null],
+        ],
+    ],
+
+    'trial_limits' => ['users' => 5, 'products' => 2000, 'channels' => 3],
+
     'invitation_days' => 7,
 
     /*

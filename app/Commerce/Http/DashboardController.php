@@ -13,7 +13,6 @@ class DashboardController
         $organization = ExecutionContext::current()->organization;
 
         return view('commerce.dashboard', [
-            'trialEndsAt' => $organization->created_at->copy()->addDays(config('commerce.trial_days')),
             'teamCount' => Membership::active()->where('organization_id', $organization->getKey())->count(),
         ]);
     }

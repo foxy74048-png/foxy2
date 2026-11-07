@@ -4,6 +4,7 @@ namespace App\Commerce\Http;
 
 use App\Commerce\Access;
 use App\Commerce\Accounts\AccountSync;
+use App\Commerce\Billing\Plans;
 use App\Commerce\Team\InvitationNotification;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
@@ -49,6 +50,15 @@ class TeamController
             ->whereHas('user', fn ($q) => $q->where('email', $email))->exists();
         if ($alreadyMember) {
             throw ValidationException::withMessages(['email' => 'Essa pessoa já está na equipe.']);
+        }
+
+        // Limite do plano: quem já está na equipe + convites esperando resposta (menos um reenvio para o mesmo e-mail).
+        $limit = Plans::limit($organization, 'users');
+        $taken = Membership::active()->where('organization_id', $organization->getKey())->count()
+            + Invitation::where('organization_id', $organization->getKey())->whereNull('accepted_at')
+                ->where('expires_at', '>', now())->where('email', '!=', $email)->count();
+        if ($limit !== null && $taken >= $limit) {
+            throw ValidationException::withMessages(['email' => "O seu plano permite até {$limit} pessoas na equipe (contando os convites pendentes). Para mais, mude de plano em Assinatura."]);
         }
 
         $days = config('commerce.invitation_days');

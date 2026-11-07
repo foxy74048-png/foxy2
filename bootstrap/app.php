@@ -1,6 +1,7 @@
 <?php
 
 use App\Ai\Assistant\AssistantException;
+use App\Commerce\Http\Middleware\EnforceSubscription;
 use App\Commerce\Http\Middleware\RequirePermission;
 use App\Commerce\Http\Middleware\ResolveStore;
 use App\Platform\ApiClients\AuthenticateApiClient;
@@ -23,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withCommands([__DIR__.'/../app/Platform/Console', __DIR__.'/../app/Ai/Console', __DIR__.'/../app/Demo/Console'])
+    ->withCommands([__DIR__.'/../app/Platform/Console', __DIR__.'/../app/Ai/Console', __DIR__.'/../app/Demo/Console', __DIR__.'/../app/Commerce/Console'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'api.client' => AuthenticateApiClient::class,
@@ -32,12 +33,16 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => RequireStaff::class,
             'commerce.store' => ResolveStore::class,
             'commerce.can' => RequirePermission::class,
+            'commerce.subscription' => EnforceSubscription::class,
         ]);
 
         // Cada produto tem o seu login: no endereço do Commerce, o do Commerce; no resto, o da equipe Foxy.
         $isCommerce = fn (Request $request) => strtolower($request->getHost()) === config('foxy.hosts.commerce');
         $middleware->redirectGuestsTo(fn (Request $request) => $isCommerce($request) ? route('commerce.login') : route('login'));
         $middleware->redirectUsersTo(fn (Request $request) => $isCommerce($request) ? route('commerce.dashboard') : '/console');
+
+        // O Stripe não manda token de formulário; o webhook confere a assinatura dele.
+        $middleware->validateCsrfTokens(except: ['stripe/webhook']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Situações esperadas (limite, conversa expirada...) viram resposta da API, não erro no log.
