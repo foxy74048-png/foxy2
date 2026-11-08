@@ -72,7 +72,7 @@ class CreateDemo extends Command
 
             $contexts->run(ExecutionContext::forUser($store->organization, $user->id, 'demo'), function () use ($catalog, $stock, $orders, $start, $days, $realNow) {
                 $variants = $this->catalog($catalog);
-                $this->stockUp($stock, $variants, 30);
+                $this->stockUp($stock, $variants, 18);
                 $customers = $this->customers();
                 $count = $this->orders($orders, $stock, $variants, $customers, $start, $days, $realNow);
                 $this->info("Pedidos criados: {$count}");
@@ -113,6 +113,8 @@ class CreateDemo extends Command
             ['Vestido Tubinho', 'VES-TUB', 'vestidos', 14990, 5500, ['Tamanho' => ['P', 'M', 'G'], 'Cor' => ['Preto', 'Vinho']]],
             ['Boné Aba Curva', 'BON-CUR', 'bones', 6990, 2100, ['Cor' => ['Preto', 'Bege', 'Azul']]],
             ['Bolsa Transversal Couro', 'BOL-TRA', 'bolsas', 22990, 9500, ['Cor' => ['Caramelo', 'Preto']]],
+            // Encalhado de propósito: nunca vende (aparece como "parado" nos relatórios).
+            ['Cinto de Couro Trançado', 'CIN-TRA', 'bolsas', 8990, 3500, []],
         ] as [$name, $sku, $category, $price, $cost, $grid]) {
             $catalog->create(
                 ['name' => $name, 'sku' => $sku, 'category_id' => $cat[$category], 'brand' => 'Foxy Demo', 'price_cents' => $price, 'cost_cents' => $cost, 'specs' => $specs,
@@ -140,6 +142,18 @@ class CreateDemo extends Command
         }
     }
 
+    private function restock(StockService $stock, array $variants): void
+    {
+        $sellable = collect($variants)->reject(fn (Variant $v) => $v->is_kit)->values();
+        $available = $stock->availability($sellable);
+        foreach ($sellable as $variant) {
+            // Algumas cores e tamanhos encalham de propósito (aparecem como "parado" ou "lento" nos relatórios).
+            if ($available[$variant->id] < 8 && ! str_ends_with($variant->sku, '-GG-AZUL')) {
+                $stock->receive($variant, 25 - max(0, $available[$variant->id]), 'Reposição do fornecedor (demo)');
+            }
+        }
+    }
+
     private function customers(): array
     {
         $first = ['Ana', 'Beatriz', 'Carla', 'Daniela', 'Eduarda', 'Fernanda', 'Gabriela', 'Helena', 'Isabela', 'Juliana', 'Larissa', 'Mariana', 'Natália', 'Paula', 'Renata', 'Sofia', 'Bruno', 'Carlos', 'Diego', 'Felipe', 'Gustavo', 'Lucas', 'Marcos', 'Rafael'];
@@ -161,15 +175,16 @@ class CreateDemo extends Command
 
     private function orders(OrderService $orders, StockService $stock, array $variants, array $customers, Carbon $start, int $days, Carbon $realNow): int
     {
-        $sellable = array_values(array_filter($variants, fn (Variant $v) => ! $v->is_kit));
+        $sellable = array_values(array_filter($variants, fn (Variant $v) => ! $v->is_kit && $v->sku !== 'CIN-TRA'));
         $kits = array_values(array_filter($variants, fn (Variant $v) => $v->is_kit));
         $count = 0;
 
         for ($d = 0; $d <= $days; $d++) {
             $day = $start->copy()->addDays($d);
-            if ($d > 0 && $d % 45 === 0) {
+            // Reposição semanal, como numa loja de verdade: só o que está acabando volta para ~25 unidades.
+            if ($d > 0 && $d % 7 === 0) {
                 Carbon::setTestNow($day->copy()->setTime(8, 0));
-                $this->stockUp($stock, $variants, 10);
+                $this->restock($stock, $variants);
             }
 
             // Cresce com o tempo; fim de semana vende um pouco mais.

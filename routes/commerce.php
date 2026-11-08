@@ -12,6 +12,7 @@ use App\Commerce\Http\InvitationController;
 use App\Commerce\Http\ListingController;
 use App\Commerce\Http\OrderController;
 use App\Commerce\Http\ProductController;
+use App\Commerce\Http\ReportController;
 use App\Commerce\Http\StockController;
 use App\Commerce\Http\StoreController;
 use App\Commerce\Http\TeamController;
@@ -69,6 +70,12 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
 
     Route::middleware(['commerce.store', 'commerce.subscription'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Relatórios (fatia 11)
+        Route::middleware('commerce.can:commerce.reports.view')->group(function () {
+            Route::get('/relatorios', [ReportController::class, 'index'])->name('reports');
+            Route::get('/relatorios/estoque.csv', [ReportController::class, 'stockCsv'])->name('reports.stock-csv');
+        });
 
         // Janela da raposa (fatia 10)
         Route::middleware('throttle:20,1')->group(function () {

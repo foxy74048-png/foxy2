@@ -27,7 +27,7 @@
 .kpis { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 .kpi { padding: 16px 18px; }
 .kpi__label { color: var(--viz-muted, #6b6a75); font-size: .85rem; }
-.kpi__value { font-size: 1.6rem; font-weight: 700; margin: 4px 0 2px; letter-spacing: -.01em; }
+.kpi__value { font-size: clamp(1.15rem, 1.6vw, 1.6rem); font-weight: 700; margin: 4px 0 2px; letter-spacing: -.01em; white-space: nowrap; }
 .kpi__note { font-size: .8rem; color: #6b6a75; }
 .kpi__delta { font-weight: 600; }
 .kpi__delta.up { color: var(--success-text, #15803d); }
