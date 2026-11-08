@@ -34,6 +34,12 @@
         </div>
         <div><label for="price">Preço no canal (R$)</label><input id="price" name="price" value="{{ old('price', \App\Commerce\Catalog\Money::input($listing->price_cents)) }}" inputmode="decimal" required></div>
         <div><label for="external_category">Categoria no canal</label><input id="external_category" name="external_category" value="{{ old('external_category', $listing->external_category) }}" maxlength="80"></div>
+        <div style="grid-column: 1 / -1;">
+                    <label for="channel_attributes">Atributos do canal (opcional, um por linha: CÓDIGO=valor)</label>
+                    <textarea id="channel_attributes" name="channel_attributes" rows="3" maxlength="3000" placeholder="GENDER=Feminino&#10;SIZE_GRID_ID=123456&#10;LISTING_TYPE=gold_pro">{{ old('channel_attributes', collect($listing->getAttribute('attributes') ?? [])->map(fn ($v, $k) => $k.'='.$v)->implode("
+")) }}</textarea>
+                    <div class="helper">Quando o canal pedir um dado que falta, ele avisa o código na mensagem de erro. No Mercado Livre: LISTING_TYPE=gold_special (Clássico, padrão) ou gold_pro (Premium); moda pede tabela de medidas (SIZE_GRID_ID).</div>
+                </div>
         <div style="grid-column: 1 / -1;"><button type="submit">Salvar{{ in_array($listing->status, ['active', 'paused'], true) ? ' e atualizar no canal' : '' }}</button></div>
     </form>
 

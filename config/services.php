@@ -34,6 +34,13 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    // Mercado Livre (Foxy Commerce, docs/10): app criado pela conta da Foxy. Retorno: https://ecommerce.foxy.net.br/app/canais/mercadolivre/retorno
+    // Notificações: https://ecommerce.foxy.net.br/webhooks/commerce/mercadolivre (tópico orders_v2)
+    'mercadolivre' => [
+        'client_id' => env('MERCADOLIVRE_CLIENT_ID'),
+        'client_secret' => env('MERCADOLIVRE_CLIENT_SECRET'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

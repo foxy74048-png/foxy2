@@ -19,7 +19,9 @@
 
 1. Entrar com a conta do Mercado Livre **da empresa (CNPJ da Foxy)**. No Brasil, cada conta com os dados validados pode ter **uma só aplicação**, então não usar conta pessoal.
 2. Em developers.mercadolivre.com.br → "Minhas aplicações" → criar a aplicação "Foxy Commerce": nome, descrição, logo, redirect URI (HTTPS, acima), permissões de **leitura e escrita** (anúncios, pedidos, envios, perguntas, nota) e URL de notificações (acima), com os tópicos de pedidos, anúncios e envios.
-3. Guardar o `client_id` e o `secret` no `.env` da foxy2.
+3. Guardar no `.env` da foxy2: `MERCADOLIVRE_CLIENT_ID=` e `MERCADOLIVRE_CLIENT_SECRET=` (o Mercado Livre só aparece como disponível no Foxy com eles).
+4. Nas notificações do app, marcar o tópico **orders_v2** (pedidos) com a URL `https://ecommerce.foxy.net.br/webhooks/commerce/mercadolivre`.
+5. Testar com o lojista piloto: Marketplaces → Conectar Mercado Livre → criar um anúncio de teste. Moda costuma exigir tabela de medidas (`SIZE_GRID_ID`), que o lojista cria no próprio Mercado Livre.
 
 Sem aprovação prévia: funciona na hora para qualquer vendedor que autorizar. A certificação (Developer Partner Program: Certificado, Silver, Gold, Platinum) é **opcional** e depende de volume de vendas e de usuários ativos. Fica para quando houver clientes.
 

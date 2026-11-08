@@ -74,6 +74,7 @@ class ListingController
             $listing = Listing::create([
                 'connection_id' => $connection->id, 'product_id' => $product->id, 'title' => $data['title'],
                 'price_cents' => $data['price_cents'], 'external_category' => $data['external_category'] ?? null, 'status' => 'draft',
+                'attributes' => self::parseAttributes($data['channel_attributes'] ?? null),
             ]);
             foreach ($variantIds as $id) {
                 ListingVariant::create(['listing_id' => $listing->id, 'variant_id' => $id]);
@@ -106,11 +107,12 @@ class ListingController
             'title' => ['required', 'string', 'max:255'],
             'price' => ['required', 'string', 'max:20'],
             'external_category' => ['nullable', 'string', 'max:80'],
+            'channel_attributes' => ['nullable', 'string', 'max:3000'],
         ], [], ['title' => 'título', 'price' => 'preço', 'external_category' => 'categoria no canal']);
         $this->guardTitle($data['title'], $listing->connection->channel);
         $price = $this->price($data['price']);
 
-        $listing->update(['title' => $data['title'], 'price_cents' => $price, 'external_category' => $data['external_category'] ?? null]);
+        $listing->update(['title' => $data['title'], 'price_cents' => $price, 'external_category' => $data['external_category'] ?? null, 'attributes' => self::parseAttributes($data['channel_attributes'] ?? null)]);
         if (in_array($listing->status, ['active', 'paused'], true)) {
             $this->sync->update($listing);
         }
@@ -152,12 +154,30 @@ class ListingController
             'title' => ['required', 'string', 'max:255'],
             'price' => ['required', 'string', 'max:20'],
             'external_category' => ['nullable', 'string', 'max:80'],
+            'channel_attributes' => ['nullable', 'string', 'max:3000'],
             'variants' => ['nullable', 'array'],
             'variants.*' => ['string', 'max:30'],
         ], [], ['connection_id' => 'conta do marketplace', 'product_id' => 'produto', 'title' => 'título', 'price' => 'preço']);
         $data['price_cents'] = $this->price($data['price']);
 
         return $data;
+    }
+
+    /** "GENDER=Feminino" por linha → ['GENDER' => 'Feminino']. Linhas sem "=" são ignoradas. */
+    public static function parseAttributes(?string $text): ?array
+    {
+        $attributes = [];
+        foreach (preg_split('/?
+/', (string) $text) as $line) {
+            if (str_contains($line, '=')) {
+                [$key, $value] = array_map('trim', explode('=', $line, 2));
+                if ($key !== '' && $value !== '') {
+                    $attributes[strtoupper($key)] = mb_substr($value, 0, 255);
+                }
+            }
+        }
+
+        return $attributes ?: null;
     }
 
     private function price(string $value): int

@@ -39,6 +39,12 @@
                 <div>
                     <label for="external_category">Categoria no canal (código, opcional)</label>
                     <input id="external_category" name="external_category" value="{{ old('external_category') }}" maxlength="80">
+                    <div class="helper">Vazio: o canal sugere pelo título.</div>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label for="channel_attributes">Atributos do canal (opcional, um por linha: CÓDIGO=valor)</label>
+                    <textarea id="channel_attributes" name="channel_attributes" rows="3" maxlength="3000" placeholder="GENDER=Feminino&#10;SIZE_GRID_ID=123456&#10;LISTING_TYPE=gold_pro">{{ old('channel_attributes') }}</textarea>
+                    <div class="helper">Quando o canal pedir um dado que falta, ele avisa o código na mensagem de erro. No Mercado Livre: LISTING_TYPE=gold_special (Clássico, padrão) ou gold_pro (Premium); moda pede tabela de medidas (SIZE_GRID_ID).</div>
                 </div>
             </div>
 

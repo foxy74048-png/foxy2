@@ -1,5 +1,7 @@
 <?php
 
+use App\Commerce\Channels\MercadoLivre\MercadoLivreConnector;
+
 /*
 | Foxy Commerce (docs/03 e docs/09). Endereço em config/foxy.php (hosts.commerce).
 */
@@ -45,7 +47,7 @@ return [
     | title_max = tamanho máximo do título do anúncio no canal.
     */
     'channels' => [
-        'mercadolivre' => ['label' => 'Mercado Livre', 'connector' => null, 'title_max' => 60],
+        'mercadolivre' => ['label' => 'Mercado Livre', 'connector' => env('MERCADOLIVRE_CLIENT_ID') ? MercadoLivreConnector::class : null, 'title_max' => 60],
         'shopee' => ['label' => 'Shopee', 'connector' => null, 'title_max' => 120],
         'magalu' => ['label' => 'Magalu', 'connector' => null, 'title_max' => 150],
         'shein' => ['label' => 'Shein', 'connector' => null, 'title_max' => 150],
