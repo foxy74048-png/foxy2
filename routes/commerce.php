@@ -15,6 +15,8 @@ use App\Commerce\Http\ProductController;
 use App\Commerce\Http\ReportController;
 use App\Commerce\Http\StockController;
 use App\Commerce\Http\StoreController;
+use App\Commerce\Http\StorefrontController;
+use App\Commerce\Http\StoreSettingsController;
 use App\Commerce\Http\TeamController;
 use App\Commerce\Http\VerificationController;
 use App\Platform\Billing\StripeWebhookController;
@@ -70,6 +72,13 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
 
     Route::middleware(['commerce.store', 'commerce.subscription'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Loja própria: configuração (fatia 6)
+        Route::middleware('commerce.can:commerce.store.manage')->group(function () {
+            Route::get('/loja', [StoreSettingsController::class, 'edit'])->name('store.settings');
+            Route::post('/loja', [StoreSettingsController::class, 'update'])->name('store.settings.update');
+            Route::post('/loja/publicar', [StoreSettingsController::class, 'publish'])->name('store.publish');
+        });
 
         // Relatórios (fatia 11)
         Route::middleware('commerce.can:commerce.reports.view')->group(function () {
@@ -164,4 +173,16 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/equipe/{membership}/remover', [TeamController::class, 'remove'])->name('team.remove');
         });
     });
+});
+
+// Loja própria pública (fatia 6): ecommerce.foxy.net.br/{slug}. Por último, para não engolir os outros endereços.
+Route::prefix('{slug}')->where(['slug' => '[a-z0-9-]+'])->middleware('commerce.public')->name('storefront.')->group(function () {
+    Route::get('/', [StorefrontController::class, 'home'])->name('home');
+    Route::get('/p/{product}', [StorefrontController::class, 'product'])->name('product');
+    Route::get('/carrinho', [StorefrontController::class, 'cart'])->name('cart');
+    Route::post('/carrinho', [StorefrontController::class, 'add'])->middleware('throttle:60,1')->name('cart.add');
+    Route::post('/carrinho/atualizar', [StorefrontController::class, 'update'])->middleware('throttle:60,1')->name('cart.update');
+    Route::get('/finalizar', [StorefrontController::class, 'checkout'])->name('checkout');
+    Route::post('/finalizar', [StorefrontController::class, 'place'])->middleware('throttle:10,1')->name('place');
+    Route::get('/pedido/{order}', [StorefrontController::class, 'order'])->middleware('signed')->name('order');
 });

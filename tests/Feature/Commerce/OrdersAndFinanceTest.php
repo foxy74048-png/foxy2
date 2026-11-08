@@ -19,6 +19,7 @@ use App\Platform\Context\ExecutionContext;
 use App\Platform\Memberships\Membership;
 use App\Platform\Organizations\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -219,6 +220,7 @@ class OrdersAndFinanceTest extends TestCase
 
     public function test_loja_demo_com_meses_de_vendas(): void
     {
+        Storage::fake(config('commerce.images_disk'));
         $this->artisan('commerce:demo', ['--dias' => 20, '--senha' => 'demo-senha-123'])->assertSuccessful();
 
         $demo = User::where('email', 'demo@foxy.net.br')->firstOrFail();
@@ -232,6 +234,7 @@ class OrdersAndFinanceTest extends TestCase
         $this->post($this->url('/entrar'), ['email' => 'demo@foxy.net.br', 'password' => 'demo-senha-123'])->assertRedirect($this->url('/app'));
         $this->get($this->url('/app?periodo=90d'))->assertOk()->assertSee('Mercado Livre')->assertSee('Mais vendidos')->assertDontSee('só para consulta');
         $this->get($this->url('/app/estoque'))->assertOk();
+        $this->get($this->url('/'.$store->slug))->assertOk()->assertSee('Camiseta Básica Algodão')->assertSee('.svg');
 
         // Sem --fresh não duplica; com --fresh recria só a demo.
         $this->artisan('commerce:demo', ['--dias' => 10])->assertFailed();

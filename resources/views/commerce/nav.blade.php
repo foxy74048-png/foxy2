@@ -19,6 +19,9 @@
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.stock.view'))
     <x-core::nav-link href="{{ route('commerce.stock') }}" :active="request()->routeIs('commerce.stock*')" icon="calendar">Estoque</x-core::nav-link>
 @endif
+@if (\App\Commerce\Access::allows($currentMembership, 'commerce.store.manage'))
+    <x-core::nav-link href="{{ route('commerce.store.settings') }}" :active="request()->routeIs('commerce.store.*')" icon="home">Loja própria</x-core::nav-link>
+@endif
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.team.view'))
     <x-core::nav-link href="{{ route('commerce.team') }}" :active="request()->routeIs('commerce.team*')" icon="users">Equipe</x-core::nav-link>
 @endif

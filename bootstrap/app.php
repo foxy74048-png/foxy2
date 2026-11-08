@@ -3,6 +3,7 @@
 use App\Ai\Assistant\AssistantException;
 use App\Commerce\Http\Middleware\EnforceSubscription;
 use App\Commerce\Http\Middleware\RequirePermission;
+use App\Commerce\Http\Middleware\ResolvePublicStore;
 use App\Commerce\Http\Middleware\ResolveStore;
 use App\Platform\ApiClients\AuthenticateApiClient;
 use App\Platform\ApiClients\RequireOrganization;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'commerce.store' => ResolveStore::class,
             'commerce.can' => RequirePermission::class,
             'commerce.subscription' => EnforceSubscription::class,
+            'commerce.public' => ResolvePublicStore::class,
         ]);
 
         // Cada produto tem o seu login: no endereço do Commerce, o do Commerce; no resto, o da equipe Foxy.

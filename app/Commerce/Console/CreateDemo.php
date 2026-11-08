@@ -5,6 +5,8 @@ namespace App\Commerce\Console;
 use App\Commerce\Accounts\AccountSync;
 use App\Commerce\Catalog\CatalogService;
 use App\Commerce\Catalog\Category;
+use App\Commerce\Catalog\Product;
+use App\Commerce\Catalog\ProductImage;
 use App\Commerce\Catalog\Variant;
 use App\Commerce\Fiscal\FiscalDocument;
 use App\Commerce\Fiscal\NfeXml;
@@ -19,10 +21,12 @@ use App\Models\User;
 use App\Platform\Billing\Subscription;
 use App\Platform\Context\ContextStore;
 use App\Platform\Context\ExecutionContext;
+use App\Platform\Files\File;
 use App\Platform\Memberships\Membership;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -69,6 +73,12 @@ class CreateDemo extends Command
         try {
             $store = $stores->open($user, self::STORE_NAME, '11999990000');
             Subscription::where('organization_id', $store->organization_id)->update(['founder_at' => now()]);
+            // Loja própria no ar, com Pix de exemplo e as três formas de entrega.
+            Store::withoutGlobalScopes()->whereKey($store->id)->update([
+                'published_at' => now(), 'pix_key' => $email, 'pix_name' => 'Moda Demo Foxy', 'pix_city' => 'Sao Paulo',
+                'about' => 'Loja de demonstração do Foxy Commerce. Os produtos e pedidos são fictícios.',
+                'delivery' => json_encode(['pickup' => true, 'pickup_address' => 'Rua Exemplo, 100 — seg a sex, 9h às 18h', 'local' => true, 'local_fee_cents' => 1500, 'local_area' => 'São Paulo capital', 'shipping' => true, 'shipping_fee_cents' => 2500, 'shipping_note' => 'Postagem em até 2 dias úteis']),
+            ]);
 
             $contexts->run(ExecutionContext::forUser($store->organization, $user->id, 'demo'), function () use ($catalog, $stock, $orders, $start, $days, $realNow) {
                 $variants = $this->catalog($catalog);
@@ -129,7 +139,27 @@ class CreateDemo extends Command
         $catalog->createKit(['name' => 'Kit Look Verão', 'sku' => 'KIT-VERAO', 'category_id' => $cat['camisetas'], 'price_cents' => 13990],
             [$id('CAM-EST-M-PRETO') => 1, $id('BON-CUR-PRETO') => 1]);
 
+        $this->pictures();
+
         return Variant::with('product')->get()->keyBy('sku')->all();
+    }
+
+    /** Uma imagem simples por produto (cor + nome), só para a vitrine da demo não ficar vazia. */
+    private function pictures(): void
+    {
+        $palette = ['#e2e8f0', '#dbeafe', '#dcfce7', '#e0f2fe', '#d1fae5', '#f1f5f9', '#cffafe', '#e5e7eb'];
+        $disk = config('commerce.images_disk');
+        foreach (Product::orderBy('name')->get() as $i => $product) {
+            $name = e($product->name);
+            $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"><rect width="600" height="600" fill="'.$palette[$i % count($palette)].'"/>'
+                .'<circle cx="300" cy="250" r="110" fill="#ffffff" opacity=".7"/><text x="300" y="275" font-family="Arial" font-size="72" font-weight="700" text-anchor="middle" fill="#1f2937">'.e(mb_strtoupper(mb_substr($product->name, 0, 2))).'</text>'
+                .'<text x="300" y="470" font-family="Arial" font-size="30" text-anchor="middle" fill="#1f2937">'.$name.'</text></svg>';
+            $id = strtolower((string) Str::ulid());
+            $path = "org/{$product->organization_id}/commerce/products/{$id}.svg";
+            Storage::disk($disk)->put($path, $svg, ['visibility' => 'public']);
+            $file = File::forceCreate(['id' => $id, 'organization_id' => $product->organization_id, 'owner_type' => 'commerce.product_image', 'disk' => $disk, 'path' => $path, 'mime' => 'image/svg+xml', 'size' => strlen($svg)]);
+            ProductImage::create(['product_id' => $product->id, 'file_id' => $file->id, 'position' => 0]);
+        }
     }
 
     private function stockUp(StockService $stock, array $variants, int $quantity): void
@@ -328,6 +358,7 @@ class CreateDemo extends Command
             DB::table('product_accounts')->where('integration_id', $organization->integration_id)->where('external_ref', $organization->external_ref)->delete();
             DB::table('organizations')->where('id', $organizationId)->delete();
         });
+        Storage::disk(config('commerce.images_disk'))->deleteDirectory("org/{$organizationId}");
         $this->info('Loja demo anterior apagada.');
     }
 }
