@@ -28,6 +28,7 @@
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.billing.manage'))
     <x-core::nav-link href="{{ route('commerce.billing') }}" :active="request()->routeIs('commerce.billing*')" icon="wallet">Assinatura</x-core::nav-link>
 @endif
+<x-core::nav-link href="{{ route('commerce.support') }}" :active="request()->routeIs('commerce.support*')" icon="send">Suporte</x-core::nav-link>
 @if ($storeCount > 1)
     <x-core::nav-link href="{{ route('commerce.stores.choose') }}" icon="copy">Trocar de loja</x-core::nav-link>
 @endif

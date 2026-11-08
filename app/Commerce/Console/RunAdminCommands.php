@@ -5,11 +5,14 @@ namespace App\Commerce\Console;
 use App\Commerce\Accounts\AccountSync;
 use App\Commerce\Billing\Plans;
 use App\Commerce\Commerce;
+use App\Commerce\Support\SupportReplyNotification;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ContextStore;
 use App\Platform\Context\ExecutionContext;
+use App\Platform\Memberships\Membership;
 use App\Platform\Organizations\Organization;
 use App\Platform\Products\ProductCommand;
+use App\Platform\Products\ProductTicket;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -65,13 +68,30 @@ class RunAdminCommands extends Command
             'account.unsuspend' => tap([true, 'Loja reativada.'], fn () => $organization->update(['status' => 'active'])),
             'account.founder' => $this->founder($subscription, ! empty($payload['active'])),
             'account.fox_credits' => [false, 'A raposa ainda não chegou ao Foxy Commerce.'],
-            'support.reply' => [false, 'O Foxy Commerce ainda não tem chamados de suporte.'],
+            'support.reply' => $this->reply($command, $organization),
             default => [false, 'Ação desconhecida.'],
         };
 
         Audit::record('commerce.admin.'.$command->type, $result[0] ? 'ok' : 'denied', $organization, ['command' => $command->id]);
 
         return $result;
+    }
+
+    /** Resposta do Admin a um chamado da loja: grava no chamado e avisa o dono por e-mail. */
+    private function reply(ProductCommand $command, Organization $organization): array
+    {
+        $p = $command->payload ?? [];
+        $ticket = ProductTicket::where('integration_id', $command->integration_id)->where('product_account_id', $command->product_account_id)
+            ->where('external_id', (string) ($p['ticket_id'] ?? ''))->first();
+        if (! $ticket || blank($p['message'] ?? null)) {
+            return [false, 'Chamado não encontrado nesta loja.'];
+        }
+
+        $ticket->update(['admin_response' => $p['message'], 'status' => in_array($p['status'] ?? '', ['answered', 'closed'], true) ? $p['status'] : 'answered', 'responded_at' => now()]);
+        Membership::active()->where('organization_id', $organization->getKey())->where('role', 'owner')->with('user')->get()
+            ->each(fn (Membership $m) => $m->user->notify(new SupportReplyNotification($ticket)));
+
+        return [true, 'Resposta entregue na loja.'];
     }
 
     private function extendTrial($subscription, int $days): array

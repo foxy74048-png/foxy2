@@ -205,3 +205,8 @@ Depois da fatia 11: conectores Shopee, Magalu e Shein (fase 3), nessa ordem, e e
 | **F8** | Raposa | Commerce como anfitrião pela API (`foxy-ai-client` + `InternalApi`), sem atalho para dentro da Foxy AI. |
 | **F9** | Endereços | App em `ecommerce.foxy.net.br/app`, loja em `ecommerce.foxy.net.br/{slug}`; subdomínio por loja depois. |
 | **F10** ✔ | Ordem | Marketplaces antes da loja própria (D-C1): 1–5, 7–11, Shopee, Magalu, Shein e então a 6. |
+
+## 13. Depois das fatias (2026-11-08)
+
+- **Suporte na central do Foxy Admin:** `/app/suporte` (qualquer pessoa da loja) grava o chamado direto em `product_tickets` (sem retrato por HTTP), ligado à conta da loja; a equipe responde em `/admin/suporte` e o comando `support.reply` (via `commerce:comandos`) grava a resposta no chamado e manda e-mail ao dono. Funciona com a loja só para consulta.
+- **Revisão de segurança dos endereços públicos:** vitrine (só loja publicada, contexto da loja do slug, textos escapados, cor validada, logo sem SVG, POST com limite), página do pedido com URL assinada, avisos dos canais (o pedido é sempre buscado na API do canal), Stripe com assinatura, retorno OAuth com `state` na sessão, XML da nota sem rede. Corrigido: **injeção de fórmula nas planilhas** (`Commerce\Insights\Csv`: texto começando com = + - @ sai com apóstrofo; números continuam números), porque o nome do comprador vem da loja pública.

@@ -4,6 +4,7 @@ namespace App\Commerce\Http;
 
 use App\Commerce\Catalog\Money;
 use App\Commerce\Catalog\Variant;
+use App\Commerce\Insights\Csv;
 use App\Commerce\Insights\FinanceReport;
 use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
@@ -42,14 +43,14 @@ class OrderController
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
             $money = fn (int $c) => number_format($c / 100, 2, ',', '');
-            fputcsv($out, ['Pedido', 'Data', 'Canal', 'Status', 'Cliente', 'Pagamento', 'Subtotal', 'Desconto', 'Frete', 'Taxas do canal', 'Total', 'Custo', 'Lucro bruto', 'Nota fiscal', 'Chave NF-e'], ';');
+            Csv::row($out, ['Pedido', 'Data', 'Canal', 'Status', 'Cliente', 'Pagamento', 'Subtotal', 'Desconto', 'Frete', 'Taxas do canal', 'Total', 'Custo', 'Lucro bruto', 'Nota fiscal', 'Chave NF-e']);
             foreach ($orders as $o) {
-                fputcsv($out, [
+                Csv::row($out, [
                     $o->number, $o->placed_at->format('d/m/Y H:i'), $o->channelLabel(), $o->statusLabel(), $o->customer?->name,
                     Order::PAYMENT_METHODS[$o->payment_method] ?? '', $money($o->subtotal_cents), $money($o->discount_cents),
                     $money($o->shipping_cents), $money($o->fee_cents), $money($o->total_cents), $money($o->cost_cents), $money($o->profitCents()),
                     $o->fiscalDocuments->first()?->number, $o->fiscalDocuments->first()?->access_key ? '​'.$o->fiscalDocuments->first()->access_key : null,
-                ], ';');
+                ]);
             }
             fclose($out);
         }, 'pedidos-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);

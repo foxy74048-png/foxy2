@@ -197,6 +197,15 @@ class OrdersAndFinanceTest extends TestCase
         $this->get($this->url('/app?periodo=invalido'))->assertSessionHasErrors('periodo');
     }
 
+    public function test_planilha_nao_vira_formula_no_excel(): void
+    {
+        $this->place(['channel' => 'whatsapp', 'paid' => true, 'customer' => ['name' => '=HYPERLINK("http://x")'], 'fee_cents' => 99999, 'items' => [['variant' => $this->v['BONE'], 'quantity' => 1]]]);
+
+        $csv = $this->actingAs($this->owner)->get($this->url('/app/pedidos/exportar'))->streamedContent();
+        $this->assertStringContainsString("'=HYPERLINK", $csv);
+        $this->assertStringContainsString(';-969,99;', $csv); // lucro negativo continua número
+    }
+
     public function test_planilha_dos_pedidos(): void
     {
         $this->place(['channel' => 'shopee', 'paid' => true, 'fee_cents' => 1000, 'items' => [['variant' => $this->v['BONE'], 'quantity' => 1]]]);

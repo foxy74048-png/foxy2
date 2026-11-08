@@ -2,6 +2,7 @@
 
 namespace App\Commerce\Http;
 
+use App\Commerce\Insights\Csv;
 use App\Commerce\Insights\FinanceReport;
 use App\Commerce\Insights\Reports;
 use App\Commerce\Orders\Order;
@@ -63,10 +64,10 @@ class ReportController
         return response()->streamDownload(function () use ($rows, $days) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['SKU', 'Produto', 'Físico', "Vendido ({$days} dias)", 'Por dia', 'Dura (dias)', 'Última venda', 'Dinheiro parado (custo)', 'Situação'], ';');
+            Csv::row($out, ['SKU', 'Produto', 'Físico', "Vendido ({$days} dias)", 'Por dia', 'Dura (dias)', 'Última venda', 'Dinheiro parado (custo)', 'Situação']);
             foreach ($rows as $r) {
-                fputcsv($out, [$r['variant']->sku, $r['variant']->fullName(), $r['on_hand'], $r['sold'], number_format($r['per_day'], 2, ',', ''),
-                    $r['coverage'] ?? '', $r['last_sale']?->format('d/m/Y') ?? '', number_format($r['stuck_cents'] / 100, 2, ',', ''), self::STOCK_STATUS[$r['status']]], ';');
+                Csv::row($out, [$r['variant']->sku, $r['variant']->fullName(), $r['on_hand'], $r['sold'], number_format($r['per_day'], 2, ',', ''),
+                    $r['coverage'] ?? '', $r['last_sale']?->format('d/m/Y') ?? '', number_format($r['stuck_cents'] / 100, 2, ',', ''), self::STOCK_STATUS[$r['status']]]);
             }
             fclose($out);
         }, 'estoque-giro-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);

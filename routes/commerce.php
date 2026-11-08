@@ -17,6 +17,7 @@ use App\Commerce\Http\StockController;
 use App\Commerce\Http\StoreController;
 use App\Commerce\Http\StorefrontController;
 use App\Commerce\Http\StoreSettingsController;
+use App\Commerce\Http\SupportController;
 use App\Commerce\Http\TeamController;
 use App\Commerce\Http\VerificationController;
 use App\Platform\Billing\StripeWebhookController;
@@ -85,6 +86,10 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::get('/relatorios', [ReportController::class, 'index'])->name('reports');
             Route::get('/relatorios/estoque.csv', [ReportController::class, 'stockCsv'])->name('reports.stock-csv');
         });
+
+        // Suporte: chamados vão para a central do Foxy Admin
+        Route::get('/suporte', [SupportController::class, 'index'])->name('support');
+        Route::post('/suporte', [SupportController::class, 'store'])->middleware('throttle:10,1')->name('support.store');
 
         // Janela da raposa (fatia 10)
         Route::middleware('throttle:20,1')->group(function () {
