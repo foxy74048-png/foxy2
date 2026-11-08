@@ -11,6 +11,7 @@
         @if ($can('commerce.orders.manage'))
             <a class="card" href="{{ route('commerce.orders', ['status' => 'paid']) }}"><div class="muted">Para separar e enviar</div><h2 style="margin:4px 0;">{{ $toShip }}</h2></a>
             <a class="card" href="{{ route('commerce.orders', ['status' => 'awaiting_payment']) }}"><div class="muted">Aguardando pagamento</div><h2 style="margin:4px 0;">{{ $awaiting }}</h2></a>
+            <a class="card" href="{{ route('commerce.orders', ['nota' => 'sem', 'periodo' => '30d']) }}"><div class="muted">Vendas sem nota (30 dias)</div><h2 style="margin:4px 0;">{{ $withoutInvoice }}</h2></a>
         @endif
         @if ($can('commerce.stock.view'))
             <a class="card" href="{{ route('commerce.stock', ['filtro' => 'baixo']) }}"><div class="muted">Estoque baixo ou negativo</div><h2 @style(['margin:4px 0', 'color:var(--danger-text)' => $lowStock > 0])>{{ $lowStock }}</h2></a>

@@ -24,6 +24,10 @@
             <label for="canal">Canal</label>
             <select id="canal" name="canal"><option value="">Todos</option>@foreach (\App\Commerce\Orders\Order::CHANNELS as $key => $label)<option value="{{ $key }}" @selected(($filters['canal'] ?? '') === $key)>{{ $label }}</option>@endforeach</select>
         </div>
+        <div>
+            <label for="nota">Nota fiscal</label>
+            <select id="nota" name="nota"><option value="">Todas</option><option value="sem" @selected(($filters['nota'] ?? '') === 'sem')>Vendidos sem nota</option><option value="com" @selected(($filters['nota'] ?? '') === 'com')>Com nota</option></select>
+        </div>
         <div><label for="busca">Nº, cliente ou telefone</label><input id="busca" name="busca" value="{{ $filters['busca'] ?? '' }}"></div>
         <div class="actions"><button type="submit">Filtrar</button><a class="button secondary" href="{{ route('commerce.orders') }}">Limpar</a></div>
     </form>

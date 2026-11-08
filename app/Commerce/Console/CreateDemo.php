@@ -6,6 +6,8 @@ use App\Commerce\Accounts\AccountSync;
 use App\Commerce\Catalog\CatalogService;
 use App\Commerce\Catalog\Category;
 use App\Commerce\Catalog\Variant;
+use App\Commerce\Fiscal\FiscalDocument;
+use App\Commerce\Fiscal\NfeXml;
 use App\Commerce\Inventory\StockLevel;
 use App\Commerce\Inventory\StockService;
 use App\Commerce\Orders\Customer;
@@ -228,6 +230,15 @@ class CreateDemo extends Command
             $stock->count($variants[$sku], ($level?->reserved ?? 0) + $i + 1, 'Contagem de inventário (demo)');
         }
 
+        // Notas fiscais: quase todos os pedidos concluídos têm; os mais recentes ficam para o lojista ligar.
+        foreach (Order::where('status', 'completed')->get() as $i => $order) {
+            if (mt_rand(1, 100) <= 85) {
+                $key = '35'.$order->placed_at->format('ym').'12345678000190'.'55'.'001'.str_pad((string) (1000 + $i), 9, '0', STR_PAD_LEFT).'1'.str_pad((string) mt_rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+                FiscalDocument::create(['order_id' => $order->id, 'source' => 'manual', 'access_key' => $key.NfeXml::checkDigit($key),
+                    'number' => (string) (1000 + $i), 'series' => '1', 'issued_at' => $order->placed_at->copy()->addHours(3), 'total_cents' => $order->total_cents]);
+            }
+        }
+
         // Cliente "nasce" na primeira compra (para o indicador de clientes novos).
         foreach (Customer::withMin('orders as first_at', 'placed_at')->get() as $customer) {
             if ($customer->first_at) {
@@ -285,6 +296,7 @@ class CreateDemo extends Command
     {
         DB::transaction(function () use ($organizationId) {
             foreach ([
+                'commerce_fiscal_documents', 'commerce_listing_variants', 'commerce_listings', 'commerce_channel_connections',
                 'commerce_order_items', 'commerce_orders', 'commerce_customers', 'commerce_stock_movements', 'commerce_stock_levels',
                 'commerce_kit_components', 'commerce_product_images', 'commerce_variants', 'commerce_products', 'commerce_categories',
                 'files', 'invitations', 'memberships', 'subscriptions', 'commerce_stores', 'audit_entries',

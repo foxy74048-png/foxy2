@@ -8,8 +8,11 @@ use Illuminate\Support\Carbon;
 /**
  * Marketplace de mentira para os testes: guarda o que o Foxy mandou e devolve pedidos preparados.
  */
-class FakeConnector implements ChannelConnector
+class FakeConnector implements ChannelConnector, ProvidesInvoices
 {
+    /** @var array<string, array> id do pedido no canal => nota */
+    public array $invoices = [];
+
     public array $published = [];
 
     public array $updated = [];
@@ -90,5 +93,10 @@ class FakeConnector implements ChannelConnector
     public function recentOrders(ChannelConnection $connection, Carbon $since): array
     {
         return $this->recent;
+    }
+
+    public function fetchInvoice(ChannelConnection $connection, string $externalOrderId): ?array
+    {
+        return $this->invoices[$externalOrderId] ?? null;
     }
 }

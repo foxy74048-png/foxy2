@@ -3,6 +3,8 @@
 namespace App\Commerce\Channels;
 
 use App\Commerce\Catalog\Variant;
+use App\Commerce\Fiscal\FiscalDocument;
+use App\Commerce\Fiscal\NfeXml;
 use App\Commerce\Inventory\StockService;
 use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
@@ -181,10 +183,37 @@ class ChannelSync
             foreach ($connector->recentOrders($connection, $since) as $resource) {
                 $this->importOrder($connection, $resource);
             }
+            $this->importInvoices($connection);
             $connection->update(['last_synced_at' => now(), 'status' => 'active', 'last_error' => null]);
         } catch (ChannelError $e) {
             $connection->attention($e->getMessage());
         }
+    }
+
+    /** Busca no canal as notas dos pedidos vendidos nos últimos 30 dias que ainda estão sem nota. */
+    public function importInvoices(ChannelConnection $connection): int
+    {
+        $connector = Channels::connector($connection->channel);
+        if (! $connector instanceof ProvidesInvoices) {
+            return 0;
+        }
+
+        $found = 0;
+        $orders = Order::sold()->where('channel', $connection->channel)->whereNotNull('external_id')
+            ->where('placed_at', '>=', now()->subDays(30))
+            ->whereDoesntHave('fiscalDocuments')->limit(50)->get();
+        foreach ($orders as $order) {
+            $invoice = $connector->fetchInvoice($connection, $order->external_id);
+            if ($invoice && NfeXml::validKey($invoice['access_key'] ?? '')) {
+                FiscalDocument::firstOrCreate(['access_key' => $invoice['access_key']], [
+                    'order_id' => $order->id, 'source' => $connection->channel, 'number' => $invoice['number'] ?? null,
+                    'series' => $invoice['series'] ?? null, 'issued_at' => $invoice['issued_at'] ?? null, 'total_cents' => $invoice['total_cents'] ?? null,
+                ]);
+                $found++;
+            }
+        }
+
+        return $found;
     }
 
     /** Chama o canal; em erro, marca o anúncio e devolve false. */

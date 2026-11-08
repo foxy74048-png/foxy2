@@ -6,6 +6,7 @@ use App\Commerce\Http\CategoryController;
 use App\Commerce\Http\ChannelController;
 use App\Commerce\Http\CustomerController;
 use App\Commerce\Http\DashboardController;
+use App\Commerce\Http\FiscalController;
 use App\Commerce\Http\InvitationController;
 use App\Commerce\Http\ListingController;
 use App\Commerce\Http\OrderController;
@@ -105,6 +106,9 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::get('/pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
             Route::post('/pedidos/{order}/pago', [OrderController::class, 'pay'])->name('orders.pay');
             Route::post('/pedidos/{order}/andamento', [OrderController::class, 'advance'])->name('orders.advance');
+            Route::post('/pedidos/{order}/nota', [FiscalController::class, 'store'])->middleware('throttle:30,1')->name('orders.fiscal');
+            Route::get('/pedidos/{order}/nota/{document}/xml', [FiscalController::class, 'download'])->name('orders.fiscal.xml');
+            Route::post('/pedidos/{order}/nota/{document}/apagar', [FiscalController::class, 'destroy'])->name('orders.fiscal.destroy');
             Route::get('/clientes', [CustomerController::class, 'index'])->name('customers');
             Route::get('/clientes/{customer}', [CustomerController::class, 'show'])->name('customers.show');
             Route::post('/clientes/{customer}', [CustomerController::class, 'update'])->name('customers.update');

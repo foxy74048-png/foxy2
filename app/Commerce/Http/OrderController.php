@@ -36,18 +36,19 @@ class OrderController
     /** Planilha (CSV, abre no Excel) com os pedidos dos mesmos filtros da lista. */
     public function export(Request $request): StreamedResponse
     {
-        $orders = $this->query($this->filters($request))->with('customer')->orderBy('placed_at')->get();
+        $orders = $this->query($this->filters($request))->with('customer', 'fiscalDocuments')->orderBy('placed_at')->get();
 
         return response()->streamDownload(function () use ($orders) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
             $money = fn (int $c) => number_format($c / 100, 2, ',', '');
-            fputcsv($out, ['Pedido', 'Data', 'Canal', 'Status', 'Cliente', 'Pagamento', 'Subtotal', 'Desconto', 'Frete', 'Taxas do canal', 'Total', 'Custo', 'Lucro bruto'], ';');
+            fputcsv($out, ['Pedido', 'Data', 'Canal', 'Status', 'Cliente', 'Pagamento', 'Subtotal', 'Desconto', 'Frete', 'Taxas do canal', 'Total', 'Custo', 'Lucro bruto', 'Nota fiscal', 'Chave NF-e'], ';');
             foreach ($orders as $o) {
                 fputcsv($out, [
                     $o->number, $o->placed_at->format('d/m/Y H:i'), $o->channelLabel(), $o->statusLabel(), $o->customer?->name,
                     Order::PAYMENT_METHODS[$o->payment_method] ?? '', $money($o->subtotal_cents), $money($o->discount_cents),
                     $money($o->shipping_cents), $money($o->fee_cents), $money($o->total_cents), $money($o->cost_cents), $money($o->profitCents()),
+                    $o->fiscalDocuments->first()?->number, $o->fiscalDocuments->first()?->access_key ? '​'.$o->fiscalDocuments->first()->access_key : null,
                 ], ';');
             }
             fclose($out);
@@ -109,7 +110,7 @@ class OrderController
 
     public function show(Order $order): View
     {
-        return view('commerce.orders.show', ['order' => $order->load('items', 'customer')]);
+        return view('commerce.orders.show', ['order' => $order->load('items', 'customer', 'fiscalDocuments')]);
     }
 
     public function pay(Request $request, Order $order): RedirectResponse
@@ -145,6 +146,7 @@ class OrderController
             'status' => ['nullable', Rule::in(array_keys(Order::STATUSES))],
             'canal' => ['nullable', Rule::in(array_keys(Order::CHANNELS))],
             'busca' => ['nullable', 'string', 'max:100'],
+            'nota' => ['nullable', 'in:sem,com'],
         ]);
     }
 
@@ -156,6 +158,8 @@ class OrderController
             ->whereBetween('placed_at', [$from, $to])
             ->when($filters['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
             ->when($filters['canal'] ?? null, fn ($q, $c) => $q->where('channel', $c))
+            ->when(($filters['nota'] ?? null) === 'sem', fn ($q) => $q->sold()->whereDoesntHave('fiscalDocuments'))
+            ->when(($filters['nota'] ?? null) === 'com', fn ($q) => $q->whereHas('fiscalDocuments'))
             ->when($filters['busca'] ?? null, function ($q, $term) {
                 $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
                 $q->where(fn ($q) => $q->where('number', ctype_digit($term) ? (int) $term : 0)

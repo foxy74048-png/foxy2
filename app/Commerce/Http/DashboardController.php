@@ -39,6 +39,7 @@ class DashboardController
                 ->count(),
             'toShip' => Order::whereIn('status', ['paid', 'in_fulfillment'])->count(),
             'awaiting' => Order::where('status', 'awaiting_payment')->count(),
+            'withoutInvoice' => Order::sold()->where('placed_at', '>=', now()->subDays(29)->startOfDay())->whereDoesntHave('fiscalDocuments')->count(),
             'finance' => null,
         ];
 

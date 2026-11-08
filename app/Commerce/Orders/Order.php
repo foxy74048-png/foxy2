@@ -2,6 +2,7 @@
 
 namespace App\Commerce\Orders;
 
+use App\Commerce\Fiscal\FiscalDocument;
 use App\Platform\Organizations\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -75,6 +76,11 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function fiscalDocuments(): HasMany
+    {
+        return $this->hasMany(FiscalDocument::class);
     }
 
     public function scopeSold(Builder $query): void

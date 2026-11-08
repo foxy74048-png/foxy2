@@ -62,6 +62,33 @@
     </div>
 
     <div class="card" style="margin-top:16px;">
+        <h3 style="margin-top:0;">Nota fiscal</h3>
+        @forelse ($order->fiscalDocuments as $doc)
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;">
+                <div>
+                    <strong>NF-e {{ $doc->number ?: "—" }}</strong> <span class="muted">série {{ $doc->series ?: "—" }}{{ $doc->issued_at ? " · emitida em ".$doc->issued_at->format("d/m/Y") : "" }}{{ $doc->source !== "manual" ? " · veio do ".(config("commerce.channels.{$doc->source}.label") ?? $doc->source) : "" }}</span>
+                    <div class="helper" style="font-family:monospace;">{{ $doc->formattedKey() }}</div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    @if ($doc->xml_file_id)<a class="button secondary" href="{{ route("commerce.orders.fiscal.xml", [$order, $doc->id]) }}">Baixar XML</a>@endif
+                    <form method="POST" action="{{ route("commerce.orders.fiscal.destroy", [$order, $doc->id]) }}" onsubmit="return confirm('Desligar esta nota do pedido?');">@csrf<button type="submit" class="secondary">Desligar</button></form>
+                </div>
+            </div>
+        @empty
+            @if (in_array($order->status, \App\Commerce\Orders\Order::SOLD, true))
+                <p class="helper" style="margin-top:0;">Emitiu a nota no seu emissor ou no marketplace? Anexe o XML ou cole a chave de acesso (44 números do DANFE).</p>
+                <form method="POST" action="{{ route("commerce.orders.fiscal", $order) }}" enctype="multipart/form-data" class="form-grid" style="align-items:end;">
+                    @csrf
+                    <div><label for="xml">XML da nota</label><input id="xml" type="file" name="xml" accept=".xml,text/xml"></div>
+                    <div><label for="access_key">ou a chave de acesso</label><input id="access_key" name="access_key" inputmode="numeric" maxlength="60" placeholder="0000 0000 0000 ..."></div>
+                    <div><button type="submit">Ligar nota</button></div>
+                </form>
+            @else
+                <p class="helper" style="margin:0;">A nota entra quando o pedido estiver pago.</p>
+            @endif
+        @endforelse
+    </div>
+    <div class="card" style="margin-top:16px;">
         <h3 style="margin-top:0;">Linha do tempo</h3>
         <ul style="margin:0;padding-left:20px;line-height:1.9;">
             <li>Pedido feito em {{ $order->placed_at->format('d/m/Y H:i') }}</li>
