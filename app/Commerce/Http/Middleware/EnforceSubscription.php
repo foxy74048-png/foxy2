@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnforceSubscription
 {
     /** Ações que funcionam mesmo em só leitura (para conseguir pagar e sair). */
-    private const ALWAYS_ALLOWED = ['commerce.billing', 'commerce.billing.*', 'commerce.logout', 'commerce.stores.*'];
+    private const ALWAYS_ALLOWED = ['commerce.billing', 'commerce.billing.*', 'commerce.logout', 'commerce.stores.*', 'commerce.fox.*'];
 
     public function handle(Request $request, Closure $next): Response
     {

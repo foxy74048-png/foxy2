@@ -31,3 +31,28 @@
     @csrf
     <button type="submit" class="button secondary" style="width:100%;">Sair</button>
 </form>
+{{-- Janela da raposa (Foxy AI) em todas as telas do app, quando a raposa do Commerce estiver publicada. --}}
+@if (\App\Commerce\Assistant\CommerceFox::isReady())
+    @php($foxWidget = rescue(fn () => app(\App\Commerce\Assistant\CommerceFox::class)->widget($currentMembership->organization, auth()->user()), null, false))
+    @if ($foxWidget && $foxWidget['assistant'])
+        <link rel="stylesheet" href="/core/foxy-assistant.css">
+        <script src="/core/foxy-assistant.js" defer></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const reports = @json(\App\Commerce\Access::allows($currentMembership, 'commerce.reports.view'));
+            FoxyAssistant.mount({
+                endpoint: @json(route('commerce.fox.message')),
+                resetEndpoint: @json(route('commerce.fox.reset')),
+                csrfToken: document.querySelector('meta[name=csrf-token]').content,
+                assistant: @json($foxWidget['assistant']),
+                launcher: 'icon',
+                getPage: () => document.title,
+                suggestions: reports
+                    ? ['Quanto vendi este mês e em qual canal?', 'O que está com estoque baixo?', 'Tem anúncio com erro?', 'Escreva um título e uma descrição de anúncio para um produto meu']
+                    : ['Quais pedidos estão para separar?', 'Como registro uma venda do WhatsApp?', 'O que está com estoque baixo?'],
+                setup: { endpoint: @json(route('commerce.fox.setup')), required: @json($foxWidget['setup']['required']), foxes: @json($foxWidget['setup']['foxes']), visuals: @json($foxWidget['setup']['visuals']) },
+            });
+        });
+        </script>
+    @endif
+@endif

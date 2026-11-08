@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Demo;
+namespace App\Platform\ApiClients;
 
 use App\Platform\Context\ContextStore;
 use Foxy\AiClient\Transport;
@@ -28,6 +28,8 @@ class InternalApi implements Transport
         $app = app();
         $original = $app->bound('request') ? $app->make('request') : null;
         $contexts = $app->make(ContextStore::class);
+        // Quem chama pode estar dentro de um contexto (ex.: a loja do Commerce): ele volta igual depois da chamada.
+        $previous = $contexts->has() ? $contexts->get() : null;
 
         $server = [
             'HTTP_AUTHORIZATION' => 'Bearer '.$this->key,
@@ -44,7 +46,7 @@ class InternalApi implements Transport
         try {
             $response = $app->make(Kernel::class)->handle($request);
         } finally {
-            $contexts->forget();
+            $previous ? $contexts->set($previous) : $contexts->forget();
 
             if ($original) {
                 $app->instance('request', $original);

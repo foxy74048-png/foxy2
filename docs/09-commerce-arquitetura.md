@@ -1,6 +1,6 @@
 # Foxy Commerce — Recorte do Core e arquitetura concreta
 
-> **Status:** v1.0. F1–F10 aprovadas em 2026-11-07. Fatias 1 a 5, 7, 8 e 9 implementadas, mais o painel financeiro (parte da 11) e a loja demo (seção 11).
+> **Status:** v1.0. F1–F10 aprovadas em 2026-11-07. Fatias 1 a 5 e 7 a 10 implementadas, mais o painel financeiro (parte da 11) e a loja demo (seção 11).
 > **Base:** `03-foxy-commerce.md` v1.0, `01-core-conceitual.md`, `05-arquitetura.md` (stack, padrões e infraestrutura já em produção).
 > **Critério:** mesmo da Foxy AI: menor custo no início e tudo preparado para crescer; o domínio já nasce multicanal.
 
@@ -145,7 +145,7 @@ A loja própria e o pedido manual também são canais (`storefront`, `manual`), 
 ## 9. Raposa no Commerce
 
 - O Commerce vira mais um sistema anfitrião da Foxy AI: publica manual e catálogo de tools de leitura (`vendas_periodo`, `pedidos_pendentes`, `estoque_baixo`, `mais_vendidos`, `anuncios_com_erro`) e executa as tools com as permissões de quem pergunta.
-- Chamada pela API da Foxy AI usando o pacote `foxy-ai-client` com o transporte `InternalApi` (já existe em `app/Demo`; sobe para a Platform). Assim passa pelos mesmos middlewares, limites e créditos de qualquer sistema, sem rede (F8).
+- Chamada pela API da Foxy AI usando o pacote `foxy-ai-client` com o transporte `AppPlatformApiClientsInternalApi` (movido de `app/Demo` em 2026-11-08; agora devolve o contexto de quem chamou ao terminar). Assim passa pelos mesmos middlewares, limites e créditos de qualquer sistema, sem rede (F8).
 - Capacidade `escrita`: "gerar título e descrição" no editor de produto e de anúncio.
 
 ## 10. Segurança e LGPD
@@ -178,7 +178,8 @@ A loja própria e o pedido manual também são canais (`storefront`, `manual`), 
    Feito em 2026-11-08: `CommerceChannelsMercadoLivreMercadoLivreConnector` (API `api.mercadolibre.com`, site MLB), ligado só quando `MERCADOLIVRE_CLIENT_ID` está no `.env`. OAuth (`auth.mercadolivre.com.br`), `/users/me`; token de 6 h renovado sozinho (o refresh token é de uso único: guarda o novo); 401 renova e tenta de novo; 429/5xx tentam de novo. Publicar: categoria sugerida pelo título (`domain_discovery`) se não informada, `BRAND`/`MODEL` do produto, atributos digitados no anúncio (`CÓDIGO=valor`, ex.: `GENDER`, `SIZE_GRID_ID`, `LISTING_TYPE=gold_pro`), fotos pela URL pública, variações por Tamanho/Cor/Voltagem/Sabor com `SELLER_SKU`, descrição. Estoque e preço **por variação** (`PUT /items/{id}/variations/{v}`; nunca a lista inteira, que apagaria as outras). Pedidos pelo tópico `orders_v2` e por `/orders/search`, com taxa (`sale_fee` × quantidade) e comprador; SKU pelo `seller_sku` ou pela variação ligada ao anúncio. Erros do Mercado Livre aparecem na tela como vieram. **A confirmar com o app criado:** categorias no modelo "User Products" (preço por variação) e a tabela de medidas obrigatória em moda.
 9. ✔ **Nota (fase A):** importar a nota emitida pelo canal quando a API der + anexar XML manualmente (qualquer canal).
    Feito em 2026-11-08: `commerce_fiscal_documents` (pedido, origem, chave de 44 dígitos única na loja, número, série, emissão, valor, XML). No pedido: anexar o XML (lido sem rede e sem entidades externas) ou digitar a chave (dígito verificador conferido; número e série tirados da chave); XML em disco **privado** (`local`), baixado só pela rota autenticada; aviso se o valor da nota difere do pedido. Pedidos: filtro "vendidos sem nota"/"com nota", número e chave na planilha; painel: "Vendas sem nota (30 dias)". Canais: interface opcional `ProvidesInvoices`; a conferência busca as notas que faltam (pedidos vendidos nos últimos 30 dias). **Mercado Livre ainda não implementa** `ProvidesInvoices`: o endereço e o formato da nota na API precisam ser confirmados com o app criado. A demo traz notas em ~85% dos pedidos concluídos.
-10. **Raposa no Commerce:** manual, tools de leitura, gerar título e descrição.
+10. ✔ **Raposa no Commerce:** manual, tools de leitura, gerar título e descrição.
+   Feito em 2026-11-08: `CommerceAssistantCommerceHost` (perfil `foxy-commerce`, manual do Commerce e 6 consultas de leitura: vendas_resumo, vendas_mais_vendidos, pedidos_pendentes, pedido_buscar, estoque_baixo, anuncios_com_erro, cada uma ligada a uma permissão do papel) e `CommerceFox` (chave do sistema criptografada em disco, conversa por sessão, plano de perguntas da loja em `COMMERCE_AI_PLAN`, padrão `ia-250`). `php artisan commerce:raposa` publica perfil, manual e consultas (rodar no deploy quando o manual mudar). Janela da raposa em todas as telas do app (`/app/raposa/mensagem`, `/nova`, `/escolher`), com escolha da raposa no primeiro uso; a IA age em nome da pessoa (`on_behalf_of`). Capacidade `escrita` (título e descrição de anúncio) para quem cuida do catálogo. Funciona também com a loja só para consulta.
 11. **Painel completo (Insights):** vendas por canal, mais vendidos, ticket médio, estoque parado.
 
 Depois da fatia 11: conectores Shopee, Magalu e Shein (fase 3), nessa ordem, e então a loja própria (fatia 6); emissão de NF-e própria (fase 4).

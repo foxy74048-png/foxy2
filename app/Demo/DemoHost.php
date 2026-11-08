@@ -3,6 +3,7 @@
 namespace App\Demo;
 
 use App\Platform\ApiClients\ApiClient;
+use App\Platform\ApiClients\InternalApi;
 use App\Platform\Integrations\Integration;
 use App\Platform\Organizations\Organization;
 use Foxy\AiClient\FoxyAiClient;

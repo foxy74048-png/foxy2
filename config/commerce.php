@@ -42,6 +42,9 @@ return [
 
     'invitation_days' => 7,
 
+    // Plano de perguntas da raposa (Foxy AI) de cada loja. Ver config/foxy.php (ai.plans).
+    'ai_plan' => env('COMMERCE_AI_PLAN', 'ia-250'),
+
     /*
     | Marketplaces (docs/09, seção 6). connector = classe que implementa ChannelConnector; null = "em breve".
     | title_max = tamanho máximo do título do anúncio no canal.

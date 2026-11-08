@@ -7,6 +7,7 @@ use App\Commerce\Http\ChannelController;
 use App\Commerce\Http\CustomerController;
 use App\Commerce\Http\DashboardController;
 use App\Commerce\Http\FiscalController;
+use App\Commerce\Http\FoxController;
 use App\Commerce\Http\InvitationController;
 use App\Commerce\Http\ListingController;
 use App\Commerce\Http\OrderController;
@@ -68,6 +69,13 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
 
     Route::middleware(['commerce.store', 'commerce.subscription'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Janela da raposa (fatia 10)
+        Route::middleware('throttle:20,1')->group(function () {
+            Route::post('/raposa/mensagem', [FoxController::class, 'message'])->name('fox.message');
+            Route::post('/raposa/nova', [FoxController::class, 'reset'])->name('fox.reset');
+            Route::post('/raposa/escolher', [FoxController::class, 'setup'])->name('fox.setup');
+        });
 
         Route::middleware('commerce.can:commerce.billing.manage')->group(function () {
             Route::get('/assinatura', [BillingController::class, 'show'])->name('billing');
