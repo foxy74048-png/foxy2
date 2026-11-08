@@ -9,6 +9,10 @@
     <x-core::nav-link href="{{ route('commerce.products') }}" :active="request()->routeIs('commerce.products*')" icon="copy">Produtos</x-core::nav-link>
     <x-core::nav-link href="{{ route('commerce.categories') }}" :active="request()->routeIs('commerce.categories*')" icon="settings">Categorias</x-core::nav-link>
 @endif
+@if (\App\Commerce\Access::allows($currentMembership, 'commerce.channels.manage'))
+    <x-core::nav-link href="{{ route('commerce.listings') }}" :active="request()->routeIs('commerce.listings*')" icon="sparkles">Anúncios</x-core::nav-link>
+    <x-core::nav-link href="{{ route('commerce.channels') }}" :active="request()->routeIs('commerce.channels*')" icon="home">Marketplaces</x-core::nav-link>
+@endif
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.stock.view'))
     <x-core::nav-link href="{{ route('commerce.stock') }}" :active="request()->routeIs('commerce.stock*')" icon="calendar">Estoque</x-core::nav-link>
 @endif

@@ -3,6 +3,9 @@
 namespace App\Commerce;
 
 use App\Commerce\Accounts\AccountSync;
+use App\Commerce\Channels\ListingVariant;
+use App\Commerce\Channels\PushListingStock;
+use App\Commerce\Inventory\StockChanged;
 use App\Commerce\Inventory\StockService;
 use App\Platform\Billing\SubscriptionChanged;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -22,6 +25,16 @@ class CommerceServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Estoque mudou: agenda o envio do novo disponível para cada anúncio no ar que usa essas variantes.
+        Event::listen(function (StockChanged $event) {
+            ListingVariant::withoutGlobalScopes()
+                ->where('organization_id', $event->organizationId)
+                ->whereIn('variant_id', $event->variantIds)
+                ->whereHas('listing', fn ($q) => $q->withoutGlobalScopes()->where('status', 'active'))
+                ->distinct()->pluck('listing_id')
+                ->each(fn (string $listingId) => PushListingStock::dispatch($event->organizationId, $listingId));
+        });
+
         // Assinatura mudou (Stripe, Foxy Admin): a conta da loja no Admin acompanha.
         Event::listen(function (SubscriptionChanged $event) {
             if ($event->subscription->product === Commerce::SLUG) {

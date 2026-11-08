@@ -41,6 +41,17 @@ return [
     'invitation_days' => 7,
 
     /*
+    | Marketplaces (docs/09, seção 6). connector = classe que implementa ChannelConnector; null = "em breve".
+    | title_max = tamanho máximo do título do anúncio no canal.
+    */
+    'channels' => [
+        'mercadolivre' => ['label' => 'Mercado Livre', 'connector' => null, 'title_max' => 60],
+        'shopee' => ['label' => 'Shopee', 'connector' => null, 'title_max' => 120],
+        'magalu' => ['label' => 'Magalu', 'connector' => null, 'title_max' => 150],
+        'shein' => ['label' => 'Shein', 'connector' => null, 'title_max' => 150],
+    ],
+
+    /*
     | Papéis fixos (docs/09, F1). O dono pode tudo; os outros, só o que está na lista.
     */
     'roles' => [

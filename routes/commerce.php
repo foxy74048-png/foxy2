@@ -3,9 +3,11 @@
 use App\Commerce\Http\AuthController;
 use App\Commerce\Http\BillingController;
 use App\Commerce\Http\CategoryController;
+use App\Commerce\Http\ChannelController;
 use App\Commerce\Http\CustomerController;
 use App\Commerce\Http\DashboardController;
 use App\Commerce\Http\InvitationController;
+use App\Commerce\Http\ListingController;
 use App\Commerce\Http\OrderController;
 use App\Commerce\Http\ProductController;
 use App\Commerce\Http\StockController;
@@ -42,6 +44,9 @@ Route::middleware('guest')->group(function () {
 
 // Webhook do Stripe (público, sem CSRF; confere a assinatura do Stripe).
 Route::post('/stripe/webhook', StripeWebhookController::class)->middleware('throttle:120,1')->name('stripe.webhook');
+
+// Avisos dos marketplaces (públicos, sem CSRF): só guardam e enfileiram; o pedido é buscado na API do canal.
+Route::post('/webhooks/commerce/{channel}', [ChannelController::class, 'webhook'])->middleware('throttle:600,1')->name('channels.webhook');
 
 // Convite de equipe: público (o token é a prova); funciona logado ou não.
 Route::get('/convite/{token}', [InvitationController::class, 'show'])->name('invitation.show');
@@ -105,6 +110,21 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/clientes/{customer}', [CustomerController::class, 'update'])->name('customers.update');
         });
         Route::post('/pedidos/{order}/cancelar', [OrderController::class, 'cancel'])->middleware('commerce.can:commerce.orders.cancel')->name('orders.cancel');
+
+        // Marketplaces e anúncios (fatia 7)
+        Route::middleware('commerce.can:commerce.channels.manage')->group(function () {
+            Route::get('/canais', [ChannelController::class, 'index'])->name('channels');
+            Route::post('/canais/{channel}/conectar', [ChannelController::class, 'connect'])->middleware('throttle:10,1')->name('channels.connect');
+            Route::get('/canais/{channel}/retorno', [ChannelController::class, 'callback'])->middleware('throttle:10,1')->name('channels.callback');
+            Route::post('/canais/conexoes/{connection}/desconectar', [ChannelController::class, 'disconnect'])->name('channels.disconnect');
+            Route::get('/anuncios', [ListingController::class, 'index'])->name('listings');
+            Route::get('/anuncios/novo', [ListingController::class, 'create'])->name('listings.create');
+            Route::post('/anuncios', [ListingController::class, 'store'])->name('listings.store');
+            Route::get('/anuncios/{listing}', [ListingController::class, 'edit'])->name('listings.edit');
+            Route::post('/anuncios/{listing}', [ListingController::class, 'update'])->name('listings.update');
+            Route::post('/anuncios/{listing}/publicar', [ListingController::class, 'publish'])->middleware('throttle:30,1')->name('listings.publish');
+            Route::post('/anuncios/{listing}/pausar', [ListingController::class, 'pause'])->name('listings.pause');
+        });
 
         // Estoque (fatia 4)
         Route::middleware('commerce.can:commerce.stock.view')->group(function () {

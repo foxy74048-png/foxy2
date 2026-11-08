@@ -46,7 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveStore::class);
 
         // O Stripe não manda token de formulário; o webhook confere a assinatura dele.
-        $middleware->validateCsrfTokens(except: ['stripe/webhook']);
+        $middleware->validateCsrfTokens(except: ['stripe/webhook', 'webhooks/commerce/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Situações esperadas (limite, conversa expirada...) viram resposta da API, não erro no log.

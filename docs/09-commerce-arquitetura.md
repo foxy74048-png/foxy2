@@ -1,6 +1,6 @@
 # Foxy Commerce — Recorte do Core e arquitetura concreta
 
-> **Status:** v1.0. F1–F10 aprovadas em 2026-11-07. Fatias 1 a 5 implementadas, mais o painel financeiro (parte da 11) e a loja demo (seção 11).
+> **Status:** v1.0. F1–F10 aprovadas em 2026-11-07. Fatias 1 a 5 e 7 implementadas, mais o painel financeiro (parte da 11) e a loja demo (seção 11).
 > **Base:** `03-foxy-commerce.md` v1.0, `01-core-conceitual.md`, `05-arquitetura.md` (stack, padrões e infraestrutura já em produção).
 > **Critério:** mesmo da Foxy AI: menor custo no início e tudo preparado para crescer; o domínio já nasce multicanal.
 
@@ -172,7 +172,8 @@ A loja própria e o pedido manual também são canais (`storefront`, `manual`), 
    **Painel financeiro** (`/app`, dono e gerente; `CommerceInsightsFinanceReport`): filtros de período (hoje, 7/30/90 dias, mês, mês passado, ano, 12 meses, datas), canal, forma de pagamento e categoria; indicadores com comparação ao período anterior (faturamento, pedidos, ticket médio, lucro bruto e margem, taxas dos canais, custo das mercadorias, a receber, cancelamentos); faturamento por dia, semana ou mês; por canal (com margem), forma de pagamento, categoria, mais vendidos e melhores clientes. Gráficos em HTML/CSS próprios (`resources/views/commerce/charts`), uma série na cor da marca, dica ao passar o mouse e tabela com os números. Lucro bruto = total − frete − taxas − custo.
    **Loja demo:** `php artisan commerce:demo [--email=demo@foxy.net.br] [--senha=] [--dias=180] [--fresh]` cria "Moda Demo Foxy" (Parceiro Fundador) com 10 produtos (grade e kits), estoque, 80 clientes e ~860 pedidos em 6 meses em todos os canais, cada um no dia dele. `--fresh` apaga e recria só a demo.
 6. **Loja própria:** vitrine pública, carrinho, checkout de convidado, Pix estático, WhatsApp, expiração de reservas, e-mails.
-7. **Canais (base):** contrato, `FakeConnector`, conexões, editor de anúncio, caixa de entrada, jobs de publicação e de estoque, conferência periódica.
+7. ✔ **Canais (base):** contrato, `FakeConnector`, conexões, editor de anúncio, caixa de entrada, jobs de publicação e de estoque, conferência periódica.
+   Feito em 2026-11-08: `commerce_channel_connections` (tokens com cast `encrypted`; uma conta de vendedor fica numa loja só), `commerce_listings` + `commerce_listing_variants` (último estoque enviado), `commerce_channel_inbox`. Contrato `CommerceChannelsChannelConnector` + `ExternalOrder` + `ChannelError`; registro em `config/commerce.php` → `channels` (conector `null` = "em breve"; `Channels::fake()` nos testes, com `FakeConnector`). `ChannelSync`: publicar (envia SKU e disponível de cada variante), atualizar, pausar, enviar estoque só do que mudou, importar pedido (idempotente por canal + id; só entra pago; cancelado no canal cancela aqui; SKU desconhecido deixa a conexão "precisa de atenção" com a explicação), processar aviso, conferência. Jobs `PublishListing`, `PushListingStock` (único por anúncio) e `ProcessInboxItem`; `StockChanged` → envio para os anúncios no ar. Rotas: `/app/canais` (conectar com `state` na sessão, retorno em `/app/canais/{canal}/retorno`, desconectar pausa os anúncios), `/app/anuncios` (novo a partir do produto, título com o limite do canal, preço próprio, variantes, publicar/pausar, erro do canal na tela), aviso público `POST /webhooks/commerce/{canal}` (sem CSRF; só guarda e enfileira). Agendador: `commerce:canais` a cada 10 min e **o worker da fila** (`queue:work --stop-when-empty`) a cada minuto, então não há passo extra no servidor (F5).
 8. **Mercado Livre:** conector real (testado sobre respostas gravadas), OAuth, categorias e atributos, publicar, estoque e preço, pedidos.
 9. **Nota (fase A):** importar a nota emitida pelo canal quando a API der + anexar XML manualmente (qualquer canal).
 10. **Raposa no Commerce:** manual, tools de leitura, gerar título e descrição.
@@ -181,7 +182,7 @@ A loja própria e o pedido manual também são canais (`storefront`, `manual`), 
 Depois da fatia 11: conectores Shopee, Magalu e Shein (fase 3), nessa ordem, e então a loja própria (fatia 6); emissão de NF-e própria (fase 4).
 **Ordem decidida (D-C1, 2026-11-07):** os clientes vendem hoje no Mercado Livre, Shopee, Magalu e Shein, então os marketplaces vêm antes da loja própria: 1 ✔ → 2 → 3 → 4 → 5 → 7 → 8 → 9 → 10 → 11 → Shopee → Magalu → Shein → 6.
 
-**Passos do responsável (no fim, sem travar as fatias):** produto e preços do Commerce no Stripe + webhook + chaves no `.env` da foxy2; bucket S3 + usuário IAM; app de desenvolvedor no Mercado Livre (client id/secret + URL de retorno); worker de fila no servidor (F5); planos e preços do Commerce (D-C4).
+**Passos do responsável (no fim, sem travar as fatias):** produto e preços do Commerce no Stripe + webhook + chaves no `.env` da foxy2; bucket S3 + usuário IAM; app de desenvolvedor no Mercado Livre (client id/secret + URL de retorno); planos e preços do Commerce (D-C4).
 
 **Exceção sugerida:** os acessos de desenvolvedor da Shopee, da Magalu e da Shein dependem de aprovação do marketplace, que pode levar semanas. Vale pedir cedo para não travar a fase 3. O do Mercado Livre costuma sair na hora. Os requisitos de cada um serão confirmados na documentação oficial antes do pedido.
 

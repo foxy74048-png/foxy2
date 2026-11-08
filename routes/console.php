@@ -15,3 +15,8 @@ Schedule::command('foxy:comunicados:enviar')->everyMinute()->withoutOverlapping(
 Schedule::command('commerce:comandos')->everyMinute()->withoutOverlapping(10);
 Schedule::command('commerce:contas')->hourly();
 Schedule::command('commerce:reservas')->everyFifteenMinutes()->withoutOverlapping(10);
+Schedule::command('commerce:canais')->everyTenMinutes()->withoutOverlapping(15);
+
+// Fila (decisão F5): um worker por minuto que sai quando a fila esvazia. Publicação de anúncios e envio de
+// estoque aos marketplaces passam por aqui. Serviço systemd dedicado quando o volume pedir.
+Schedule::command('queue:work --stop-when-empty --max-time=55 --tries=3')->everyMinute()->withoutOverlapping(2);

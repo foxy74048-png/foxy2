@@ -2,6 +2,7 @@
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
     <x-slot:actions>
         <a class="button secondary" href="{{ route('commerce.products') }}">Voltar aos produtos</a>
+        @if ($product->status === 'active' && \App\Commerce\Access::allows($currentMembership, 'commerce.channels.manage'))<a class="button" href="{{ route('commerce.listings.create', ['produto' => $product->id]) }}">Anunciar</a>@endif
     </x-slot:actions>
 
     @include('commerce.status')
