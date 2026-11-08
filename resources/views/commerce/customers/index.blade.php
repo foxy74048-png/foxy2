@@ -1,0 +1,42 @@
+<x-core::layout title="Clientes" product="Foxy Commerce" :subtitle="$currentStore->name">
+    <x-slot:nav>@include('commerce.nav')</x-slot:nav>
+    @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
+
+    @include('commerce.status')
+
+    <form class="card form-grid" method="GET" action="{{ route('commerce.customers') }}" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items:end;">
+        <div><label for="busca">Nome, telefone ou e-mail</label><input id="busca" name="busca" value="{{ $filters['busca'] ?? '' }}"></div>
+        <div>
+            <label for="ordem">Ordenar por</label>
+            <select id="ordem" name="ordem">
+                <option value="gasto" @selected(($filters['ordem'] ?? 'gasto') === 'gasto')>Quem mais comprou</option>
+                <option value="recente" @selected(($filters['ordem'] ?? '') === 'recente')>Compra mais recente</option>
+                <option value="nome" @selected(($filters['ordem'] ?? '') === 'nome')>Nome</option>
+            </select>
+        </div>
+        <div><button type="submit">Filtrar</button></div>
+    </form>
+
+    <div class="card" style="margin-top:16px;">
+        @if ($customers->isEmpty())
+            <div class="empty">Nenhum cliente ainda. Eles entram sozinhos pelos pedidos.</div>
+        @else
+            <div class="table-wrap"><table>
+                <thead><tr><th>Cliente</th><th>Contato</th><th>Cidade</th><th style="text-align:right;">Pedidos</th><th style="text-align:right;">Total comprado</th><th>Última compra</th></tr></thead>
+                <tbody>
+                    @foreach ($customers as $c)
+                        <tr>
+                            <td><a href="{{ route('commerce.customers.show', $c) }}"><strong>{{ $c->name }}</strong></a></td>
+                            <td>{{ $c->phone ?? $c->email ?? '—' }}</td>
+                            <td>{{ $c->city ? $c->city.($c->state ? '/'.$c->state : '') : '—' }}</td>
+                            <td style="text-align:right;">{{ $c->orders_count }}</td>
+                            <td style="text-align:right;">{{ $money((int) $c->spent_cents) }}</td>
+                            <td>{{ $c->last_order_at ? \Illuminate\Support\Carbon::parse($c->last_order_at)->format('d/m/Y') : '—' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table></div>
+            <div style="margin-top:12px;">{{ $customers->links() }}</div>
+        @endif
+    </div>
+</x-core::layout>

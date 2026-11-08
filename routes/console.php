@@ -14,3 +14,4 @@ Schedule::command('foxy:comunicados:enviar')->everyMinute()->withoutOverlapping(
 // Foxy Commerce (docs/09): ações do Foxy Admin nas lojas e situação das contas (o teste vence sozinho).
 Schedule::command('commerce:comandos')->everyMinute()->withoutOverlapping(10);
 Schedule::command('commerce:contas')->hourly();
+Schedule::command('commerce:reservas')->everyFifteenMinutes()->withoutOverlapping(10);

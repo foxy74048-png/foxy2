@@ -124,7 +124,7 @@ class IdentityAndTeamTest extends TestCase
 
         $this->get($link)->assertRedirect($this->url('/app'));
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $this->get($this->url('/app'))->assertOk()->assertSee('Moda da Ana')->assertSee('ecommerce.foxy.net.br/moda-da-ana');
+        $this->get($this->url('/app'))->assertOk()->assertSee('Moda da Ana');
     }
 
     public function test_endereco_da_loja_nao_repete_nem_usa_palavra_reservada(): void

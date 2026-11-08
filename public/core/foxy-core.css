@@ -167,3 +167,7 @@ th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-
     .core-main { margin-left: 0; max-width: 100%; padding: 76px 18px 40px; }
     .grid.two { grid-template-columns: 1fr; }
 }
+
+/* Cartão que é link (atalhos do painel): sem sublinhado, com destaque ao passar o mouse. */
+a.card { color: inherit; text-decoration: none; display: block; }
+a.card:hover { box-shadow: 0 8px 20px rgba(91, 63, 209, 0.12); }

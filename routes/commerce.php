@@ -3,8 +3,10 @@
 use App\Commerce\Http\AuthController;
 use App\Commerce\Http\BillingController;
 use App\Commerce\Http\CategoryController;
+use App\Commerce\Http\CustomerController;
 use App\Commerce\Http\DashboardController;
 use App\Commerce\Http\InvitationController;
+use App\Commerce\Http\OrderController;
 use App\Commerce\Http\ProductController;
 use App\Commerce\Http\StockController;
 use App\Commerce\Http\StoreController;
@@ -88,6 +90,21 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/categorias/{category}', [CategoryController::class, 'update'])->name('categories.update');
             Route::post('/categorias/{category}/apagar', [CategoryController::class, 'destroy'])->name('categories.destroy');
         });
+
+        // Pedidos e clientes (fatia 5)
+        Route::middleware('commerce.can:commerce.orders.manage')->group(function () {
+            Route::get('/pedidos', [OrderController::class, 'index'])->name('orders');
+            Route::get('/pedidos/exportar', [OrderController::class, 'export'])->name('orders.export');
+            Route::get('/pedidos/novo', [OrderController::class, 'create'])->name('orders.create');
+            Route::post('/pedidos', [OrderController::class, 'store'])->middleware('throttle:60,1')->name('orders.store');
+            Route::get('/pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
+            Route::post('/pedidos/{order}/pago', [OrderController::class, 'pay'])->name('orders.pay');
+            Route::post('/pedidos/{order}/andamento', [OrderController::class, 'advance'])->name('orders.advance');
+            Route::get('/clientes', [CustomerController::class, 'index'])->name('customers');
+            Route::get('/clientes/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+            Route::post('/clientes/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+        });
+        Route::post('/pedidos/{order}/cancelar', [OrderController::class, 'cancel'])->middleware('commerce.can:commerce.orders.cancel')->name('orders.cancel');
 
         // Estoque (fatia 4)
         Route::middleware('commerce.can:commerce.stock.view')->group(function () {
