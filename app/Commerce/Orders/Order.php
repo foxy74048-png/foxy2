@@ -2,6 +2,7 @@
 
 namespace App\Commerce\Orders;
 
+use App\Commerce\Finance\Receivable;
 use App\Commerce\Fiscal\FiscalDocument;
 use App\Platform\Organizations\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Builder;
@@ -46,6 +47,7 @@ class Order extends Model
         'cartao_debito' => 'Cartão de débito',
         'dinheiro' => 'Dinheiro',
         'boleto' => 'Boleto',
+        'crediario' => 'Crediário / fiado (parcelas)',
         'marketplace' => 'Pelo marketplace',
     ];
 
@@ -71,6 +73,11 @@ class Order extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function receivables(): HasMany
+    {
+        return $this->hasMany(Receivable::class)->orderBy('due_date');
     }
 
     public function items(): HasMany

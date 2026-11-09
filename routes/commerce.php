@@ -6,6 +6,7 @@ use App\Commerce\Http\CategoryController;
 use App\Commerce\Http\ChannelController;
 use App\Commerce\Http\CustomerController;
 use App\Commerce\Http\DashboardController;
+use App\Commerce\Http\FinanceController;
 use App\Commerce\Http\FiscalController;
 use App\Commerce\Http\FoxController;
 use App\Commerce\Http\InvitationController;
@@ -20,6 +21,7 @@ use App\Commerce\Http\StoreSettingsController;
 use App\Commerce\Http\SupportController;
 use App\Commerce\Http\TeamController;
 use App\Commerce\Http\VerificationController;
+use App\Commerce\Http\WhatsAppController;
 use App\Platform\Billing\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -144,12 +146,35 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::get('/pedidos/{order}/nota/{document}/xml', [FiscalController::class, 'download'])->name('orders.fiscal.xml');
             Route::post('/pedidos/{order}/nota/{document}/apagar', [FiscalController::class, 'destroy'])->name('orders.fiscal.destroy');
             Route::get('/clientes', [CustomerController::class, 'index'])->name('customers');
+            Route::post('/clientes', [CustomerController::class, 'store'])->name('customers.store');
             Route::get('/clientes/{customer}', [CustomerController::class, 'show'])->name('customers.show');
             Route::post('/clientes/{customer}', [CustomerController::class, 'update'])->name('customers.update');
         });
         Route::post('/pedidos/{order}/cancelar', [OrderController::class, 'cancel'])->middleware('commerce.can:commerce.orders.cancel')->name('orders.cancel');
 
         // Marketplaces e anúncios (fatia 7)
+        // Financeiro (a receber, a pagar, fluxo) e WhatsApp da loja (cobranças e lembretes).
+        Route::middleware('commerce.can:commerce.finance.manage')->group(function () {
+            Route::get('/financeiro', [FinanceController::class, 'index'])->name('finance');
+            Route::post('/financeiro/receber', [FinanceController::class, 'storeReceivable'])->name('finance.receivables.store');
+            Route::get('/financeiro/receber/{receivable}', [FinanceController::class, 'showReceivable'])->name('finance.receivables.show');
+            Route::post('/financeiro/receber/{receivable}', [FinanceController::class, 'updateReceivable'])->name('finance.receivables.update');
+            Route::post('/financeiro/receber/{receivable}/baixa', [FinanceController::class, 'receive'])->name('finance.receivables.receive');
+            Route::post('/financeiro/receber/{receivable}/reabrir', [FinanceController::class, 'reopenReceivable'])->name('finance.receivables.reopen');
+            Route::post('/financeiro/receber/{receivable}/cancelar', [FinanceController::class, 'cancelReceivable'])->name('finance.receivables.cancel');
+            Route::post('/financeiro/pagar', [FinanceController::class, 'storePayable'])->name('finance.payables.store');
+            Route::post('/financeiro/pagar/{payable}', [FinanceController::class, 'updatePayable'])->name('finance.payables.update');
+            Route::post('/financeiro/pagar/{payable}/baixa', [FinanceController::class, 'pay'])->name('finance.payables.pay');
+            Route::post('/financeiro/pagar/{payable}/reabrir', [FinanceController::class, 'reopenPayable'])->name('finance.payables.reopen');
+            Route::post('/financeiro/pagar/{payable}/cancelar', [FinanceController::class, 'cancelPayable'])->name('finance.payables.cancel');
+            Route::post('/financeiro/receber/{receivable}/cobrar', [WhatsAppController::class, 'charge'])->middleware('throttle:30,1')->name('finance.receivables.charge');
+            Route::get('/whatsapp', [WhatsAppController::class, 'show'])->name('whatsapp');
+            Route::post('/whatsapp/conectar', [WhatsAppController::class, 'connect'])->middleware('throttle:10,1')->name('whatsapp.connect');
+            Route::get('/whatsapp/situacao', [WhatsAppController::class, 'status'])->middleware('throttle:60,1')->name('whatsapp.status');
+            Route::post('/whatsapp/desconectar', [WhatsAppController::class, 'disconnect'])->name('whatsapp.disconnect');
+            Route::post('/whatsapp/preferencias', [WhatsAppController::class, 'settings'])->name('whatsapp.settings');
+        });
+
         Route::middleware('commerce.can:commerce.channels.manage')->group(function () {
             Route::get('/canais', [ChannelController::class, 'index'])->name('channels');
             Route::post('/canais/{channel}/conectar', [ChannelController::class, 'connect'])->middleware('throttle:10,1')->name('channels.connect');

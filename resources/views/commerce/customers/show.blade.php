@@ -20,6 +20,38 @@
         </table></div>
     </div>
 
+    @php($open = $receivables->where('status', 'aberto'))
+    @if (\App\Commerce\Access::allows($currentMembership, 'commerce.finance.manage'))
+    <div class="card" style="margin-top:16px;">
+        <div class="toolbar"><h3 style="margin:0;">Contas a receber <span class="muted">({{ $open->count() }} em aberto · {{ $money($open->sum('amount_cents')) }})</span></h3>
+            @if ($customer->phone)<a class="button secondary" href="https://wa.me/{{ \App\Platform\Messaging\WhatsAppSender::normalize($customer->phone) }}" target="_blank" rel="noopener">Abrir conversa no WhatsApp</a>@endif</div>
+        @if ($receivables->isEmpty())
+            <div class="empty">Nada a receber desta cliente. Vendas no crediário/fiado aparecem aqui com as parcelas.</div>
+        @else
+            <div class="table-wrap"><table>
+                <thead><tr><th>Vencimento</th><th>Descrição</th><th style="text-align:right;">Valor</th><th>Situação</th><th></th></tr></thead>
+                <tbody>
+                    @foreach ($receivables as $r)
+                        <tr>
+                            <td>{{ $r->due_date->format('d/m/Y') }}</td>
+                            <td><a href="{{ route('commerce.finance.receivables.show', $r) }}">{{ $r->description }}</a> <span class="muted">{{ $r->installmentLabel() }}</span></td>
+                            <td style="text-align:right;white-space:nowrap;">{{ $money($r->amount_cents) }}</td>
+                            <td><span @class(['badge', 'success' => $r->status === 'recebido', 'danger' => $r->isOverdue()])>{{ $r->statusLabel() }}</span></td>
+                            <td style="text-align:right;">@if ($r->isOpen())<form method="POST" action="{{ route('commerce.finance.receivables.charge', $r) }}" style="display:inline;">@csrf<button type="submit" class="secondary">Cobrar no WhatsApp</button></form>@endif</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table></div>
+        @endif
+        @if ($messages->isNotEmpty())
+            <h4 style="margin-bottom:6px;">Mensagens enviadas</h4>
+            @foreach ($messages as $m)
+                <div class="helper">{{ $m->created_at->timezone('America/Sao_Paulo')->format('d/m H:i') }} · {{ \App\Commerce\Finance\WhatsAppMessage::KINDS[$m->kind] ?? $m->kind }} · {{ \App\Commerce\Finance\WhatsAppMessage::STATUSES[$m->status] ?? $m->status }}{{ $m->error ? ': '.$m->error : '' }}</div>
+            @endforeach
+        @endif
+    </div>
+    @endif
+
     <form class="card form-grid" method="POST" action="{{ route('commerce.customers.update', $customer) }}" style="margin-top:16px;">
         @csrf
         <div style="grid-column: 1 / -1;"><h3 style="margin:0;">Dados</h3></div>

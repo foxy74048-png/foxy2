@@ -15,6 +15,7 @@ Schedule::command('foxy:comunicados:enviar')->everyMinute()->withoutOverlapping(
 Schedule::command('commerce:comandos')->everyMinute()->withoutOverlapping(10);
 Schedule::command('commerce:contas')->hourly();
 Schedule::command('commerce:reservas')->everyFifteenMinutes()->withoutOverlapping(10);
+Schedule::command('commerce:lembretes')->hourlyAt(5)->withoutOverlapping(55);
 Schedule::command('commerce:canais')->everyTenMinutes()->withoutOverlapping(15);
 
 // Cópia de segurança diária e rotina de saúde (avisa a equipe por e-mail; quadro no painel do Foxy Admin).

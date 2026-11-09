@@ -2,6 +2,8 @@
 
 namespace App\Commerce\Http;
 
+use App\Commerce\Finance\Receivable;
+use App\Commerce\Finance\WhatsAppMessage;
 use App\Commerce\Insights\Export;
 use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
@@ -56,14 +58,31 @@ class CustomerController
         return view('commerce.customers.show', [
             'customer' => $customer,
             'orders' => $orders,
+            'receivables' => Receivable::where('customer_id', $customer->id)->whereIn('status', ['aberto', 'recebido'])->orderByRaw("case when status = 'aberto' then 0 else 1 end")->orderBy('due_date')->limit(50)->get(),
+            'messages' => WhatsAppMessage::where('customer_id', $customer->id)->latest()->limit(20)->get(),
             'spent' => (int) $sold->sum('total_cents'),
             'ticket' => $sold->count() ? intdiv((int) $sold->sum('total_cents'), $sold->count()) : 0,
         ]);
     }
 
+    /** Cliente novo pela tela (sem precisar de pedido). */
+    public function store(Request $request): RedirectResponse
+    {
+        $customer = Customer::create($this->validated($request));
+
+        return redirect()->route('commerce.customers.show', $customer)->with('status', 'Cliente cadastrada.');
+    }
+
     public function update(Request $request, Customer $customer): RedirectResponse
     {
-        $customer->update($request->validate([
+        $customer->update($this->validated($request));
+
+        return back()->with('status', 'Cliente salvo.');
+    }
+
+    private function validated(Request $request): array
+    {
+        return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
@@ -71,8 +90,6 @@ class CustomerController
             'city' => ['nullable', 'string', 'max:80'],
             'state' => ['nullable', 'string', 'size:2'],
             'notes' => ['nullable', 'string', 'max:2000'],
-        ], [], ['name' => 'nome', 'document' => 'CPF/CNPJ', 'state' => 'UF']));
-
-        return back()->with('status', 'Cliente salvo.');
+        ], [], ['name' => 'nome', 'document' => 'CPF/CNPJ', 'state' => 'UF']);
     }
 }

@@ -42,6 +42,9 @@ return [
 
     'invitation_days' => 7,
 
+    // Lembretes de cobrança pelo WhatsApp da loja: pausa entre uma mensagem e outra (segundos), para o número não ser bloqueado.
+    'whatsapp_pause_seconds' => [6, 10],
+
     // Plano de perguntas da raposa (Foxy AI) de cada loja. Ver config/foxy.php (ai.plans).
     'ai_plan' => env('COMMERCE_AI_PLAN', 'ia-250'),
 
@@ -63,7 +66,7 @@ return [
         'owner' => ['label' => 'Dono(a)', 'permissions' => ['*']],
         'manager' => ['label' => 'Gerente', 'permissions' => [
             'commerce.team.view', 'commerce.store.manage', 'commerce.catalog.view', 'commerce.catalog.manage', 'commerce.stock.view', 'commerce.stock.adjust',
-            'commerce.orders.manage', 'commerce.orders.cancel', 'commerce.channels.manage', 'commerce.reports.view',
+            'commerce.orders.manage', 'commerce.orders.cancel', 'commerce.channels.manage', 'commerce.reports.view', 'commerce.finance.manage',
         ]],
         'attendant' => ['label' => 'Atendente', 'permissions' => [
             'commerce.catalog.view', 'commerce.stock.view', 'commerce.orders.manage',

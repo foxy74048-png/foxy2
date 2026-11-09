@@ -56,9 +56,18 @@
                 <label for="payment_method">Forma de pagamento</label>
                 <select id="payment_method" name="payment_method"><option value="">—</option>@foreach (\App\Commerce\Orders\Order::PAYMENT_METHODS as $key => $label)@continue($key === 'marketplace')<option value="{{ $key }}" @selected(old('payment_method') === $key)>{{ $label }}</option>@endforeach</select>
             </div>
-            <div style="display:flex;align-items:flex-end;">
+            <div style="display:flex;align-items:flex-end;" data-paid-box>
                 <label style="display:flex;gap:8px;align-items:center;font-weight:600;"><input type="checkbox" name="paid" value="1" style="width:auto;" @checked(old('paid', true))> Já está pago</label>
             </div>
+            <div data-credit-box @if (old('payment_method') !== 'crediario') hidden @endif>
+                <label for="installments">Parcelas</label>
+                <input id="installments" name="installments" type="number" min="1" max="{{ \App\Commerce\Finance\FinanceService::MAX_INSTALLMENTS }}" value="{{ old('installments', 2) }}">
+            </div>
+            <div data-credit-box @if (old('payment_method') !== 'crediario') hidden @endif>
+                <label for="first_due">1º vencimento</label>
+                <input id="first_due" name="first_due" type="date" value="{{ old('first_due', today()->addMonth()->toDateString()) }}">
+            </div>
+            <div data-credit-box style="grid-column:1/-1;" @if (old('payment_method') !== 'crediario') hidden @endif><div class="alert info" style="margin:0;">Crediário: a venda sai do estoque agora e o valor vira parcelas mensais em <b>Financeiro › A receber</b>, no nome da cliente. O WhatsApp lembra antes de cada vencimento (se ligado).</div></div>
             <div style="grid-column: 1 / -1;">
                 <label for="notes">Observações</label>
                 <textarea id="notes" name="notes" rows="2" maxlength="2000">{{ old('notes') }}</textarea>
@@ -130,6 +139,10 @@
                 summary();
             });
             document.getElementById('add-item').addEventListener('click', addRow);
+            const method = document.getElementById('payment_method');
+            const credit = function () { const on = method.value === 'crediario'; document.querySelectorAll('[data-credit-box]').forEach(function (b) { b.hidden = !on; }); document.querySelector('[data-paid-box]').hidden = on; };
+            method.addEventListener('change', credit);
+            credit();
             summary();
         })();
     </script>

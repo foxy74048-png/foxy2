@@ -4,6 +4,7 @@ namespace App\Commerce\Http;
 
 use App\Commerce\Catalog\Money;
 use App\Commerce\Catalog\Variant;
+use App\Commerce\Finance\FinanceService;
 use App\Commerce\Insights\Csv;
 use App\Commerce\Insights\Export;
 use App\Commerce\Insights\FinanceReport;
@@ -13,6 +14,8 @@ use App\Commerce\Orders\Order;
 use App\Commerce\Orders\OrderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -98,7 +101,15 @@ class OrderController
             'paid' => ['nullable', 'boolean'],
             'payment_method' => ['nullable', Rule::in(array_keys(Order::PAYMENT_METHODS))],
             'notes' => ['nullable', 'string', 'max:2000'],
-        ], [], ['channel' => 'canal', 'customer.email' => 'e-mail do cliente']);
+            'installments' => ['nullable', 'integer', 'min:1', 'max:'.FinanceService::MAX_INSTALLMENTS],
+            'first_due' => ['nullable', 'date'],
+        ], [], ['channel' => 'canal', 'customer.email' => 'e-mail do cliente', 'installments' => 'parcelas', 'first_due' => 'primeiro vencimento']);
+
+        // Crediário/fiado: a peça sai agora (venda feita) e o valor vira parcelas a receber, no nome da cliente.
+        $credit = ($data['payment_method'] ?? null) === 'crediario';
+        if ($credit && blank($data['customer_id'] ?? null) && blank($data['customer']['name'] ?? null)) {
+            throw ValidationException::withMessages(['customer.name' => 'No crediário, informe a cliente (para cobrar e lembrar das parcelas).']);
+        }
 
         $customerId = filled($data['customer_id'] ?? null) ? Customer::findOrFail($data['customer_id'])->id : null;
         $items = [];
@@ -111,25 +122,30 @@ class OrderController
             $items[] = ['variant' => $variant, 'quantity' => (int) ($row['quantity'] ?? 1), 'unit_price_cents' => Money::toCents($row['price'] ?? null) ?? $variant->price_cents];
         }
 
-        $order = $this->orders->place([
+        $order = DB::transaction(fn () => tap($this->orders->place([
             'channel' => $data['channel'],
             'customer_id' => $customerId,
             'customer' => $customerId ? null : array_filter($data['customer'] ?? []),
             'items' => $items,
             'discount_cents' => Money::toCents($data['discount'] ?? null) ?? 0,
             'shipping_cents' => Money::toCents($data['shipping'] ?? null) ?? 0,
-            'paid' => (bool) ($data['paid'] ?? false),
+            'paid' => $credit || (bool) ($data['paid'] ?? false),
             'payment_method' => $data['payment_method'] ?? null,
             'notes' => $data['notes'] ?? null,
-        ]);
+        ]), function (Order $order) use ($credit, $data) {
+            if ($credit) {
+                app(FinanceService::class)->installments([], $order->total_cents, (int) ($data['installments'] ?? 1),
+                    Carbon::parse($data['first_due'] ?? today()->addMonth()), $order);
+            }
+        }));
 
-        return redirect()->route('commerce.orders.show', $order)->with('status', "Pedido #{$order->number} registrado.");
+        return redirect()->route('commerce.orders.show', $order)->with('status', "Pedido #{$order->number} registrado.".($credit ? ' As parcelas estão em Financeiro › A receber.' : ''));
     }
 
     public function show(Order $order): View
     {
         return view('commerce.orders.show', [
-            'order' => $order->load('items', 'customer', 'fiscalDocuments'),
+            'order' => $order->load('items', 'customer', 'fiscalDocuments', 'receivables'),
             // Peças para troca: primeiro as do mesmo produto (outro tamanho/cor), depois o resto.
             'swap' => $order->status === 'canceled' ? collect() : Variant::with('product')->where('status', 'active')->orderBy('sku')->limit(3000)->get()
                 ->sortBy(fn ($v) => $order->items->pluck('product_id')->contains($v->product_id) ? 0 : 1)->values(),

@@ -8,6 +8,10 @@
     <x-core::nav-link href="{{ route('commerce.orders') }}" :active="request()->routeIs('commerce.orders*')" icon="send">Pedidos</x-core::nav-link>
     <x-core::nav-link href="{{ route('commerce.customers') }}" :active="request()->routeIs('commerce.customers*')" icon="users">Clientes</x-core::nav-link>
 @endif
+@if (\App\Commerce\Access::allows($currentMembership, 'commerce.finance.manage'))
+    <x-core::nav-link href="{{ route('commerce.finance') }}" :active="request()->routeIs('commerce.finance*')" icon="wallet">Financeiro</x-core::nav-link>
+    <x-core::nav-link href="{{ route('commerce.whatsapp') }}" :active="request()->routeIs('commerce.whatsapp*')" icon="send">WhatsApp</x-core::nav-link>
+@endif
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.catalog.view'))
     <x-core::nav-link href="{{ route('commerce.products') }}" :active="request()->routeIs('commerce.products*')" icon="copy">Produtos</x-core::nav-link>
     <x-core::nav-link href="{{ route('commerce.categories') }}" :active="request()->routeIs('commerce.categories*')" icon="settings">Categorias</x-core::nav-link>

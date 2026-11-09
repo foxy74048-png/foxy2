@@ -21,12 +21,12 @@ class Store extends Model
 
     protected $fillable = [
         'organization_id', 'slug', 'name', 'whatsapp', 'published_at', 'pix_key', 'pix_name', 'pix_city', 'payment_instructions',
-        'delivery', 'primary_color', 'logo_file_id', 'about',
+        'delivery', 'primary_color', 'logo_file_id', 'about', 'whatsapp_settings',
     ];
 
     protected function casts(): array
     {
-        return ['published_at' => 'datetime', 'delivery' => 'array'];
+        return ['published_at' => 'datetime', 'delivery' => 'array', 'whatsapp_settings' => 'array'];
     }
 
     public function logo(): BelongsTo

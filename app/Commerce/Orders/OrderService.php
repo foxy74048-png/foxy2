@@ -4,6 +4,7 @@ namespace App\Commerce\Orders;
 
 use App\Commerce\Catalog\KitComponent;
 use App\Commerce\Catalog\Variant;
+use App\Commerce\Finance\FinanceService;
 use App\Commerce\Inventory\StockService;
 use App\Commerce\Stores\Store;
 use App\Platform\Audit\Audit;
@@ -185,6 +186,7 @@ class OrderService
 
             $notes = trim(($order->notes ? $order->notes."\n" : '').($reason ? 'Cancelado: '.$reason : ''));
             $order->update(['status' => 'canceled', 'canceled_at' => now(), 'reserved_until' => null, 'notes' => $notes ?: null]);
+            app(FinanceService::class)->cancelOrderReceivables($order); // parcelas do crediário
             Audit::record('commerce.order.canceled', subject: $order, metadata: ['reason' => $reason]);
         });
     }

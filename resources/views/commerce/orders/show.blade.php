@@ -61,6 +61,21 @@
         </table></div>
     </div>
 
+    @if ($order->receivables->isNotEmpty())
+        <div class="card" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Parcelas a receber <span class="muted">({{ $order->receivables->where('status', 'aberto')->count() }} em aberto)</span></h3>
+            <div class="table-wrap"><table>
+                <thead><tr><th>Parcela</th><th>Vencimento</th><th style="text-align:right;">Valor</th><th>Situação</th></tr></thead>
+                <tbody>
+                    @foreach ($order->receivables as $r)
+                        <tr><td>{{ $r->installmentLabel() ?: 'Única' }}</td><td>{{ $r->due_date->format('d/m/Y') }}</td><td style="text-align:right;">{{ $money($r->amount_cents) }}</td><td><span @class(['badge', 'success' => $r->status === 'recebido', 'danger' => $r->isOverdue()])>{{ $r->statusLabel() }}</span></td></tr>
+                    @endforeach
+                </tbody>
+            </table></div>
+            @if (\App\Commerce\Access::allows($currentMembership, 'commerce.finance.manage'))<p style="margin-bottom:0;"><a href="{{ route('commerce.finance', ['busca' => '#'.$order->number]) }}">Receber ou cobrar em Financeiro › A receber</a></p>@endif
+        </div>
+    @endif
+
     @if ($order->status !== 'canceled' && $order->items->whereNotNull('variant_id')->isNotEmpty())
         @php($manualOrder = in_array($order->channel, \App\Commerce\Orders\Order::MANUAL_CHANNELS, true))
         <div class="card" style="margin-top:16px;">
