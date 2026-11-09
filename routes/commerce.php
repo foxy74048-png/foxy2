@@ -133,6 +133,7 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::get('/pedidos/novo', [OrderController::class, 'create'])->name('orders.create');
             Route::post('/pedidos', [OrderController::class, 'store'])->middleware('throttle:60,1')->name('orders.store');
             Route::get('/pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
+            Route::post('/pedidos/{order}/editar', [OrderController::class, 'update'])->name('orders.update');
             Route::post('/pedidos/{order}/pago', [OrderController::class, 'pay'])->name('orders.pay');
             Route::post('/pedidos/{order}/andamento', [OrderController::class, 'advance'])->name('orders.advance');
             Route::post('/pedidos/{order}/nota', [FiscalController::class, 'store'])->middleware('throttle:30,1')->name('orders.fiscal');
@@ -156,6 +157,7 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::get('/anuncios/{listing}', [ListingController::class, 'edit'])->name('listings.edit');
             Route::post('/anuncios/{listing}', [ListingController::class, 'update'])->name('listings.update');
             Route::post('/anuncios/{listing}/publicar', [ListingController::class, 'publish'])->middleware('throttle:30,1')->name('listings.publish');
+            Route::post('/anuncios/{listing}/apagar', [ListingController::class, 'destroy'])->name('listings.destroy');
             Route::post('/anuncios/{listing}/pausar', [ListingController::class, 'pause'])->name('listings.pause');
         });
 
@@ -175,6 +177,7 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/equipe/convites', [TeamController::class, 'invite'])->middleware('throttle:20,1')->name('team.invite');
             Route::post('/equipe/convites/{invitation}/cancelar', [TeamController::class, 'cancelInvitation'])->name('team.invitations.cancel');
             Route::post('/equipe/{membership}/papel', [TeamController::class, 'changeRole'])->name('team.role');
+            Route::post('/equipe/{membership}/suspender', [TeamController::class, 'suspend'])->name('team.suspend');
             Route::post('/equipe/{membership}/remover', [TeamController::class, 'remove'])->name('team.remove');
         });
     });

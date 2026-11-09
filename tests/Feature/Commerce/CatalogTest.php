@@ -19,6 +19,7 @@ use App\Platform\Files\File;
 use App\Platform\Memberships\Membership;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -64,6 +65,17 @@ class CatalogTest extends TestCase
     private function shirt(): Product
     {
         return $this->inStore(fn () => Product::where('name', 'Camiseta Básica')->with('variants')->firstOrFail());
+    }
+
+    public function test_paginacao_em_portugues_e_sem_icone_gigante(): void
+    {
+        $html = (string) (new LengthAwarePaginator(range(1, 30), 526, 30, 2, ['path' => '/app/produtos']))->links();
+
+        $this->assertStringContainsString('Mostrando 31–60 de 526', $html);
+        $this->assertStringContainsString('Próxima', $html);
+        $this->assertStringContainsString('aria-current="page">2<', $html);
+        $this->assertStringContainsString('/app/produtos?page=18', $html);
+        $this->assertStringNotContainsString('<svg', $html);
     }
 
     public function test_dinheiro_aceita_o_jeito_brasileiro_de_digitar(): void

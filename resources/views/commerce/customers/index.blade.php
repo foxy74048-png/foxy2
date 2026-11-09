@@ -22,7 +22,7 @@
             <div class="empty">Nenhum cliente ainda. Eles entram sozinhos pelos pedidos.</div>
         @else
             <div class="table-wrap"><table>
-                <thead><tr><th>Cliente</th><th>Contato</th><th>Cidade</th><th style="text-align:right;">Pedidos</th><th style="text-align:right;">Total comprado</th><th>Última compra</th></tr></thead>
+                <thead><tr><th>Cliente</th><th>Contato</th><th>Cidade</th><th style="text-align:right;">Pedidos</th><th style="text-align:right;">Total comprado</th><th>Última compra</th><th></th></tr></thead>
                 <tbody>
                     @foreach ($customers as $c)
                         <tr>
@@ -32,6 +32,7 @@
                             <td style="text-align:right;">{{ $c->orders_count }}</td>
                             <td style="text-align:right;">{{ $money((int) $c->spent_cents) }}</td>
                             <td>{{ $c->last_order_at ? \Illuminate\Support\Carbon::parse($c->last_order_at)->format('d/m/Y') : '—' }}</td>
+                            <td style="text-align:right;"><a class="button secondary" href="{{ route('commerce.customers.show', $c) }}">Editar</a></td>
                         </tr>
                     @endforeach
                 </tbody>

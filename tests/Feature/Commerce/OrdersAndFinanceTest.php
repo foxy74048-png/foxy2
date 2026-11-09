@@ -136,6 +136,29 @@ class OrdersAndFinanceTest extends TestCase
         $this->assertSame(8, $this->onHand('CAM-P'));
     }
 
+    public function test_editar_dados_do_pedido(): void
+    {
+        $order = $this->place(['channel' => 'whatsapp', 'items' => [['variant' => $this->v['CAM-P'], 'quantity' => 2]]]);
+        $this->actingAs($this->owner);
+
+        $this->get($this->url("/app/pedidos/{$order->id}"))->assertSee('Editar dados do pedido');
+        $this->post($this->url("/app/pedidos/{$order->id}/editar"), ['notes' => 'Entregar à tarde', 'payment_method' => 'dinheiro', 'discount' => '5,00', 'shipping' => '12,50'])->assertSessionHasNoErrors();
+        $order->refresh();
+        $this->assertSame('Entregar à tarde', $order->notes);
+        $this->assertSame('dinheiro', $order->payment_method);
+        $this->assertSame($order->subtotal_cents - 500 + 1250, $order->total_cents);
+
+        // Pedido de marketplace: frete e desconto vêm do canal.
+        $ml = $this->place(['channel' => 'mercadolivre', 'paid' => true, 'payment_method' => 'marketplace', 'shipping_cents' => 2000, 'items' => [['variant' => $this->v['CAM-P'], 'quantity' => 1]]]);
+        $this->post($this->url("/app/pedidos/{$ml->id}/editar"), ['notes' => 'ok', 'shipping' => '0', 'payment_method' => 'pix'])->assertSessionHasNoErrors();
+        $this->assertSame(2000, $ml->fresh()->shipping_cents);
+        $this->assertSame('marketplace', $ml->fresh()->payment_method);
+        $this->assertSame('ok', $ml->fresh()->notes);
+
+        $this->post($this->url("/app/pedidos/{$order->id}/cancelar"))->assertSessionHasNoErrors();
+        $this->post($this->url("/app/pedidos/{$order->id}/editar"), ['notes' => 'x'])->assertSessionHasErrors('order');
+    }
+
     public function test_reserva_vencida_cancela_e_solta_as_pecas(): void
     {
         $order = $this->place(['channel' => 'whatsapp', 'items' => [['variant' => $this->v['BONE'], 'quantity' => 4]]]);

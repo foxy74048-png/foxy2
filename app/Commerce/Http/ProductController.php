@@ -159,7 +159,7 @@ class ProductController
         $product->update(['status' => $product->status === 'archived' ? 'active' : 'archived']);
         Audit::record($product->status === 'archived' ? 'commerce.product.archived' : 'commerce.product.restored', subject: $product);
 
-        return back()->with('status', $product->status === 'archived' ? 'Produto arquivado: some das listas, mas o histórico fica.' : 'Produto reativado.');
+        return back()->with('status', $product->status === 'archived' ? 'Produto desativado: some das listas e da loja, mas o histórico fica. Dá para reativar quando quiser.' : 'Produto reativado.');
     }
 
     public function uploadImages(Request $request, Product $product): RedirectResponse

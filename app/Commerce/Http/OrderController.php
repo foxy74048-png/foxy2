@@ -122,6 +122,34 @@ class OrderController
         return back()->with('status', 'Pagamento confirmado. O estoque foi baixado.');
     }
 
+    public function update(Request $request, Order $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'tracking_code' => ['nullable', 'string', 'max:60'],
+            'payment_method' => ['nullable', Rule::in(array_keys(Order::PAYMENT_METHODS))],
+            'discount' => ['nullable', 'string', 'max:20'],
+            'shipping' => ['nullable', 'string', 'max:20'],
+        ], [], ['notes' => 'observações', 'tracking_code' => 'rastreio', 'discount' => 'desconto', 'shipping' => 'frete']);
+
+        $changes = ['notes' => $data['notes'] ?? null];
+        if ($request->has('tracking_code')) {
+            $changes['tracking_code'] = $data['tracking_code'] ?? null;
+        }
+        if ($request->filled('payment_method')) {
+            $changes['payment_method'] = $data['payment_method'];
+        }
+        if ($request->has('discount')) {
+            $changes['discount_cents'] = Money::toCents($data['discount'] ?? null) ?? 0;
+        }
+        if ($request->has('shipping')) {
+            $changes['shipping_cents'] = Money::toCents($data['shipping'] ?? null) ?? 0;
+        }
+        $this->orders->updateDetails($order, $changes);
+
+        return back()->with('status', 'Pedido salvo.');
+    }
+
     public function advance(Request $request, Order $order): RedirectResponse
     {
         $data = $request->validate(['status' => ['required', 'string'], 'tracking_code' => ['nullable', 'string', 'max:60']]);

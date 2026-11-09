@@ -30,7 +30,7 @@ class TeamController
         $organization = $this->organization();
 
         return view('commerce.team', [
-            'members' => Membership::with('user')->where('organization_id', $organization->getKey())->active()->oldest()->get(),
+            'members' => Membership::with('user')->where('organization_id', $organization->getKey())->onTeam()->oldest()->get(),
             'invitations' => Invitation::where('organization_id', $organization->getKey())->whereNull('accepted_at')->where('expires_at', '>', now())->latest()->get(),
             'roles' => Access::roles(),
             'canManage' => Access::allows($request->attributes->get('commerce.membership'), 'commerce.team.manage'),
@@ -46,15 +46,15 @@ class TeamController
         ], [], ['role' => 'papel']);
         $email = Str::lower($data['email']);
 
-        $alreadyMember = Membership::active()->where('organization_id', $organization->getKey())
+        $alreadyMember = Membership::onTeam()->where('organization_id', $organization->getKey())
             ->whereHas('user', fn ($q) => $q->where('email', $email))->exists();
         if ($alreadyMember) {
-            throw ValidationException::withMessages(['email' => 'Essa pessoa já está na equipe.']);
+            throw ValidationException::withMessages(['email' => 'Essa pessoa já está na equipe (se estiver suspensa, é só reativar na lista).']);
         }
 
         // Limite do plano: quem já está na equipe + convites esperando resposta (menos um reenvio para o mesmo e-mail).
         $limit = Plans::limit($organization, 'users');
-        $taken = Membership::active()->where('organization_id', $organization->getKey())->count()
+        $taken = Membership::onTeam()->where('organization_id', $organization->getKey())->count()
             + Invitation::where('organization_id', $organization->getKey())->whereNull('accepted_at')
                 ->where('expires_at', '>', now())->where('email', '!=', $email)->count();
         if ($limit !== null && $taken >= $limit) {
@@ -113,6 +113,28 @@ class TeamController
         return back()->with('status', 'Acesso retirado. A pessoa não entra mais nesta loja.');
     }
 
+    /** Suspende ou reativa o acesso sem tirar a pessoa da equipe. */
+    public function suspend(Request $request, string $membership): RedirectResponse
+    {
+        $membership = $this->member($membership);
+        $suspend = $request->boolean('suspend');
+
+        if ($suspend) {
+            if ((string) $membership->user_id === (string) $request->user()->getKey()) {
+                throw ValidationException::withMessages(['role' => 'Você não pode suspender o seu próprio acesso.']);
+            }
+            if ($membership->role === 'owner') {
+                $this->keepAnOwner($membership);
+            }
+        }
+
+        $membership->update(['status' => $suspend ? Membership::SUSPENDED : Membership::ACTIVE]);
+        Audit::record($suspend ? 'commerce.team.suspended' : 'commerce.team.reactivated', subject: $membership);
+        AccountSync::sync($this->organization());
+
+        return back()->with('status', $suspend ? 'Acesso suspenso. A pessoa continua na equipe, mas não entra até ser reativada.' : 'Acesso reativado.');
+    }
+
     private function organization(): Organization
     {
         return ExecutionContext::current()->organization;
@@ -120,7 +142,7 @@ class TeamController
 
     private function member(string $id): Membership
     {
-        return Membership::active()->where('organization_id', $this->organization()->getKey())->findOrFail($id);
+        return Membership::onTeam()->where('organization_id', $this->organization()->getKey())->findOrFail($id);
     }
 
     /** A loja nunca fica sem dono. */

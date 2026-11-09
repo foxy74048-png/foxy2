@@ -6,7 +6,7 @@
     </x-slot:actions>
 
     @include('commerce.status')
-    @if ($product->status === 'archived')<div class="alert info" style="margin-bottom:16px;">Produto arquivado: não aparece nas listas nem vai para os canais.</div>@endif
+    @if ($product->status === 'archived')<div class="alert info" style="margin-bottom:16px;">Produto desativado: não aparece nas listas nem vai para os canais. Use "Reativar produto" no fim da página para voltar a vender.</div>@endif
 
     {{-- Variantes primeiro: é o que mais se mexe (SKU, preço). --}}
     <form class="card" method="POST" action="{{ route('commerce.products.variants', $product) }}">
@@ -103,6 +103,6 @@
 
     <form method="POST" action="{{ route('commerce.products.archive', $product) }}" style="margin-top:16px;">
         @csrf
-        <button type="submit" class="secondary">{{ $product->status === 'archived' ? 'Reativar produto' : 'Arquivar produto' }}</button>
+        <button type="submit" class="secondary">{{ $product->status === 'archived' ? 'Reativar produto' : 'Desativar produto' }}</button>
     </form>
 </x-core::layout>

@@ -16,7 +16,7 @@ class Product extends Model
 {
     use BelongsToOrganization, HasUlids;
 
-    public const STATUSES = ['active' => 'Ativo', 'draft' => 'Rascunho', 'archived' => 'Arquivado'];
+    public const STATUSES = ['active' => 'Ativo', 'draft' => 'Rascunho', 'archived' => 'Desativado'];
 
     protected $table = 'commerce_products';
 

@@ -40,7 +40,7 @@
             <tbody>
                 @foreach ($members as $m)
                     <tr>
-                        <td><strong>{{ $m->user->name }}</strong>@if ($m->user_id === auth()->id()) <span class="badge">você</span>@endif</td>
+                        <td><strong>{{ $m->user->name }}</strong>@if ($m->user_id === auth()->id()) <span class="badge">você</span>@endif @if ($m->status === 'suspended') <span class="badge danger">suspenso</span>@endif</td>
                         <td>{{ $m->user->email }}</td>
                         <td>
                             @if ($canManage)
@@ -56,7 +56,13 @@
                             @endif
                         </td>
                         @if ($canManage)
-                            <td>
+                            <td style="display:flex;gap:8px;flex-wrap:wrap;">
+                                @if ($m->user_id !== auth()->id())
+                                    <form method="POST" action="{{ route('commerce.team.suspend', $m->id) }}">
+                                        @csrf<input type="hidden" name="suspend" value="{{ $m->status === 'suspended' ? 0 : 1 }}">
+                                        <button type="submit" class="secondary">{{ $m->status === 'suspended' ? 'Reativar' : 'Suspender' }}</button>
+                                    </form>
+                                @endif
                                 <form method="POST" action="{{ route('commerce.team.remove', $m->id) }}" onsubmit="return confirm('Retirar o acesso desta pessoa à loja?');">
                                     @csrf
                                     <button type="submit" class="danger">Retirar acesso</button>

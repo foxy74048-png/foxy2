@@ -245,6 +245,25 @@ class IdentityAndTeamTest extends TestCase
         $this->get($this->url('/app/nova-loja'))->assertSee('Peça um convite');
     }
 
+    public function test_suspender_acesso_mantem_na_equipe_e_reativar_devolve(): void
+    {
+        [$ana, $store] = $this->owner();
+        $own = Membership::where('user_id', $ana->id)->firstOrFail();
+        $carla = $this->member($store, 'attendant', 'carla@loja.test');
+        $carlaMembership = Membership::where('user_id', $carla->id)->firstOrFail();
+
+        $this->actingAs($ana)->post($this->url("/app/equipe/{$own->id}/suspender"), ['suspend' => 1])->assertSessionHasErrors('role');
+        $this->assertSame(Membership::ACTIVE, $own->fresh()->status);
+
+        $this->post($this->url("/app/equipe/{$carlaMembership->id}/suspender"), ['suspend' => 1])->assertSessionHasNoErrors();
+        $this->assertSame(Membership::SUSPENDED, $carlaMembership->fresh()->status);
+        $this->get($this->url('/app/equipe'))->assertSee($carla->name)->assertSee('suspenso')->assertSee('Reativar');
+        $this->actingAs($carla)->get($this->url('/app'))->assertRedirect($this->url('/app/nova-loja'));
+
+        $this->actingAs($ana)->post($this->url("/app/equipe/{$carlaMembership->id}/suspender"), ['suspend' => 0])->assertSessionHasNoErrors();
+        $this->actingAs($carla)->get($this->url('/app'))->assertOk();
+    }
+
     public function test_gerente_ve_a_equipe_mas_nao_convida(): void
     {
         [, $store] = $this->owner();

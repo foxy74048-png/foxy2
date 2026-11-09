@@ -153,7 +153,15 @@ class ChannelsTest extends TestCase
 
         $this->assertSame('error', $listing->status);
         $this->get($this->url("/app/anuncios/{$listing->id}"))->assertSee('Categoria obrigatória')->assertSee('Tentar publicar de novo');
-        $this->get($this->url('/app/anuncios'))->assertSee('Com erro');
+        $this->get($this->url('/app/anuncios'))->assertSee('Com erro')->assertSee('Apagar');
+
+        // Ainda não está no canal: pode apagar. Publicado não se apaga, se pausa.
+        $this->post($this->url("/app/anuncios/{$listing->id}/apagar"))->assertSessionHasNoErrors();
+        $this->assertSame(0, $this->inStore(fn () => Listing::count()));
+        $this->market->failPublishWith = null;
+        $active = $this->publishShirt();
+        $this->post($this->url("/app/anuncios/{$active->id}/apagar"))->assertSessionHasErrors('status');
+        $this->get($this->url('/app/anuncios'))->assertSee('Pausar');
     }
 
     public function test_estoque_vai_sozinho_so_com_o_que_mudou(): void

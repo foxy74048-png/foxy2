@@ -88,6 +88,29 @@
             @endif
         @endforelse
     </div>
+    @if ($order->status !== 'canceled')
+        @php($manual = in_array($order->channel, \App\Commerce\Orders\Order::MANUAL_CHANNELS, true))
+        <div class="card" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Editar dados do pedido</h3>
+            <form method="POST" action="{{ route('commerce.orders.update', $order) }}" class="form-grid" style="align-items:end;">
+                @csrf
+                @if ($order->payment_method !== 'marketplace')
+                    <div><label for="e-pm">Forma de pagamento</label><select id="e-pm" name="payment_method"><option value="">—</option>@foreach (\App\Commerce\Orders\Order::PAYMENT_METHODS as $k => $l)@continue($k === 'marketplace')<option value="{{ $k }}" @selected($order->payment_method === $k)>{{ $l }}</option>@endforeach</select></div>
+                @endif
+                @if ($manual)
+                    <div><label for="e-discount">Desconto (R$)</label><input id="e-discount" name="discount" inputmode="decimal" value="{{ old('discount', number_format($order->discount_cents / 100, 2, ',', '')) }}"></div>
+                    <div><label for="e-shipping">Frete (R$)</label><input id="e-shipping" name="shipping" inputmode="decimal" value="{{ old('shipping', number_format($order->shipping_cents / 100, 2, ',', '')) }}"></div>
+                @endif
+                @if (in_array($order->status, ['shipped', 'completed'], true))
+                    <div><label for="e-tracking">Código de rastreio</label><input id="e-tracking" name="tracking_code" maxlength="60" value="{{ old('tracking_code', $order->tracking_code) }}"></div>
+                @endif
+                <div style="grid-column:1/-1;"><label for="e-notes">Observações</label><textarea id="e-notes" name="notes" rows="3" maxlength="2000">{{ old('notes', $order->notes) }}</textarea></div>
+                <div><button type="submit">Salvar pedido</button></div>
+            </form>
+            <p class="helper" style="margin-bottom:0;">Para trocar peças ou quantidades, cancele o pedido (as peças voltam ao estoque) e lance de novo.@unless ($manual) Desconto e frete deste pedido vêm do canal e não se editam aqui.@endunless</p>
+        </div>
+    @endif
+
     <div class="card" style="margin-top:16px;">
         <h3 style="margin-top:0;">Linha do tempo</h3>
         <ul style="margin:0;padding-left:20px;line-height:1.9;">

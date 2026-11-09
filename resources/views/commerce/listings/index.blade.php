@@ -32,7 +32,7 @@
                 <div class="empty">Nenhum anúncio com esses filtros.</div>
             @else
                 <div class="table-wrap"><table>
-                    <thead><tr><th></th><th>Anúncio</th><th>Canal</th><th>Variantes</th><th style="text-align:right;">Preço</th><th>Situação</th></tr></thead>
+                    <thead><tr><th></th><th>Anúncio</th><th>Canal</th><th>Variantes</th><th style="text-align:right;">Preço</th><th>Situação</th><th style="text-align:right;">Ações</th></tr></thead>
                     <tbody>
                         @foreach ($listings as $l)
                             <tr>
@@ -42,6 +42,19 @@
                                 <td>{{ $l->variants->count() }}</td>
                                 <td style="text-align:right;white-space:nowrap;">{{ $money($l->price_cents) }}</td>
                                 <td><span @class(['badge', 'success' => $l->status === 'active', 'danger' => $l->status === 'error'])>{{ $l->statusLabel() }}</span></td>
+                                <td style="text-align:right;white-space:nowrap;">
+                                    <a class="button secondary" href="{{ route('commerce.listings.edit', $l) }}">Editar</a>
+                                    @if (in_array($l->status, ['active', 'paused'], true))
+                                        <form method="POST" action="{{ route('commerce.listings.pause', $l) }}" style="display:inline;">
+                                            @csrf<input type="hidden" name="paused" value="{{ $l->status === 'active' ? 1 : 0 }}">
+                                            <button type="submit" class="secondary">{{ $l->status === 'active' ? 'Pausar' : 'Reativar' }}</button>
+                                        </form>
+                                    @elseif (in_array($l->status, ['draft', 'error'], true))
+                                        <form method="POST" action="{{ route('commerce.listings.destroy', $l) }}" style="display:inline;" onsubmit="return confirm('Apagar este rascunho de anúncio? Ele ainda não está no canal.');">
+                                            @csrf<button type="submit" class="secondary">Apagar</button>
+                                        </form>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

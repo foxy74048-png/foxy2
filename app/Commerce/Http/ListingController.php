@@ -135,6 +135,22 @@ class ListingController
         return redirect()->route('commerce.listings.edit', $listing)->with('status', 'Publicando no '.$listing->connection->label().'. Em alguns instantes a situação muda aqui.');
     }
 
+    /** Rascunho (ou que deu erro ao publicar) ainda não existe no canal: pode ser apagado. Publicado se pausa. */
+    public function destroy(Listing $listing): RedirectResponse
+    {
+        if (! in_array($listing->status, ['draft', 'error'], true) || $listing->external_id) {
+            throw ValidationException::withMessages(['status' => 'Anúncio que já está no canal não se apaga: use "Pausar".']);
+        }
+
+        DB::transaction(function () use ($listing) {
+            $listing->variants()->delete();
+            $listing->delete();
+        });
+        Audit::record('commerce.listing.deleted', metadata: ['title' => $listing->title]);
+
+        return redirect()->route('commerce.listings')->with('status', 'Rascunho de anúncio apagado.');
+    }
+
     public function pause(Request $request, Listing $listing): RedirectResponse
     {
         $paused = $request->boolean('paused');

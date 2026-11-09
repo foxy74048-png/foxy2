@@ -104,6 +104,39 @@ class OrderService
         });
     }
 
+    /**
+     * Editar dados do pedido sem mexer nos itens (para trocar peças: cancelar e lançar de novo).
+     * Observação e rastreio sempre; forma de pagamento fora do marketplace; desconto e frete só nos
+     * pedidos digitados (balcão, WhatsApp, Instagram): nos outros vêm do canal ou o cliente já viu o Pix.
+     *
+     * @param  array{notes?: ?string, tracking_code?: ?string, payment_method?: ?string, discount_cents?: ?int, shipping_cents?: ?int}  $data
+     */
+    public function updateDetails(Order $order, array $data): void
+    {
+        if ($order->status === 'canceled') {
+            throw ValidationException::withMessages(['order' => 'Pedido cancelado não se edita.']);
+        }
+
+        $changes = [];
+        foreach (['notes', 'tracking_code'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $changes[$field] = $data[$field];
+            }
+        }
+        if (! empty($data['payment_method']) && $data['payment_method'] !== 'marketplace' && $order->payment_method !== 'marketplace') {
+            $changes['payment_method'] = $data['payment_method'];
+        }
+        if (in_array($order->channel, Order::MANUAL_CHANNELS, true) && (array_key_exists('discount_cents', $data) || array_key_exists('shipping_cents', $data))) {
+            $discount = min(max(0, (int) ($data['discount_cents'] ?? $order->discount_cents)), $order->subtotal_cents);
+            $shipping = max(0, (int) ($data['shipping_cents'] ?? $order->shipping_cents));
+            $changes += ['discount_cents' => $discount, 'shipping_cents' => $shipping, 'total_cents' => $order->subtotal_cents - $discount + $shipping];
+        }
+
+        $before = $order->only(array_keys($changes));
+        $order->update($changes);
+        Audit::record('commerce.order.edited', subject: $order, metadata: ['before' => $before, 'after' => $order->only(array_keys($changes))]);
+    }
+
     public function markPaid(Order $order, ?string $method = null): void
     {
         $this->guardStatus($order, ['awaiting_payment'], 'confirmar o pagamento');

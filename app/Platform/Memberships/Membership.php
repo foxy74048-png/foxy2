@@ -22,6 +22,9 @@ class Membership extends Model
 
     public const REMOVED = 'removed';
 
+    /** Continua na equipe (ocupa a vaga), mas não entra enquanto estiver suspenso. */
+    public const SUSPENDED = 'suspended';
+
     protected $fillable = ['organization_id', 'user_id', 'role', 'status', 'invited_by'];
 
     protected $attributes = ['status' => self::ACTIVE];
@@ -39,6 +42,12 @@ class Membership extends Model
     public function scopeActive(Builder $query): void
     {
         $query->where('status', self::ACTIVE);
+    }
+
+    /** Na equipe: ativos e suspensos. */
+    public function scopeOnTeam(Builder $query): void
+    {
+        $query->whereIn('status', [self::ACTIVE, self::SUSPENDED]);
     }
 
     public function isActive(): bool
