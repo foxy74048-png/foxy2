@@ -7,6 +7,7 @@ use App\Commerce\Catalog\Variant;
 use App\Commerce\Insights\Csv;
 use App\Commerce\Insights\Export;
 use App\Commerce\Insights\FinanceReport;
+use App\Commerce\Inventory\StockService;
 use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
 use App\Commerce\Orders\OrderService;
@@ -69,8 +70,13 @@ class OrderController
 
     public function create(): View
     {
+        $variants = Variant::with('product')->where('status', 'active')->whereHas('product', fn ($q) => $q->where('status', 'active'))->orderBy('sku')->limit(3000)->get();
+        $available = app(StockService::class)->availability($variants);
+
         return view('commerce.orders.create', [
-            'variants' => Variant::with('product')->where('status', 'active')->whereHas('product', fn ($q) => $q->where('status', 'active'))->orderBy('sku')->limit(3000)->get(),
+            'variants' => $variants,
+            // Para a tela mostrar nome, preço e disponível enquanto digita o SKU.
+            'catalog' => $variants->mapWithKeys(fn (Variant $v) => [$v->sku => ['name' => $v->fullName(), 'price' => $v->price_cents, 'available' => $available[$v->id] ?? 0]]),
             'customers' => Customer::orderBy('name')->limit(3000)->get(['id', 'name', 'phone']),
         ]);
     }
