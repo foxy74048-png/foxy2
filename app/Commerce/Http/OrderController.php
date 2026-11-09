@@ -5,6 +5,7 @@ namespace App\Commerce\Http;
 use App\Commerce\Catalog\Money;
 use App\Commerce\Catalog\Variant;
 use App\Commerce\Insights\Csv;
+use App\Commerce\Insights\Export;
 use App\Commerce\Insights\FinanceReport;
 use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
@@ -15,7 +16,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Pedidos de todos os canais numa fila só (docs/09, fatia 5). Pedido manual = balcão, WhatsApp, Instagram.
@@ -24,9 +25,12 @@ class OrderController
 {
     public function __construct(private OrderService $orders) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|Response
     {
         $filters = $this->filters($request);
+        if ($format = Export::requested($request)) {
+            return $this->exportAs($filters, $format);
+        }
 
         return view('commerce.orders.index', [
             'orders' => $this->query($filters)->with('customer')->latest('placed_at')->paginate(30)->withQueryString(),
@@ -35,25 +39,32 @@ class OrderController
     }
 
     /** Planilha (CSV, abre no Excel) com os pedidos dos mesmos filtros da lista. */
-    public function export(Request $request): StreamedResponse
+    /** Endereço antigo da planilha: continua funcionando. */
+    public function export(Request $request): Response
     {
-        $orders = $this->query($this->filters($request))->with('customer', 'fiscalDocuments')->orderBy('placed_at')->get();
+        return $this->exportAs($this->filters($request), 'planilha');
+    }
 
-        return response()->streamDownload(function () use ($orders) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF");
-            $money = fn (int $c) => number_format($c / 100, 2, ',', '');
-            Csv::row($out, ['Pedido', 'Data', 'Canal', 'Status', 'Cliente', 'Pagamento', 'Subtotal', 'Desconto', 'Frete', 'Taxas do canal', 'Total', 'Custo', 'Lucro bruto', 'Nota fiscal', 'Chave NF-e']);
-            foreach ($orders as $o) {
-                Csv::row($out, [
-                    $o->number, $o->placed_at->format('d/m/Y H:i'), $o->channelLabel(), $o->statusLabel(), $o->customer?->name,
-                    Order::PAYMENT_METHODS[$o->payment_method] ?? '', $money($o->subtotal_cents), $money($o->discount_cents),
-                    $money($o->shipping_cents), $money($o->fee_cents), $money($o->total_cents), $money($o->cost_cents), $money($o->profitCents()),
-                    $o->fiscalDocuments->first()?->number, $o->fiscalDocuments->first()?->access_key ? '​'.$o->fiscalDocuments->first()->access_key : null,
-                ]);
-            }
-            fclose($out);
-        }, 'pedidos-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    private function exportAs(array $filters, string $format): Response
+    {
+        $orders = $this->query($filters)->with('customer', 'fiscalDocuments')->orderBy('placed_at')->get();
+
+        return (new Export('Pedidos'))
+            ->filters([
+                'Período' => ! empty($filters['de']) || ! empty($filters['ate']) ? trim(($filters['de'] ?? '…').' a '.($filters['ate'] ?? '…')) : FinanceReport::PERIODS[$filters['periodo'] ?? '90d'],
+                'Situação' => isset($filters['status']) ? Order::STATUSES[$filters['status']] : null,
+                'Canal' => isset($filters['canal']) ? Order::CHANNELS[$filters['canal']] : null,
+                'Nota fiscal' => ['sem' => 'Sem nota', 'com' => 'Com nota'][$filters['nota'] ?? ''] ?? null,
+                'Busca' => $filters['busca'] ?? null,
+            ])
+            ->section(null, ['Pedido' => 'int', 'Data' => 'datetime', 'Canal' => 'text', 'Situação' => 'text', 'Cliente' => 'text', 'Pagamento' => 'text',
+                'Subtotal' => 'money', 'Desconto' => 'money', 'Frete' => 'money', 'Taxas do canal' => 'money', 'Total' => 'money', 'Custo' => 'money', 'Lucro bruto' => 'money', 'Nota fiscal' => 'text', 'Chave NF-e' => 'text:planilha'],
+                $orders->map(fn (Order $o) => [
+                    $o->number, $o->placed_at, $o->channelLabel(), $o->statusLabel(), $o->customer?->name, Order::PAYMENT_METHODS[$o->payment_method] ?? null,
+                    $o->subtotal_cents, $o->discount_cents, $o->shipping_cents, $o->fee_cents, $o->total_cents, $o->cost_cents, $o->status === 'canceled' ? null : $o->profitCents(),
+                    $o->fiscalDocuments->first()?->number, $o->fiscalDocuments->first()?->access_key ? "\u{200B}".$o->fiscalDocuments->first()->access_key : null,
+                ]))
+            ->download($format);
     }
 
     public function create(): View

@@ -1,5 +1,6 @@
 <x-core::layout title="Painel" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
+    <x-slot:actions>@if ($finance)@include('commerce.export.buttons')@endif</x-slot:actions>
     <x-slot:head>@include('commerce.charts.assets')</x-slot:head>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
     @php($can = fn ($p) => \App\Commerce\Access::allows($currentMembership, $p))

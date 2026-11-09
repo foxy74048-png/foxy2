@@ -1,5 +1,6 @@
 <x-core::layout title="Relatórios" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
+    <x-slot:actions>@include('commerce.export.buttons')</x-slot:actions>
     <x-slot:head>@include('commerce.charts.assets')</x-slot:head>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
     @php($pct = fn ($v) => $v === null ? '—' : ($v >= 0 ? '▲ ' : '▼ ').number_format(abs($v), 1, ',', '.').'%')
@@ -58,7 +59,7 @@
             <input type="hidden" name="aba" value="estoque">
             <div><label for="dias">Vendas dos últimos</label><select id="dias" name="dias">@foreach ([30, 60, 90, 180] as $d)<option value="{{ $d }}" @selected((int) ($filters['dias'] ?? 90) === $d)>{{ $d }} dias</option>@endforeach</select></div>
             <div><label for="situacao">Situação</label><select id="situacao" name="situacao"><option value="">Todas</option>@foreach ($statusLabels as $k => $l)<option value="{{ $k }}" @selected(($filters['situacao'] ?? '') === $k)>{{ $l }}</option>@endforeach</select></div>
-            <div class="actions"><button type="submit">Aplicar</button><a class="button secondary" href="{{ route('commerce.reports.stock-csv', ['dias' => $filters['dias'] ?? 90]) }}">Baixar planilha</a></div>
+            <div class="actions"><button type="submit">Aplicar</button></div>
         </form>
 
         <div class="card" style="margin-top:16px;">

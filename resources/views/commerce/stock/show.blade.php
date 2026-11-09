@@ -1,6 +1,6 @@
 <x-core::layout :title="'Estoque · '.$variant->sku" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:actions><a class="button secondary" href="{{ route('commerce.stock') }}">Voltar ao estoque</a></x-slot:actions>
+    <x-slot:actions>@include('commerce.export.buttons') <a class="button secondary" href="{{ route('commerce.stock') }}">Voltar ao estoque</a></x-slot:actions>
 
     @include('commerce.status')
     @php($canAdjust = \App\Commerce\Access::allows($currentMembership, 'commerce.stock.adjust'))

@@ -9,6 +9,7 @@ use App\Commerce\Channels\ChannelSync;
 use App\Commerce\Channels\Listing;
 use App\Commerce\Channels\ListingVariant;
 use App\Commerce\Channels\PublishListing;
+use App\Commerce\Insights\Export;
 use App\Commerce\Inventory\StockService;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Anúncios criados no Foxy (docs/09, seção 6.2): um produto pode ter um anúncio por conta de marketplace,
@@ -27,7 +29,7 @@ class ListingController
 {
     public function __construct(private ChannelSync $sync) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|Response
     {
         $filters = $request->validate([
             'conexao' => ['nullable', 'string', 'max:30'],
@@ -35,12 +37,22 @@ class ListingController
             'busca' => ['nullable', 'string', 'max:100'],
         ]);
 
+        $listings = Listing::with('connection', 'product.images.file', 'variants')
+            ->when($filters['conexao'] ?? null, fn ($q, $c) => $q->where('connection_id', $c))
+            ->when($filters['situacao'] ?? null, fn ($q, $s) => $q->where('status', $s))
+            ->when($filters['busca'] ?? null, fn ($q, $t) => $q->whereLike('title', '%'.str_replace(['%', '_'], ['\%', '\_'], $t).'%'))
+            ->latest();
+
+        if ($format = Export::requested($request)) {
+            return (new Export('Anúncios'))
+                ->filters(['Situação' => isset($filters['situacao']) ? Listing::STATUSES[$filters['situacao']] : null, 'Busca' => $filters['busca'] ?? null])
+                ->section(null, ['Título' => 'text', 'Canal' => 'text', 'Código no canal' => 'text', 'Produto' => 'text', 'Variantes' => 'int', 'Preço' => 'money', 'Situação' => 'text', 'Última sincronização' => 'datetime', 'Erro' => 'text'],
+                    $listings->get()->map(fn (Listing $l) => [$l->title, $l->connection->label(), $l->external_id, $l->product->name, $l->variants->count(), $l->price_cents, $l->statusLabel(), $l->synced_at, $l->last_error]))
+                ->download($format);
+        }
+
         return view('commerce.listings.index', [
-            'listings' => Listing::with('connection', 'product.images.file', 'variants')
-                ->when($filters['conexao'] ?? null, fn ($q, $c) => $q->where('connection_id', $c))
-                ->when($filters['situacao'] ?? null, fn ($q, $s) => $q->where('status', $s))
-                ->when($filters['busca'] ?? null, fn ($q, $t) => $q->whereLike('title', '%'.str_replace(['%', '_'], ['\%', '\_'], $t).'%'))
-                ->latest()->paginate(30)->withQueryString(),
+            'listings' => $listings->paginate(30)->withQueryString(),
             'connections' => ChannelConnection::where('status', '!=', 'disconnected')->get(),
             'filters' => $filters,
             'counts' => Listing::selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status'),

@@ -3,19 +3,29 @@
 namespace App\Commerce\Http;
 
 use App\Commerce\Catalog\Category;
+use App\Commerce\Insights\Export;
 use App\Platform\Context\ExecutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class CategoryController
 {
-    public function index(): View
+    public function index(Request $request): View|Response
     {
+        $categories = Category::with('parent')->withCount('products')->orderBy('name')->get();
+        if ($format = Export::requested($request)) {
+            return (new Export('Categorias'))
+                ->section(null, ['Categoria' => 'text', 'Dentro de' => 'text', 'Produtos' => 'int'],
+                    $categories->sortBy(fn (Category $c) => $c->fullName())->map(fn (Category $c) => [$c->fullName(), $c->parent?->name, $c->products_count]))
+                ->download($format);
+        }
+
         return view('commerce.categories', [
-            'categories' => Category::with('parent')->withCount('products')->orderBy('name')->get(),
+            'categories' => $categories,
         ]);
     }
 

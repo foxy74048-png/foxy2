@@ -4,6 +4,7 @@ namespace App\Commerce\Http;
 
 use App\Commerce\Access;
 use App\Commerce\Catalog\Variant;
+use App\Commerce\Insights\Export;
 use App\Commerce\Inventory\StockLevel;
 use App\Commerce\Inventory\StockMovement;
 use App\Commerce\Inventory\StockService;
@@ -16,6 +17,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Estoque da loja (docs/09, fatia 4): lista com disponível (kits calculados pelas peças), entrada de
@@ -25,7 +27,7 @@ class StockController
 {
     public function __construct(private StockService $stock) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|Response
     {
         $filters = $request->validate([
             'busca' => ['nullable', 'string', 'max:100'],
@@ -64,6 +66,17 @@ class StockController
             default => $rows,
         };
 
+        if ($format = Export::requested($request)) {
+            $labels = ['negativo' => 'Negativo', 'zerado' => 'Zerado', 'baixo' => 'Baixo', 'ok' => 'OK'];
+
+            return (new Export('Posição do estoque'))
+                ->filters(['Busca' => $filters['busca'] ?? null, 'Mostrar' => ['baixo' => 'Baixo, zerado ou negativo', 'zerado' => 'Zerado ou negativo', 'negativo' => 'Só negativo'][$filters['filtro'] ?? ''] ?? null])
+                ->section(null, ['SKU' => 'text', 'Produto' => 'text', 'Físico' => 'int', 'Reservado' => 'int', 'Disponível' => 'int', 'Mínimo' => 'int', 'Custo unitário' => 'money', 'Situação' => 'text'],
+                    $rows->map(fn ($r) => [$r['variant']->sku, $r['variant']->fullName().($r['variant']->is_kit ? ' (kit)' : ''), $r['variant']->is_kit ? null : ($r['level']?->on_hand ?? 0),
+                        $r['variant']->is_kit ? null : ($r['level']?->reserved ?? 0), $r['available'], $r['level']?->min_stock, $r['variant']->cost_cents, $labels[$r['status']]]))
+                ->download($format);
+        }
+
         return view('commerce.stock.index', ['rows' => $rows->values(), 'filters' => $filters, 'counts' => $counts]);
     }
 
@@ -81,9 +94,18 @@ class StockController
         return view('commerce.stock.receive', ['catalog' => $catalog, 'recent' => $recent]);
     }
 
-    public function show(Variant $variant): View
+    public function show(Request $request, Variant $variant): View|Response
     {
         $variant->load('product', 'components.component');
+        if ($format = Export::requested($request)) {
+            $all = StockMovement::with('user')->where('variant_id', $variant->id)->latest('created_at')->latest('id')->get();
+
+            return (new Export('Histórico do estoque · '.$variant->sku))
+                ->filters(['Produto' => $variant->fullName()])
+                ->section(null, ['Quando' => 'datetime', 'O que aconteceu' => 'text', 'Quantidade' => 'int', 'Reserva' => 'int', 'Físico depois' => 'int', 'Motivo' => 'text', 'Por' => 'text'],
+                    $all->map(fn (StockMovement $m) => [$m->created_at->timezone('America/Sao_Paulo'), $m->label(), $m->quantity, $m->reserved_change ?: null, $m->on_hand_after, $m->reason, $m->user?->name ?? 'Sistema']))
+                ->download($format);
+        }
         $movements = StockMovement::where('variant_id', $variant->id)->latest('created_at')->latest('id')->paginate(50);
         $users = User::whereIn('id', $movements->pluck('user_id')->filter()->unique())->pluck('name', 'id');
 

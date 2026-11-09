@@ -9,6 +9,7 @@ use App\Commerce\Catalog\Money;
 use App\Commerce\Catalog\Product;
 use App\Commerce\Catalog\ProductImage;
 use App\Commerce\Catalog\Variant;
+use App\Commerce\Insights\Export;
 use App\Commerce\Inventory\StockService;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Catálogo do lojista (docs/09, fatia 3). Produto e variantes são achados pelo escopo da loja (BelongsToOrganization):
@@ -30,7 +32,7 @@ class ProductController
 
     public function __construct(private CatalogService $catalog) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|Response
     {
         $filters = $request->validate([
             'busca' => ['nullable', 'string', 'max:100'],
@@ -45,7 +47,17 @@ class ProductController
             })
             ->when($filters['categoria'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
             ->when($filters['situacao'] ?? null, fn ($q, $status) => $q->where('status', $status), fn ($q) => $q->where('status', '!=', 'archived'))
-            ->orderBy('name')->paginate(30)->withQueryString();
+            ->orderBy('name');
+
+        if ($format = Export::requested($request)) {
+            return (new Export('Produtos'))
+                ->filters(['Busca' => $filters['busca'] ?? null, 'Categoria' => isset($filters['categoria']) ? Category::find($filters['categoria'])?->fullName() : null, 'Situação' => isset($filters['situacao']) ? Product::STATUSES[$filters['situacao']] : 'Ativos e rascunhos'])
+                ->section(null, ['Produto' => 'text', 'Tipo' => 'text', 'Categoria' => 'text', 'Variantes' => 'int', 'SKUs' => 'text', 'Preço mínimo' => 'money', 'Preço máximo' => 'money', 'Situação' => 'text'],
+                    $products->get()->map(fn (Product $p) => [$p->name, $p->isKit() ? 'Kit' : 'Produto', $p->category?->fullName(), $p->variants->count(), $p->variants->pluck('sku')->implode(', '),
+                        $p->variants->min('price_cents'), $p->variants->max('price_cents'), Product::STATUSES[$p->status] ?? $p->status]))
+                ->download($format);
+        }
+        $products = $products->paginate(30)->withQueryString();
 
         return view('commerce.products.index', [
             'products' => $products,

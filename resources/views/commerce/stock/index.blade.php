@@ -1,5 +1,6 @@
 <x-core::layout title="Estoque" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
+    <x-slot:actions>@include('commerce.export.buttons')</x-slot:actions>
 
     @include('commerce.status')
     @php($canAdjust = \App\Commerce\Access::allows($currentMembership, 'commerce.stock.adjust'))

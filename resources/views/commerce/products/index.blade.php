@@ -2,6 +2,7 @@
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
     @php($canManage = \App\Commerce\Access::allows($currentMembership, 'commerce.catalog.manage'))
     <x-slot:actions>
+        @include('commerce.export.buttons')
         @if ($canManage)
             <a class="button secondary" href="{{ route('commerce.products.create', ['tipo' => 'kit']) }}">Novo kit</a>
             <a class="button" href="{{ route('commerce.products.create') }}">Novo produto</a>

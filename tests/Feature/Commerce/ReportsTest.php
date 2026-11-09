@@ -114,6 +114,31 @@ class ReportsTest extends TestCase
         $this->get($this->url('/app/relatorios?aba=abc&periodo=90d&classe=C'))->assertSee('Boné')->assertDontSee('<td>Camiseta</td>', false);
     }
 
+    public function test_toda_lista_e_relatorio_exporta_planilha_e_pdf(): void
+    {
+        $this->actingAs($this->owner);
+        $pages = [
+            '/app?periodo=90d' => 'Faturamento', '/app/relatorios' => 'Faturamento', '/app/relatorios?aba=estoque&dias=30' => 'BOLSA',
+            '/app/relatorios?aba=abc' => 'Camiseta', '/app/pedidos?periodo=90d' => 'WhatsApp', '/app/produtos' => 'Camiseta', '/app/categorias' => 'Categoria',
+            '/app/estoque' => 'BOLSA', '/app/estoque/'.$this->v['CAM']->id => 'Entrada', '/app/clientes' => 'Cliente', '/app/anuncios' => 'Título', '/app/equipe' => $this->owner->email,
+        ];
+
+        foreach ($pages as $path => $expected) {
+            $this->get($this->url($path))->assertOk()->assertSee('exportar=pdf', false);
+            $glue = str_contains($path, '?') ? '&' : '?';
+
+            $csv = $this->get($this->url($path.$glue.'exportar=planilha'))->assertOk()->assertHeader('Content-Type', 'text/csv; charset=UTF-8')->streamedContent();
+            $this->assertStringContainsString($expected, $csv, "planilha de {$path}");
+
+            $pdf = $this->get($this->url($path.$glue.'exportar=pdf'))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+            $this->assertStringStartsWith('%PDF', $pdf->getContent(), "pdf de {$path}");
+        }
+
+        // Paginação não corta a exportação; filtros valem.
+        $csv = $this->get($this->url('/app/estoque?filtro=negativo&exportar=planilha'))->streamedContent();
+        $this->assertStringNotContainsString('BOLSA', $csv);
+    }
+
     public function test_so_dono_e_gerente_veem_relatorios(): void
     {
         $attendant = User::factory()->create();

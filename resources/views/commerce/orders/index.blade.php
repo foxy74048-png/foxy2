@@ -2,7 +2,7 @@
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
     <x-slot:head>@include('commerce.charts.assets')</x-slot:head>
     <x-slot:actions>
-        <a class="button secondary" href="{{ route('commerce.orders.export', request()->query()) }}">Baixar planilha</a>
+        @include('commerce.export.buttons')
         <a class="button" href="{{ route('commerce.orders.create') }}">Novo pedido</a>
     </x-slot:actions>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))

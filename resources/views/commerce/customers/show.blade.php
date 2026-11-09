@@ -1,6 +1,6 @@
 <x-core::layout :title="$customer->name" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:actions><a class="button secondary" href="{{ route('commerce.customers') }}">Voltar aos clientes</a></x-slot:actions>
+    <x-slot:actions>@include('commerce.export.buttons')<a class="button secondary" href="{{ route('commerce.customers') }}">Voltar aos clientes</a></x-slot:actions>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
 
     @include('commerce.status')

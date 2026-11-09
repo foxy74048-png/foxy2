@@ -5,6 +5,7 @@ namespace App\Commerce\Http;
 use App\Commerce\Access;
 use App\Commerce\Accounts\AccountSync;
 use App\Commerce\Billing\Plans;
+use App\Commerce\Insights\Export;
 use App\Commerce\Team\InvitationNotification;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
@@ -18,6 +19,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Equipe da loja: um login por funcionário, convidado pelo dono com um papel (docs/09, F1).
@@ -25,9 +27,18 @@ use Illuminate\View\View;
  */
 class TeamController
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|Response
     {
         $organization = $this->organization();
+        if ($format = Export::requested($request)) {
+            $status = [Membership::ACTIVE => 'Ativo', Membership::SUSPENDED => 'Suspenso'];
+
+            return (new Export('Equipe'))
+                ->section(null, ['Nome' => 'text', 'E-mail' => 'text', 'Papel' => 'text', 'Situação' => 'text', 'Desde' => 'date'],
+                    Membership::with('user')->where('organization_id', $organization->getKey())->onTeam()->oldest()->get()
+                        ->map(fn (Membership $m) => [$m->user->name, $m->user->email, Access::roles()[$m->role] ?? $m->role, $status[$m->status] ?? $m->status, $m->created_at]))
+                ->download($format);
+        }
 
         return view('commerce.team', [
             'members' => Membership::with('user')->where('organization_id', $organization->getKey())->onTeam()->oldest()->get(),

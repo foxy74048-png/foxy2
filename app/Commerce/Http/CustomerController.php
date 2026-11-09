@@ -2,15 +2,18 @@
 
 namespace App\Commerce\Http;
 
+use App\Commerce\Insights\Export;
 use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class CustomerController
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|Response
     {
         $filters = $request->validate(['busca' => ['nullable', 'string', 'max:100'], 'ordem' => ['nullable', 'in:nome,gasto,recente']]);
 
@@ -24,15 +27,30 @@ class CustomerController
             })
             ->when(($filters['ordem'] ?? 'gasto') === 'gasto', fn ($q) => $q->orderByDesc('spent_cents'))
             ->when(($filters['ordem'] ?? null) === 'recente', fn ($q) => $q->orderByDesc('last_order_at'))
-            ->orderBy('name')
-            ->paginate(30)->withQueryString();
+            ->orderBy('name');
+
+        if ($format = Export::requested($request)) {
+            return (new Export('Clientes'))
+                ->filters(['Busca' => $filters['busca'] ?? null, 'Ordem' => ['nome' => 'Nome', 'gasto' => 'Quem mais comprou', 'recente' => 'Compra mais recente'][$filters['ordem'] ?? 'gasto']])
+                ->section(null, ['Cliente' => 'text', 'Telefone' => 'text', 'E-mail' => 'text', 'Cidade' => 'text', 'UF' => 'text', 'Pedidos' => 'int', 'Total comprado' => 'money', 'Última compra' => 'date'],
+                    $customers->get()->map(fn (Customer $c) => [$c->name, $c->phone, $c->email, $c->city, $c->state, $c->orders_count, (int) $c->spent_cents, $c->last_order_at ? Carbon::parse($c->last_order_at) : null]))
+                ->download($format);
+        }
+        $customers = $customers->paginate(30)->withQueryString();
 
         return view('commerce.customers.index', ['customers' => $customers, 'filters' => $filters]);
     }
 
-    public function show(Customer $customer): View
+    public function show(Request $request, Customer $customer): View|Response
     {
         $orders = $customer->orders()->latest('placed_at')->get();
+        if ($format = Export::requested($request)) {
+            return (new Export('Pedidos de '.$customer->name))
+                ->filters(['Telefone' => $customer->phone, 'E-mail' => $customer->email])
+                ->section(null, ['Pedido' => 'int', 'Data' => 'datetime', 'Canal' => 'text', 'Situação' => 'text', 'Total' => 'money'],
+                    $orders->map(fn (Order $o) => [$o->number, $o->placed_at, $o->channelLabel(), $o->statusLabel(), $o->total_cents]))
+                ->download($format);
+        }
         $sold = $orders->whereIn('status', Order::SOLD);
 
         return view('commerce.customers.show', [

@@ -2,14 +2,14 @@
 
 namespace App\Commerce\Http;
 
-use App\Commerce\Insights\Csv;
+use App\Commerce\Insights\Export;
 use App\Commerce\Insights\FinanceReport;
 use App\Commerce\Insights\Reports;
 use App\Commerce\Orders\Order;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Relatórios (dono e gerente): mês a mês, estoque parado e giro, curva ABC.
@@ -23,7 +23,7 @@ class ReportController
         'sem_estoque' => 'Sem estoque', 'saudavel' => 'Saudável',
     ];
 
-    public function index(Request $request, Reports $reports): View
+    public function index(Request $request, Reports $reports): View|Response
     {
         $filters = $request->validate([
             'aba' => ['nullable', Rule::in(array_keys(self::TABS))],
@@ -52,24 +52,41 @@ class ReportController
             $data['rows'] = isset($filters['classe']) ? $rows->where('class', $filters['classe'])->values() : $rows;
         }
 
+        if ($format = Export::requested($request)) {
+            return $this->export($data, $filters, $format);
+        }
+
         return view('commerce.reports', $data);
     }
 
-    /** Planilha do estoque parado e giro. */
-    public function stockCsv(Request $request, Reports $reports): StreamedResponse
+    private function export(array $data, array $filters, string $format): Response
+    {
+        return (match ($data['tab']) {
+            'mensal' => (new Export('Relatório mês a mês'))
+                ->filters(['Meses' => (string) ($filters['meses'] ?? 12), 'Canal' => isset($filters['canal']) ? Order::CHANNELS[$filters['canal']] : 'Todos'])
+                ->section(null, ['Mês' => 'text', 'Pedidos' => 'int', 'Faturamento' => 'money', 'Variação %' => 'percent', 'Ticket médio' => 'money', 'Lucro bruto' => 'money', 'Margem %' => 'percent'],
+                    $data['months']->map(fn ($m) => [$m['full'], $m['orders'], $m['revenue'], $m['delta'], $m['ticket'], $m['profit'], $m['margin']])),
+            'estoque' => $this->stockExport($data['rows'], (int) ($filters['dias'] ?? 90), $filters['situacao'] ?? null),
+            default => (new Export('Curva ABC dos produtos'))
+                ->filters(['Período' => $data['from']->format('d/m/Y').' a '.$data['to']->format('d/m/Y'), 'Classe' => $filters['classe'] ?? null])
+                ->section(null, ['Classe' => 'text', 'Produto' => 'text', 'Quantidade' => 'int', 'Faturamento' => 'money', 'Participação %' => 'percent', 'Acumulado %' => 'percent', 'Lucro bruto' => 'money', 'Margem %' => 'percent'],
+                    $data['rows']->map(fn ($r) => [$r['class'], $r['label'], $r['quantity'], $r['revenue'], $r['share'], $r['cumulative'], $r['profit'], $r['margin']])),
+        })->download($format);
+    }
+
+    private function stockExport($rows, int $days, ?string $status): Export
+    {
+        return (new Export('Estoque parado e giro'))
+            ->filters(['Vendas dos últimos' => $days.' dias', 'Situação' => $status ? self::STOCK_STATUS[$status] : null])
+            ->section(null, ['SKU' => 'text', 'Produto' => 'text', 'Físico' => 'int', "Vendido ({$days} dias)" => 'int', 'Por dia' => 'decimal', 'Dura (dias)' => 'int', 'Última venda' => 'date', 'Dinheiro parado (custo)' => 'money', 'Situação' => 'text'],
+                $rows->map(fn ($r) => [$r['variant']->sku, $r['variant']->fullName(), $r['on_hand'], $r['sold'], $r['per_day'], $r['coverage'], $r['last_sale'], $r['stuck_cents'], self::STOCK_STATUS[$r['status']]]));
+    }
+
+    /** Planilha do estoque parado e giro (endereço antigo, continua funcionando). */
+    public function stockCsv(Request $request, Reports $reports): Response
     {
         $days = in_array((int) $request->query('dias'), [30, 60, 90, 180], true) ? (int) $request->query('dias') : 90;
-        $rows = $reports->stock($days);
 
-        return response()->streamDownload(function () use ($rows, $days) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF");
-            Csv::row($out, ['SKU', 'Produto', 'Físico', "Vendido ({$days} dias)", 'Por dia', 'Dura (dias)', 'Última venda', 'Dinheiro parado (custo)', 'Situação']);
-            foreach ($rows as $r) {
-                Csv::row($out, [$r['variant']->sku, $r['variant']->fullName(), $r['on_hand'], $r['sold'], number_format($r['per_day'], 2, ',', ''),
-                    $r['coverage'] ?? '', $r['last_sale']?->format('d/m/Y') ?? '', number_format($r['stuck_cents'] / 100, 2, ',', ''), self::STOCK_STATUS[$r['status']]]);
-            }
-            fclose($out);
-        }, 'estoque-giro-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return $this->stockExport($reports->stock($days), $days, null)->download('planilha');
     }
 }
