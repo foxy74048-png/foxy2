@@ -14,6 +14,7 @@ use App\Commerce\Inventory\StockService;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
 use App\Platform\Files\File;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -100,6 +101,59 @@ class ProductController
 
         return redirect()->route('commerce.products.edit', $product)
             ->with('status', $kit ? 'Kit criado.' : 'Produto criado com '.$product->variants()->count().' variante(s). Confira SKUs e preços abaixo.');
+    }
+
+    /**
+     * Cadastro rápido (de dentro do pedido): nome, categoria (existente ou nova), preço, custo, tamanhos e
+     * cores opcionais e estoque inicial de cada variação. Devolve as variações para a tela já usar.
+     */
+    public function quickStore(Request $request): JsonResponse
+    {
+        $this->guardLimit();
+        $organizationId = ExecutionContext::current()->organization->getKey();
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'category_id' => ['nullable', Rule::exists('commerce_categories', 'id')->where('organization_id', $organizationId)],
+            'new_category' => ['nullable', 'string', 'max:80'],
+            'price' => ['required', 'string', 'max:20'],
+            'cost' => ['nullable', 'string', 'max:20'],
+            'sizes' => ['nullable', 'string', 'max:300'],
+            'colors' => ['nullable', 'string', 'max:300'],
+            'stock' => ['nullable', 'integer', 'min:0', 'max:100000'],
+        ], [], ['name' => 'nome', 'price' => 'preço', 'sizes' => 'tamanhos', 'colors' => 'cores', 'stock' => 'estoque inicial']);
+
+        $price = Money::toCents($data['price']);
+        if (! $price) {
+            throw ValidationException::withMessages(['price' => 'Informe o preço de venda.']);
+        }
+
+        $product = DB::transaction(function () use ($data, $price) {
+            $categoryId = $data['category_id'] ?? null;
+            if (! $categoryId && filled($data['new_category'] ?? null)) {
+                $categoryId = (Category::whereRaw('lower(name) = ?', [mb_strtolower(trim($data['new_category']))])->whereNull('parent_id')->first()
+                    ?? Category::create(['name' => trim($data['new_category'])]))->id;
+            }
+            // Só as características preenchidas viram grade (sem nada: produto de uma variação só).
+            [$names, $values] = CatalogService::parseGrid(array_values(array_filter([
+                ['name' => 'Tamanho', 'values' => trim($data['sizes'] ?? '')], ['name' => 'Cor', 'values' => trim($data['colors'] ?? '')],
+            ], fn ($axis) => $axis['values'] !== '')));
+            $product = $this->catalog->create(['name' => trim($data['name']), 'category_id' => $categoryId, 'price_cents' => $price,
+                'cost_cents' => Money::toCents($data['cost'] ?? null), 'status' => 'active'], $names, $values);
+            if (($data['stock'] ?? 0) > 0) {
+                foreach ($product->variants as $variant) {
+                    app(StockService::class)->receive($variant, (int) $data['stock'], 'Cadastro rápido no pedido');
+                }
+            }
+
+            return $product;
+        });
+
+        $available = app(StockService::class)->availability($product->variants()->get());
+
+        return response()->json([
+            'product' => ['name' => $product->name, 'category' => $product->category?->fullName(),
+                'variants' => $product->variants()->get()->map(fn (Variant $v) => ['sku' => $v->sku, 'label' => $v->label() ?: 'Único', 'price' => $v->price_cents, 'available' => $available[$v->id] ?? 0])->values()],
+        ], 201);
     }
 
     public function edit(Product $product): View

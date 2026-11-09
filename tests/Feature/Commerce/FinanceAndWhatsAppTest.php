@@ -3,6 +3,7 @@
 namespace Tests\Feature\Commerce;
 
 use App\Commerce\Catalog\CatalogService;
+use App\Commerce\Catalog\Category;
 use App\Commerce\Catalog\Variant;
 use App\Commerce\Finance\FinanceService;
 use App\Commerce\Finance\Payable;
@@ -151,6 +152,37 @@ class FinanceAndWhatsAppTest extends TestCase
         $this->get($this->url('/app/financeiro?aba=fluxo'))->assertOk()->assertSee('Esta semana')->assertSee('R$ 50,00')->assertSee('R$ 333,34');
         $this->get($this->url('/app/financeiro?aba=pagar&categoria=fornecedor'))->assertOk()->assertSee('Têxtil X')->assertDontSee('Aluguel</strong>', false);
         $this->assertStringContainsString('Renda do fornecedor', $this->get($this->url('/app/financeiro?aba=pagar&exportar=planilha'))->streamedContent());
+    }
+
+    public function test_pedido_com_cliente_da_lista_e_produto_cadastrado_na_hora(): void
+    {
+        $bia = $this->inStore(fn () => Customer::create(['name' => 'Bia Lima', 'phone' => '11944443333']));
+        $this->inStore(fn () => app(FinanceService::class)->installments(['customer_id' => $bia->id, 'description' => 'Fiado'], 4500, 1, Carbon::parse('2026-11-01')));
+
+        $page = $this->get($this->url("/app/pedidos/novo?cliente={$bia->id}"))->assertOk();
+        $page->assertSee('"name":"Bia Lima"', false)->assertSee('"open":4500', false)->assertSee('"label":"42"', false)->assertSee('Produto que não está cadastrado');
+
+        // Produto novo de dentro do pedido: categoria nova, tamanhos, cores e estoque inicial.
+        $this->postJson($this->url('/app/produtos/rapido'), ['name' => 'Calcinha Lisa', 'new_category' => 'Calcinhas', 'price' => '39,90', 'cost' => '12', 'sizes' => 'P, M', 'colors' => 'Preto', 'stock' => 4])
+            ->assertCreated()->assertJsonPath('product.category', 'Calcinhas')->assertJsonCount(2, 'product.variants')
+            ->assertJsonPath('product.variants.0.available', 4)->assertJsonPath('product.variants.0.price', 3990);
+        $this->postJson($this->url('/app/produtos/rapido'), ['name' => 'Sem preço'])->assertUnprocessable()->assertJsonValidationErrors('price');
+        $this->postJson($this->url('/app/produtos/rapido'), ['name' => 'Body', 'new_category' => 'calcinhas', 'price' => '99'])->assertCreated()->assertJsonPath('product.category', 'Calcinhas');
+        $this->assertSame(1, $this->inStore(fn () => Category::count())); // não duplica a categoria
+
+        $sku = $this->inStore(fn () => Variant::whereHas('product', fn ($q) => $q->where('name', 'Calcinha Lisa'))->orderBy('position')->value('sku'));
+        $this->post($this->url('/app/pedidos'), ['channel' => 'instagram', 'customer_id' => $bia->id, 'customer' => ['name' => 'Bia Lima · 11944443333'], 'paid' => 1, 'payment_method' => 'pix',
+            'items' => [['sku' => $sku, 'quantity' => 2]]])->assertSessionHasNoErrors();
+        $order = $this->inStore(fn () => Order::latest('number')->first());
+        $this->assertSame($bia->id, $order->customer_id);
+        $this->assertSame(1, $this->inStore(fn () => Customer::count())); // usou a cliente da lista, não criou outra
+        $this->assertSame(7980, $order->total_cents);
+
+        // Atendente registra pedido mas não cadastra produto.
+        $attendant = User::factory()->create();
+        Membership::create(['organization_id' => $this->store->organization_id, 'user_id' => $attendant->id, 'role' => 'attendant']);
+        $this->actingAs($attendant)->postJson($this->url('/app/produtos/rapido'), ['name' => 'X', 'price' => '10'])->assertForbidden();
+        $this->get($this->url('/app/pedidos/novo'))->assertOk()->assertDontSee('Produto que não está cadastrado');
     }
 
     public function test_atendente_nao_ve_o_financeiro(): void

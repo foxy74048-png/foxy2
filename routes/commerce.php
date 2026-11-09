@@ -115,6 +115,7 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
         Route::middleware('commerce.can:commerce.catalog.manage')->group(function () {
             Route::get('/produtos/novo', [ProductController::class, 'create'])->name('products.create');
             Route::post('/produtos', [ProductController::class, 'store'])->name('products.store');
+            Route::post('/produtos/rapido', [ProductController::class, 'quickStore'])->middleware(['commerce.can:commerce.stock.adjust', 'throttle:30,1'])->name('products.quick');
             Route::get('/produtos/{product}', [ProductController::class, 'edit'])->name('products.edit');
             Route::post('/produtos/{product}', [ProductController::class, 'update'])->name('products.update');
             Route::post('/produtos/{product}/variantes', [ProductController::class, 'updateVariants'])->name('products.variants');

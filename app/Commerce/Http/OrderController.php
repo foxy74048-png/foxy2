@@ -2,6 +2,8 @@
 
 namespace App\Commerce\Http;
 
+use App\Commerce\Access;
+use App\Commerce\Catalog\Category;
 use App\Commerce\Catalog\Money;
 use App\Commerce\Catalog\Variant;
 use App\Commerce\Finance\FinanceService;
@@ -71,16 +73,26 @@ class OrderController
             ->download($format);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        $variants = Variant::with('product')->where('status', 'active')->whereHas('product', fn ($q) => $q->where('status', 'active'))->orderBy('sku')->limit(3000)->get();
+        $variants = Variant::with('product.category.parent')->where('status', 'active')->whereHas('product', fn ($q) => $q->where('status', 'active'))->orderBy('sku')->limit(3000)->get();
         $available = app(StockService::class)->availability($variants);
+        $customers = Customer::withSum(['receivables as open_cents' => fn ($q) => $q->where('status', 'aberto')], 'amount_cents')
+            ->withMax('orders as last_order_at', 'placed_at')->orderBy('name')->limit(3000)->get();
 
         return view('commerce.orders.create', [
-            'variants' => $variants,
-            // Para a tela mostrar nome, preço e disponível enquanto digita o SKU.
-            'catalog' => $variants->mapWithKeys(fn (Variant $v) => [$v->sku => ['name' => $v->fullName(), 'price' => $v->price_cents, 'available' => $available[$v->id] ?? 0]]),
-            'customers' => Customer::orderBy('name')->limit(3000)->get(['id', 'name', 'phone']),
+            // Escolha por produto e depois tamanho/cor (só o que está ativo no catálogo).
+            'products' => $variants->groupBy('product_id')->map(fn ($group) => [
+                'name' => $group->first()->product->name,
+                'category' => $group->first()->product->category?->fullName(),
+                'variants' => $group->sortBy('position')->map(fn (Variant $v) => ['sku' => $v->sku, 'label' => $v->label() ?: 'Único', 'price' => $v->price_cents, 'available' => $available[$v->id] ?? 0])->values(),
+            ])->sortBy('name')->values(),
+            'customers' => $customers->map(fn (Customer $c) => ['id' => $c->id, 'name' => $c->name, 'phone' => $c->phone, 'open' => (int) $c->open_cents,
+                'last' => $c->last_order_at ? Carbon::parse($c->last_order_at)->format('d/m/Y') : null])->values(),
+            'categories' => Category::with('parent')->orderBy('name')->get(),
+            'canCreateProducts' => Access::allows($request->attributes->get('commerce.membership'), 'commerce.catalog.manage')
+                && Access::allows($request->attributes->get('commerce.membership'), 'commerce.stock.adjust'),
+            'preselectedCustomer' => $request->query('cliente'),
         ]);
     }
 

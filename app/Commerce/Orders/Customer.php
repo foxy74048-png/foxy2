@@ -2,6 +2,7 @@
 
 namespace App\Commerce\Orders;
 
+use App\Commerce\Finance\Receivable;
 use App\Platform\Organizations\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,11 @@ class Customer extends Model
     protected $table = 'commerce_customers';
 
     protected $fillable = ['name', 'email', 'phone', 'document', 'city', 'state', 'notes'];
+
+    public function receivables(): HasMany
+    {
+        return $this->hasMany(Receivable::class);
+    }
 
     public function orders(): HasMany
     {

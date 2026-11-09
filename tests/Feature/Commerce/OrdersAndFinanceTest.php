@@ -208,7 +208,7 @@ class OrdersAndFinanceTest extends TestCase
         Membership::create(['organization_id' => $this->store->organization_id, 'user_id' => $attendant->id, 'role' => 'attendant']);
         $order = $this->place(['channel' => 'balcao', 'paid' => true, 'items' => [['variant' => $this->v['BONE'], 'quantity' => 1]]]);
 
-        $this->actingAs($attendant)->get($this->url('/app/pedidos/novo'))->assertOk()->assertSee('+ Adicionar item')->assertSee('"CAM-P":{"name"', false);
+        $this->actingAs($attendant)->get($this->url('/app/pedidos/novo'))->assertOk()->assertSee('+ Adicionar item')->assertSee('"sku":"CAM-P"', false)->assertDontSee('Produto que não está cadastrado');
         $this->actingAs($attendant)->post($this->url("/app/pedidos/{$order->id}/cancelar"))->assertForbidden();
         $this->actingAs($attendant)->get($this->url('/app'))->assertOk()->assertSee('Para separar e enviar')->assertDontSee('Lucro bruto');
     }
