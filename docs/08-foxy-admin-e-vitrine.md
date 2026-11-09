@@ -102,6 +102,12 @@ fica no Core (`ai_insights`: resumo e a tela de onde veio a pergunta — `conver
 produtos**, com produto e conta e situação (nova, avaliando, vai ser feita, feita, descartada). É o **único lugar**: o
 Studio deixou de guardar a própria cópia (a tela do Studio leva para cá).
 
+## 5.1 Cópia de segurança e rotina de saúde (2026-11-09)
+
+- `foxy:backup` (03:30): `pg_dump -Fc` do banco + `tar.gz` de `storage/app/public` e `private`, em `FOXY_BACKUP_PATH` (servidor: `/var/backups/foxy2`, dono www-data), guardando `FOXY_BACKUP_KEEP_DAYS` (14). `FOXY_BACKUP_DISK=s3` manda cópia para fora quando houver bucket. Resultado em `last-backup.json`.
+- `foxy:saude` (a cada 10 min): banco, disco, backup de menos de 26 h, fila (parada >15 min / falhas 24 h), contas de marketplace pedindo reconexão e validade dos certificados (`FOXY_HEALTH_SSL_HOSTS`). Grava `storage/app/private/health.json`, mostrado no painel do Foxy Admin ("Saúde do sistema", com aviso se a verificação atrasar = agendador parado). E-mail para a equipe (is_staff, ou `FOXY_HEALTH_ALERT_EMAILS`) quando piora, lembrete diário enquanto houver falha e aviso quando volta ao normal.
+- Restaurar: `pg_restore -c -d foxy2 foxy-db-AAAAMMDD-HHMMSS.dump` (com backup do estado atual antes) e `tar -xzf foxy-arquivos-….tar.gz -C storage/app`.
+
 ## 6. Fases
 
 1. ✔ Vitrine + Admin (painel, contas) + promoções de IA + envio do retrato pelo Studio.

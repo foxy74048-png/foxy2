@@ -11,6 +11,27 @@
         <div class="card"><div class="muted">Promoções de IA valendo</div><h2>{{ $promotions['running'] }}</h2><div class="helper">{{ $n($promotions['granted']) }} perguntas de brinde para {{ $promotions['clients'] }} cliente(s) neste mês</div></div>
     </div>
 
+    @php($healthStale = ! $health || \Illuminate\Support\Carbon::parse($health['checked_at'])->lt(now()->subMinutes(30)))
+    <h3 style="margin-top:24px;">Saúde do sistema</h3>
+    <div class="card">
+        @if (! $health)
+            <div class="helper">A rotina de saúde ainda não rodou (roda sozinha a cada 10 minutos; ou <code>php artisan foxy:saude</code>).</div>
+        @else
+            <div class="helper" style="margin-bottom:8px;">Conferido em {{ \Illuminate\Support\Carbon::parse($health['checked_at'])->timezone('America/Sao_Paulo')->format('d/m H:i') }}@if ($healthStale) · <strong style="color:var(--danger-text);">atrasado: o agendador pode ter parado</strong>@endif</div>
+            <div class="table-wrap"><table>
+                <tbody>
+                    @foreach ($health['checks'] as $c)
+                        <tr>
+                            <td style="width:28px;">{{ ['ok' => '🟢', 'atencao' => '🟡', 'falha' => '🔴'][$c['status']] ?? '⚪' }}</td>
+                            <td><strong>{{ $c['label'] }}</strong></td>
+                            <td class="muted">{{ $c['detail'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table></div>
+        @endif
+    </div>
+
     <h3 style="margin-top:24px;">Pede atenção</h3>
     <div class="grid cards">
         <a class="card" href="{{ route('admin.support') }}" style="text-decoration:none;"><div class="muted">Chamados abertos</div><h2>{{ $attention['tickets'] }}</h2></a>

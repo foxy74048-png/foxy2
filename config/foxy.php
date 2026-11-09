@@ -118,4 +118,21 @@ return [
         ],
     ],
 
+    /*
+    | Cópia de segurança e rotina de saúde (foxy:backup às 03:30, foxy:saude a cada 10 min). No servidor:
+    | FOXY_BACKUP_PATH=/var/backups/foxy2 (fora do projeto). FOXY_BACKUP_DISK=s3 manda uma cópia para fora.
+    */
+    'backup' => [
+        'path' => env('FOXY_BACKUP_PATH', storage_path('app/backups')),
+        'keep_days' => (int) env('FOXY_BACKUP_KEEP_DAYS', 14),
+        'disk' => env('FOXY_BACKUP_DISK'),
+    ],
+
+    'health' => [
+        // Endereços cujo certificado HTTPS é conferido (vazio nos testes).
+        'ssl_hosts' => array_filter(explode(',', (string) env('FOXY_HEALTH_SSL_HOSTS', ''))),
+        // Quem recebe os avisos; vazio = todas as pessoas da equipe Foxy (is_staff).
+        'alert_emails' => array_filter(explode(',', (string) env('FOXY_HEALTH_ALERT_EMAILS', ''))),
+    ],
+
 ];

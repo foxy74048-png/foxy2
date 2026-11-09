@@ -7,9 +7,12 @@ use App\Ai\Promotions\AiPromotionGrant;
 use App\Ai\Promotions\PromotionEngine;
 use App\Ai\Usage\UsageReport;
 use App\Platform\Integrations\Integration;
+use App\Platform\Maintenance\Health;
 use App\Platform\Organizations\Organization;
 use App\Platform\Products\ProductAccount;
+use App\Platform\Products\ProductCommand;
 use App\Platform\Products\ProductSnapshot;
+use App\Platform\Products\ProductTicket;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -61,12 +64,13 @@ class AdminController
                 'clients' => AiPromotionGrant::where('created_at', '>=', now()->startOfMonth())->distinct('organization_id')->count('organization_id'),
             ],
             'month' => $month,
+            'health' => Health::latest(),
             'attention' => [
                 'problems' => ProductAccount::where('status', '!=', 'removed')->whereNotNull('problems')->get()->filter(fn ($a) => ! empty($a->problems))->take(8),
-                'tickets' => \App\Platform\Products\ProductTicket::where('status', 'open')->count(),
+                'tickets' => ProductTicket::where('status', 'open')->count(),
                 'idlePaying' => ProductAccount::where('status', '!=', 'removed')->where('mrr', '>', 0)->whereIn('health', ['idle', 'never'])->count(),
                 'trialsEnding' => ProductAccount::where('status', 'trial')->whereBetween('trial_ends_at', [now(), now()->addDays(3)])->count(),
-                'failedCommands' => \App\Platform\Products\ProductCommand::where('status', 'falhou')->where('created_at', '>=', now()->subDays(7))->count(),
+                'failedCommands' => ProductCommand::where('status', 'falhou')->where('created_at', '>=', now()->subDays(7))->count(),
             ],
         ]);
     }

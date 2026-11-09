@@ -2,6 +2,7 @@
 
 namespace App\Platform\Http;
 
+use App\Ai\Promotions\PromotionEngine;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
 use App\Platform\Organizations\Organization;
@@ -34,7 +35,7 @@ class OrganizationController
         Audit::record($created ? 'platform.organization_created' : 'platform.organization_updated', 'ok', $organization);
 
         if ($created) {
-            app(\App\Ai\Promotions\PromotionEngine::class)->apply();
+            app(PromotionEngine::class)->apply();
         }
 
         return response()->json($this->present($organization), $created ? 201 : 200);

@@ -2,9 +2,11 @@
 
 namespace App\Platform\Http;
 
+use App\Ai\Plans\AiCreditGrant;
 use App\Ai\Promotions\PromotionEngine;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
+use App\Platform\Organizations\Organization;
 use App\Platform\Products\ProductAccount;
 use App\Platform\Products\ProductSnapshot;
 use App\Platform\Products\ProductTicket;
@@ -123,8 +125,8 @@ class ProductSnapshotController
 
         // Perguntas extras de cada conta no mês (promoções, presentes, pacotes): o produto mostra a raposa para quem
         // ganhou, mesmo sem perguntas no plano. Só contas com extra; quem não aparece não tem.
-        $organizations = \App\Platform\Organizations\Organization::where('integration_id', $integrationId)->whereIn('external_ref', $refs)->pluck('external_ref', 'id');
-        $aiExtra = \App\Ai\Plans\AiCreditGrant::withoutGlobalScopes()
+        $organizations = Organization::where('integration_id', $integrationId)->whereIn('external_ref', $refs)->pluck('external_ref', 'id');
+        $aiExtra = AiCreditGrant::withoutGlobalScopes()
             ->whereIn('organization_id', $organizations->keys())
             ->where('period', now()->format('Y-m'))
             ->selectRaw('organization_id, sum(credits) as credits')->groupBy('organization_id')
