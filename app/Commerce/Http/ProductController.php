@@ -41,7 +41,7 @@ class ProductController
         $products = Product::with(['category', 'variants', 'images.file'])
             ->when($filters['busca'] ?? null, function ($q, $term) {
                 $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
-                $q->where(fn ($q) => $q->where('name', 'like', $like)->orWhereHas('variants', fn ($v) => $v->where('sku', 'like', $like)));
+                $q->where(fn ($q) => $q->whereLike('name', $like)->orWhereHas('variants', fn ($v) => $v->whereLike('sku', $like)));
             })
             ->when($filters['categoria'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
             ->when($filters['situacao'] ?? null, fn ($q, $status) => $q->where('status', $status), fn ($q) => $q->where('status', '!=', 'archived'))

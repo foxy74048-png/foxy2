@@ -20,7 +20,7 @@ class CustomerController
             ->withMax('orders as last_order_at', 'placed_at')
             ->when($filters['busca'] ?? null, function ($q, $term) {
                 $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
-                $q->where(fn ($q) => $q->where('name', 'like', $like)->orWhere('phone', 'like', $like)->orWhere('email', 'like', $like));
+                $q->where(fn ($q) => $q->whereLike('name', $like)->orWhereLike('phone', $like)->orWhereLike('email', $like));
             })
             ->when(($filters['ordem'] ?? 'gasto') === 'gasto', fn ($q) => $q->orderByDesc('spent_cents'))
             ->when(($filters['ordem'] ?? null) === 'recente', fn ($q) => $q->orderByDesc('last_order_at'))

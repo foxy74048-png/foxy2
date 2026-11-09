@@ -36,7 +36,7 @@ class StockController
             ->whereHas('product', fn ($q) => $q->where('status', '!=', 'archived'))
             ->when($filters['busca'] ?? null, function ($q, $term) {
                 $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
-                $q->where(fn ($q) => $q->where('sku', 'like', $like)->orWhereHas('product', fn ($p) => $p->where('name', 'like', $like)));
+                $q->where(fn ($q) => $q->whereLike('sku', $like)->orWhereHas('product', fn ($p) => $p->whereLike('name', $like)));
             })
             ->orderBy('sku')->limit(2000)->get();
 

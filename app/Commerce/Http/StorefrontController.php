@@ -36,7 +36,7 @@ class StorefrontController
         $products = Product::with(['images.file', 'variants' => fn ($q) => $q->where('status', 'active')])
             ->where('status', 'active')
             ->whereHas('variants', fn ($q) => $q->where('status', 'active'))
-            ->when($filters['q'] ?? null, fn ($q, $t) => $q->where('name', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $t).'%'))
+            ->when($filters['q'] ?? null, fn ($q, $t) => $q->whereLike('name', '%'.str_replace(['%', '_'], ['\%', '\_'], $t).'%'))
             ->when($filters['categoria'] ?? null, fn ($q, $c) => $q->where(fn ($q) => $q->where('category_id', $c)->orWhereIn('category_id', Category::where('parent_id', $c)->select('id'))))
             ->orderBy('name')->paginate(24)->withQueryString();
 

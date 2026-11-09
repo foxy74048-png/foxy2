@@ -39,7 +39,7 @@ class ListingController
             'listings' => Listing::with('connection', 'product.images.file', 'variants')
                 ->when($filters['conexao'] ?? null, fn ($q, $c) => $q->where('connection_id', $c))
                 ->when($filters['situacao'] ?? null, fn ($q, $s) => $q->where('status', $s))
-                ->when($filters['busca'] ?? null, fn ($q, $t) => $q->where('title', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $t).'%'))
+                ->when($filters['busca'] ?? null, fn ($q, $t) => $q->whereLike('title', '%'.str_replace(['%', '_'], ['\%', '\_'], $t).'%'))
                 ->latest()->paginate(30)->withQueryString(),
             'connections' => ChannelConnection::where('status', '!=', 'disconnected')->get(),
             'filters' => $filters,

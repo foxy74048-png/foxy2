@@ -28,9 +28,14 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->foreignUlid('organization_id')->constrained();
             $table->string('name', 80);
-            $table->foreignUlid('parent_id')->nullable()->constrained('commerce_categories');
+            $table->ulid('parent_id')->nullable();
             $table->timestamps();
             $table->index(['organization_id', 'name']);
+        });
+
+        // A ligação com a própria tabela vem depois: no PostgreSQL a chave estrangeira não pode nascer antes da primária.
+        Schema::table('commerce_categories', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('commerce_categories');
         });
 
         Schema::create('commerce_products', function (Blueprint $table) {

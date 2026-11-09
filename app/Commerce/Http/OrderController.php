@@ -164,8 +164,8 @@ class OrderController
             ->when($filters['busca'] ?? null, function ($q, $term) {
                 $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
                 $q->where(fn ($q) => $q->where('number', ctype_digit($term) ? (int) $term : 0)
-                    ->orWhere('external_id', 'like', $like)
-                    ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', $like)->orWhere('phone', 'like', $like)));
+                    ->orWhereLike('external_id', $like)
+                    ->orWhereHas('customer', fn ($c) => $c->whereLike('name', $like)->orWhereLike('phone', $like)));
             });
     }
 }
