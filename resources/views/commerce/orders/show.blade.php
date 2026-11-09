@@ -138,7 +138,7 @@
                 <div style="grid-column:1/-1;"><label for="e-notes">Observações</label><textarea id="e-notes" name="notes" rows="3" maxlength="2000">{{ old('notes', $order->notes) }}</textarea></div>
                 <div><button type="submit">Salvar pedido</button></div>
             </form>
-            <p class="helper" style="margin-bottom:0;">Para trocar peças ou quantidades, cancele o pedido (as peças voltam ao estoque) e lance de novo.@unless ($manual) Desconto e frete deste pedido vêm do canal e não se editam aqui.@endunless</p>
+            <p class="helper" style="margin-bottom:0;">Outro tamanho ou cor: use "Trocar peça" acima. Para tirar ou acrescentar itens, cancele o pedido (as peças voltam ao estoque) e lance de novo.@unless ($manual) Desconto e frete deste pedido vêm do canal e não se editam aqui.@endunless</p>
         </div>
     @endif
 

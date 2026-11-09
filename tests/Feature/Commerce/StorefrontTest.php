@@ -91,7 +91,8 @@ class StorefrontTest extends TestCase
 
         $this->get($this->url('/moda-da-ana'))->assertOk()->assertSee('Camiseta Básica')->assertSee('#0f766e', false);
         $product = $this->v['CAM-P']->product_id;
-        $this->get($this->url("/moda-da-ana/p/{$product}"))->assertOk()->assertSee('P — R$ 79,90')->assertSee('M — R$ 79,90 (esgotado)');
+        $this->get($this->url("/moda-da-ana/p/{$product}"))->assertOk()->assertSee('P — R$ 79,90')->assertSee('M — R$ 79,90 (esgotado)')
+            ->assertSee('data-picker', false)->assertSee('<label for="opt-0">Tamanho</label>', false); // uma escolha por característica
 
         // Mais do que o disponível não entra.
         $this->post($this->url('/moda-da-ana/carrinho'), ['variant_id' => $this->v['CAM-P']->id, 'quantity' => 4])->assertSessionHasErrors('quantity');

@@ -21,6 +21,47 @@
 
             <form method="POST" action="{{ route('commerce.storefront.cart.add', $store->slug) }}" style="margin-top:16px;display:grid;gap:14px;">
                 @csrf
+                @if ($product->variants->count() > 1 && $product->hasGrid())
+                    {{-- Uma escolha por característica (Cor, Tamanho; no conjunto, o tamanho de cada peça). O select completo abaixo continua valendo sem JavaScript. --}}
+                    @php($optionNames = array_values($product->option_names))
+                    @php($pickerData = $product->variants->map(fn ($v) => ['id' => $v->id, 'options' => array_map(fn ($n) => (string) ($v->options[$n] ?? ''), $optionNames), 'price' => $money($v->price_cents), 'left' => max(0, $available[$v->id] ?? 0)])->values())
+                    <div data-picker hidden><div style="display:grid;gap:14px;">
+                        @foreach ($optionNames as $i => $name)
+                            @php($values = $product->variants->map(fn ($v) => (string) ($v->options[$name] ?? ''))->filter()->unique()->values())
+                            <div>
+                                <label for="opt-{{ $i }}">{{ $name }}</label>
+                                <select id="opt-{{ $i }}" data-option="{{ $i }}">
+                                    @foreach ($values as $value)
+                                        <option value="{{ $value }}" @selected(($first?->options[$name] ?? null) === $value)>{{ str_starts_with($value, $name.' ') ? mb_substr($value, mb_strlen($name) + 1) : $value }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endforeach
+                        <div><span class="price" style="font-size:1.5rem;" data-picker-price></span> <span class="muted" data-picker-stock></span></div>
+                    </div></div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            const variants = @json($pickerData);
+                            const picker = document.querySelector('[data-picker]');
+                            const full = document.getElementById('variant_id');
+                            const selects = [...picker.querySelectorAll('[data-option]')];
+                            const button = picker.closest('form').querySelector('button[type="submit"]');
+                            picker.hidden = false;
+                            full.closest('div').hidden = true;
+                            function sync() {
+                                const chosen = selects.map(function (s) { return s.value; });
+                                const v = variants.find(function (x) { return x.options.every(function (o, i) { return o === chosen[i]; }); });
+                                picker.querySelector('[data-picker-price]').textContent = v ? v.price : '';
+                                picker.querySelector('[data-picker-stock]').textContent = !v ? 'Combinação indisponível' : (v.left === 0 ? 'Esgotado' : (v.left <= 3 ? 'Últimas ' + v.left + ' unidades' : ''));
+                                if (v) { full.value = v.id; }
+                                button.disabled = !v || v.left === 0;
+                                button.textContent = !v || v.left === 0 ? 'Indisponível' : 'Adicionar ao carrinho';
+                            }
+                            selects.forEach(function (s) { s.addEventListener('change', sync); });
+                            sync();
+                        });
+                    </script>
+                @endif
                 @if ($product->variants->count() > 1)
                     <div>
                         <label for="variant_id">Escolha</label>

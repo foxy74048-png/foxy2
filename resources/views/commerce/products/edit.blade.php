@@ -8,22 +8,50 @@
     @include('commerce.status')
     @if ($product->status === 'archived')<div class="alert info" style="margin-bottom:16px;">Produto desativado: não aparece nas listas nem vai para os canais. Use "Reativar produto" no fim da página para voltar a vender.</div>@endif
 
+    @if ($product->isSet())
+        @php($setPieces = collect($product->kit_set['pieces'] ?? []))
+        @php($setNames = \App\Commerce\Catalog\Product::whereIn('id', $setPieces->pluck('product_id'))->pluck('name', 'id'))
+        <div class="card" style="margin-bottom:16px;">
+            <h3 style="margin-top:0;">Peças do conjunto</h3>
+            <ul style="margin:0 0 12px;padding-left:20px;line-height:1.8;">
+                @foreach ($setPieces as $piece)
+                    <li><strong>{{ $piece['label'] }}</strong>: {{ $setNames[$piece['product_id']] ?? 'produto removido' }}{{ ($piece['quantity'] ?? 1) > 1 ? ' × '.$piece['quantity'] : '' }}</li>
+                @endforeach
+            </ul>
+            <p class="helper">{{ $product->kit_set['same'] ? 'Só combina peças com a mesma '.$product->kit_set['same'].'.' : 'Combina todos os tamanhos entre si.' }} Cada combinação acima baixa o estoque das peças dela. Não vai vender alguma? Desmarque "Ativa" na lista.</p>
+            <form method="POST" action="{{ route('commerce.products.set', $product) }}">
+                @csrf
+                <button type="submit" class="secondary">Criar combinações que faltam</button>
+                <span class="helper">Use depois de cadastrar um tamanho ou cor nova numa das peças.</span>
+            </form>
+        </div>
+    @endif
+
     {{-- Variantes primeiro: é o que mais se mexe (SKU, preço). --}}
     <form class="card" method="POST" action="{{ route('commerce.products.variants', $product) }}">
         @csrf
-        <h3 style="margin-top:0;">{{ $product->isKit() ? 'Kit' : 'Variantes' }} <span class="muted">({{ $product->variants->count() }})</span></h3>
+        <h3 style="margin-top:0;">{{ $product->isSet() ? 'Combinações do conjunto' : ($product->isKit() ? 'Kit' : 'Variantes') }} <span class="muted">({{ $product->variants->count() }})</span></h3>
+        @if ($product->variants->count() > 8)
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+                <input type="search" placeholder="Filtrar (ex.: Preto, 42, GG)" style="max-width:240px;" aria-label="Filtrar variantes" data-variant-filter>
+                <span class="muted" style="margin-left:8px;">Mesmo preço para as que aparecem:</span>
+                <input inputmode="decimal" placeholder="129,90" style="max-width:110px;" aria-label="Preço para todas" data-bulk-price>
+                <button type="button" class="secondary" data-bulk-apply>Aplicar</button>
+                <span class="helper">Depois clique em Salvar.</span>
+            </div>
+        @endif
         <div class="table-wrap"><table>
             <thead><tr>@if ($product->hasGrid())<th>Variante</th>@endif<th>SKU</th><th>Preço (R$)</th>@unless ($product->isKit())<th>Custo (R$)</th>@endunless<th>Código de barras</th><th>Ativa</th><th>Disponível</th></tr></thead>
             <tbody>
                 @foreach ($product->variants as $v)
-                    <tr>
+                    <tr data-variant-row="{{ mb_strtolower($v->label().' '.$v->sku) }}">
                         @if ($product->hasGrid())<td><strong>{{ $v->label() }}</strong></td>@endif
                         <td><input name="variants[{{ $v->id }}][sku]" value="{{ old("variants.{$v->id}.sku", $v->sku) }}" maxlength="55" required aria-label="SKU {{ $v->label() }}"></td>
                         <td><input name="variants[{{ $v->id }}][price]" value="{{ old("variants.{$v->id}.price", \App\Commerce\Catalog\Money::input($v->price_cents)) }}" inputmode="decimal" required style="max-width:110px;" aria-label="Preço {{ $v->label() }}"></td>
                         @unless ($product->isKit())<td><input name="variants[{{ $v->id }}][cost]" value="{{ old("variants.{$v->id}.cost", \App\Commerce\Catalog\Money::input($v->cost_cents)) }}" inputmode="decimal" style="max-width:110px;" aria-label="Custo {{ $v->label() }}"></td>@endunless
                         <td><input name="variants[{{ $v->id }}][gtin]" value="{{ old("variants.{$v->id}.gtin", $v->gtin) }}" inputmode="numeric" maxlength="14" style="max-width:150px;" aria-label="Código de barras {{ $v->label() }}"></td>
                         <td>
-                            <select name="variants[{{ $v->id }}][status]" aria-label="Situação {{ $v->label() }}">
+                            <select name="variants[{{ $v->id }}][status]" style="min-width:92px;" aria-label="Situação {{ $v->label() }}">
                                 <option value="active" @selected($v->status === 'active')>Sim</option>
                                 <option value="inactive" @selected($v->status === 'inactive')>Não</option>
                             </select>
@@ -33,8 +61,24 @@
                 @endforeach
             </tbody>
         </table></div>
-        <div style="margin-top:12px;"><button type="submit">Salvar variantes</button></div>
+        <div style="margin-top:12px;"><button type="submit">Salvar {{ $product->isSet() ? 'combinações' : 'variantes' }}</button></div>
     </form>
+    <script>
+        (function () {
+            const filter = document.querySelector('[data-variant-filter]');
+            if (!filter) return;
+            const rows = [...document.querySelectorAll('[data-variant-row]')];
+            filter.addEventListener('input', function () {
+                const terms = filter.value.toLowerCase().split(/\s+/).filter(Boolean);
+                rows.forEach(function (r) { r.hidden = !terms.every(function (t) { return r.dataset.variantRow.includes(t); }); });
+            });
+            document.querySelector('[data-bulk-apply]').addEventListener('click', function () {
+                const price = document.querySelector('[data-bulk-price]').value.trim();
+                if (!price) return;
+                rows.filter(function (r) { return !r.hidden; }).forEach(function (r) { r.querySelector('input[name$="[price]"]').value = price; });
+            });
+        })();
+    </script>
 
     @if ($product->hasGrid() && ! $product->isKit())
         <form class="card form-grid" method="POST" action="{{ route('commerce.products.grid', $product) }}" style="margin-top:16px;align-items:end;">
@@ -57,24 +101,7 @@
         </form>
     @endif
 
-    @if ($product->isSet())
-        @php($setPieces = collect($product->kit_set['pieces'] ?? []))
-        @php($setNames = \App\Commerce\Catalog\Product::whereIn('id', $setPieces->pluck('product_id'))->pluck('name', 'id'))
-        <div class="card" style="margin-top:16px;">
-            <h3 style="margin-top:0;">Peças do conjunto</h3>
-            <ul style="margin:0 0 12px;padding-left:20px;line-height:1.8;">
-                @foreach ($setPieces as $piece)
-                    <li><strong>{{ $piece['label'] }}</strong>: {{ $setNames[$piece['product_id']] ?? 'produto removido' }}{{ ($piece['quantity'] ?? 1) > 1 ? ' × '.$piece['quantity'] : '' }}</li>
-                @endforeach
-            </ul>
-            <p class="helper">{{ $product->kit_set['same'] ? 'Só combina peças com a mesma '.$product->kit_set['same'].'.' : 'Combina todos os tamanhos entre si.' }} Cada combinação acima baixa o estoque das peças dela. Não vai vender alguma? Desmarque "Ativa" na lista.</p>
-            <form method="POST" action="{{ route('commerce.products.set', $product) }}">
-                @csrf
-                <button type="submit" class="secondary">Criar combinações que faltam</button>
-                <span class="helper">Use depois de cadastrar um tamanho ou cor nova numa das peças.</span>
-            </form>
-        </div>
-    @elseif ($product->isKit())
+    @if ($product->isKit() && ! $product->isSet())
         @php($kitVariant = $product->variants->first())
         <form class="card" method="POST" action="{{ route('commerce.products.kit', $product) }}" style="margin-top:16px;">
             @csrf
