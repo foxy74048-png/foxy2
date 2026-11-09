@@ -20,13 +20,13 @@ class Product extends Model
 
     protected $table = 'commerce_products';
 
-    protected $fillable = ['category_id', 'type', 'name', 'description', 'brand', 'status', 'option_names', 'specs'];
+    protected $fillable = ['category_id', 'type', 'name', 'description', 'brand', 'status', 'option_names', 'specs', 'kit_set'];
 
     protected $attributes = ['type' => 'simple', 'status' => 'active'];
 
     protected function casts(): array
     {
-        return ['option_names' => 'array', 'specs' => 'array'];
+        return ['option_names' => 'array', 'specs' => 'array', 'kit_set' => 'array'];
     }
 
     public function category(): BelongsTo
@@ -47,6 +47,12 @@ class Product extends Model
     public function isKit(): bool
     {
         return $this->type === 'kit';
+    }
+
+    /** Conjunto: kit em que se escolhe o tamanho de cada peça (uma variante por combinação). */
+    public function isSet(): bool
+    {
+        return $this->isKit() && ! empty($this->kit_set);
     }
 
     public function hasGrid(): bool

@@ -189,6 +189,66 @@ class OrderService
         });
     }
 
+    /**
+     * Troca de peça (ex.: a cliente pediu M e quer G). A peça devolvida volta ao estoque (movimento "Troca")
+     * e a nova sai; com o pedido ainda sem pagamento, só troca a reserva. Trocar parte da quantidade divide
+     * o item. O preço muda só nos pedidos digitados (nos outros vale o que o canal cobrou).
+     */
+    public function exchangeItem(Order $order, OrderItem $item, Variant $new, int $quantity, ?int $unitPriceCents = null): void
+    {
+        if ($order->status === 'canceled') {
+            throw ValidationException::withMessages(['exchange' => 'Pedido cancelado não tem troca.']);
+        }
+        if ($item->order_id !== $order->id || ! $item->variant_id) {
+            throw ValidationException::withMessages(['exchange' => 'Esse item não pode ser trocado.']);
+        }
+        if ($quantity < 1 || $quantity > $item->quantity) {
+            throw ValidationException::withMessages(['exchange' => "Dá para trocar de 1 a {$item->quantity} unidade(s) deste item."]);
+        }
+        if ($new->id === $item->variant_id) {
+            throw ValidationException::withMessages(['exchange' => 'Escolha uma peça diferente da que está no pedido.']);
+        }
+        if ($new->status !== 'active') {
+            throw ValidationException::withMessages(['exchange' => "{$new->sku} está desativada."]);
+        }
+
+        DB::transaction(function () use ($order, $item, $new, $quantity, $unitPriceCents) {
+            $old = $item->variant;
+            $new->loadMissing('product');
+            if ($order->status === 'awaiting_payment') {
+                $this->stock->release($old, $quantity, $order->id);
+                $this->stock->reserve($new, $quantity, $order->id);
+            } else {
+                $this->stock->restock($old, $quantity, $order->id, 'troca');
+                $this->stock->sell($new, $quantity, $order->id);
+            }
+
+            $price = in_array($order->channel, Order::MANUAL_CHANNELS, true) && $unitPriceCents !== null ? max(0, $unitPriceCents) : $item->unit_price_cents;
+            $line = ['variant_id' => $new->id, 'product_id' => $new->product_id, 'sku' => $new->sku, 'name' => $new->fullName(),
+                'quantity' => $quantity, 'unit_price_cents' => $price, 'unit_cost_cents' => $this->unitCost($new), 'total_cents' => $price * $quantity];
+
+            if ($quantity === $item->quantity) {
+                $item->update($line);
+            } else {
+                $item->update(['quantity' => $item->quantity - $quantity, 'total_cents' => $item->unit_price_cents * ($item->quantity - $quantity)]);
+                OrderItem::create($line + ['order_id' => $order->id]);
+            }
+
+            $items = $order->items()->get();
+            $subtotal = (int) $items->sum('total_cents');
+            $discount = min($order->discount_cents, $subtotal);
+            $note = 'Troca em '.now()->timezone('America/Sao_Paulo')->format('d/m/Y').": {$quantity}× {$old->sku} → {$new->sku}";
+            $order->update([
+                'subtotal_cents' => $subtotal,
+                'discount_cents' => $discount,
+                'total_cents' => $subtotal - $discount + $order->shipping_cents,
+                'cost_cents' => (int) $items->sum(fn (OrderItem $i) => $i->unit_cost_cents * $i->quantity),
+                'notes' => trim(($order->notes ? $order->notes."\n" : '').$note),
+            ]);
+            Audit::record('commerce.order.exchanged', subject: $order, metadata: ['from' => $old->sku, 'to' => $new->sku, 'quantity' => $quantity]);
+        });
+    }
+
     /** Custo da unidade: o da variante, ou a soma das peças no kit. */
     private function unitCost(Variant $variant): int
     {

@@ -117,6 +117,7 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/produtos/{product}', [ProductController::class, 'update'])->name('products.update');
             Route::post('/produtos/{product}/variantes', [ProductController::class, 'updateVariants'])->name('products.variants');
             Route::post('/produtos/{product}/grade', [ProductController::class, 'extendGrid'])->name('products.grid');
+            Route::post('/produtos/{product}/conjunto', [ProductController::class, 'refreshSet'])->name('products.set');
             Route::post('/produtos/{product}/kit', [ProductController::class, 'updateComponents'])->name('products.kit');
             Route::post('/produtos/{product}/arquivar', [ProductController::class, 'archive'])->name('products.archive');
             Route::post('/produtos/{product}/fotos', [ProductController::class, 'uploadImages'])->middleware('throttle:30,1')->name('products.images');
@@ -134,6 +135,7 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/pedidos', [OrderController::class, 'store'])->middleware('throttle:60,1')->name('orders.store');
             Route::get('/pedidos/{order}', [OrderController::class, 'show'])->name('orders.show');
             Route::post('/pedidos/{order}/editar', [OrderController::class, 'update'])->name('orders.update');
+            Route::post('/pedidos/{order}/trocar', [OrderController::class, 'exchange'])->name('orders.exchange');
             Route::post('/pedidos/{order}/pago', [OrderController::class, 'pay'])->name('orders.pay');
             Route::post('/pedidos/{order}/andamento', [OrderController::class, 'advance'])->name('orders.advance');
             Route::post('/pedidos/{order}/nota', [FiscalController::class, 'store'])->middleware('throttle:30,1')->name('orders.fiscal');

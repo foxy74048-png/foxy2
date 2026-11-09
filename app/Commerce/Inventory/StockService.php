@@ -54,7 +54,7 @@ class StockService
     /** Devolve ao estoque (pedido cancelado depois da baixa, ou devolução do cliente). */
     public function restock(Variant $variant, int $quantity, ?string $orderId = null, string $type = 'cancelamento'): void
     {
-        $this->apply($variant, in_array($type, ['cancelamento', 'devolucao'], true) ? $type : 'cancelamento', $this->positive($quantity), 0, $orderId);
+        $this->apply($variant, in_array($type, ['cancelamento', 'devolucao', 'troca'], true) ? $type : 'cancelamento', $this->positive($quantity), 0, $orderId);
     }
 
     public function reserve(Variant $variant, int $quantity, ?string $orderId = null): void

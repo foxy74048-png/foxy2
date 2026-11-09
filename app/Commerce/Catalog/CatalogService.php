@@ -168,6 +168,137 @@ class CatalogService
         });
     }
 
+    /** Combinações demais viram uma lista impossível de usar (e de anunciar). */
+    public const MAX_SET_COMBINATIONS = 300;
+
+    /**
+     * Conjunto: kit em que a cliente escolhe o tamanho de cada peça (ex.: sutiã M com calcinha G). Cada
+     * combinação vira uma variante-kit com as suas peças, então estoque, loja e canais funcionam como num kit.
+     *
+     * @param  array<int, array{product_id: string, label: string, quantity?: int}>  $pieces
+     * @param  ?string  $same  característica que precisa ser igual nas peças (ex.: "Cor"); null = combina tudo
+     */
+    public function createSet(array $data, array $pieces, ?string $same): Product
+    {
+        if (count($pieces) < 2) {
+            throw ValidationException::withMessages(['set' => 'O conjunto precisa de pelo menos duas peças (ex.: sutiã e calcinha).']);
+        }
+
+        return DB::transaction(function () use ($data, $pieces, $same) {
+            $labels = array_map(fn ($p) => Str::limit(trim($p['label']), 30, ''), $pieces);
+            $product = Product::create([
+                'type' => 'kit',
+                'category_id' => $data['category_id'] ?? null,
+                'name' => $data['name'],
+                'description' => $data['description'] ?? null,
+                'brand' => $data['brand'] ?? null,
+                'status' => $data['status'] ?? 'active',
+                'specs' => $data['specs'] ?? null,
+                'option_names' => array_values(array_filter([$same ?: null, ...$labels])),
+                'kit_set' => [
+                    'same' => $same ?: null,
+                    'pieces' => array_map(fn ($p, $label) => ['product_id' => $p['product_id'], 'label' => $label, 'quantity' => max(1, min(99, (int) ($p['quantity'] ?? 1)))], $pieces, $labels),
+                ],
+            ]);
+
+            $added = $this->syncSet($product, $data['price_cents'], $data['sku'] ?? null);
+            if ($added === 0) {
+                throw ValidationException::withMessages(['set' => 'Nenhuma combinação possível: confira se as peças têm variantes ativas'.($same ? " e a mesma \"{$same}\" em comum" : '').'.']);
+            }
+            Audit::record('commerce.set.created', subject: $product, metadata: ['combinations' => $added]);
+
+            return $product;
+        });
+    }
+
+    /**
+     * Cria as combinações que faltam no conjunto (ex.: depois de cadastrar um tamanho novo no sutiã).
+     * Não apaga nenhuma: combinação que não deve ser vendida se desativa na lista de variantes.
+     */
+    public function syncSet(Product $product, ?int $priceCents = null, ?string $skuBase = null): int
+    {
+        $config = $product->kit_set;
+        $same = $config['same'] ?? null;
+        $pieces = collect($config['pieces'] ?? [])->map(function ($piece) use ($same) {
+            $variants = Variant::where('product_id', $piece['product_id'])->where('is_kit', false)->where('status', 'active')->orderBy('position')->get();
+            if ($variants->isEmpty()) {
+                throw ValidationException::withMessages(['set' => 'Uma das peças do conjunto não tem variantes ativas (ou não é um produto simples).']);
+            }
+
+            return $piece + ['variants' => $variants, 'has_same' => $same !== null && $variants->contains(fn ($v) => isset($v->options[$same]))];
+        });
+
+        // Valores da característica igual que existem em todas as peças que a têm.
+        $groups = [null];
+        if ($same !== null && $pieces->contains('has_same', true)) {
+            $groups = $pieces->where('has_same', true)
+                ->map(fn ($p) => $p['variants']->pluck("options.{$same}")->filter()->unique()->values()->all())
+                ->reduce(fn ($carry, $values) => $carry === null ? $values : array_values(array_intersect($carry, $values)));
+        }
+
+        $combinations = [];
+        foreach ($groups as $value) {
+            $lists = $pieces->map(fn ($p) => $value === null || ! $p['has_same'] ? $p['variants'] : $p['variants']->filter(fn ($v) => ($v->options[$same] ?? null) === $value));
+            $result = [[]];
+            foreach ($lists as $i => $list) {
+                $next = [];
+                foreach ($result as $partial) {
+                    foreach ($list as $variant) {
+                        $next[] = $partial + [$i => $variant];
+                    }
+                }
+                $result = $next;
+            }
+            foreach ($result as $combo) {
+                if (count($combo) === $pieces->count()) {
+                    $combinations[] = ['same' => $value, 'pieces' => $combo];
+                }
+            }
+        }
+
+        if (count($combinations) > self::MAX_SET_COMBINATIONS) {
+            throw ValidationException::withMessages(['set' => 'Esse conjunto daria '.count($combinations).' combinações (máximo '.self::MAX_SET_COMBINATIONS.'). Marque a característica que precisa ser igual (ex.: Cor) ou use menos peças.']);
+        }
+
+        // Combinações que já existem (pelas peças de cada variante-kit).
+        $existing = $product->variants()->with('components')->get()
+            ->map(fn (Variant $v) => $v->components->pluck('component_variant_id')->sort()->implode('|'))->flip();
+        $price = $priceCents ?? (int) $product->variants()->min('price_cents');
+        $position = (int) $product->variants()->max('position') + 1;
+        $taken = [];
+        $added = 0;
+
+        foreach ($combinations as $combo) {
+            $key = collect($combo['pieces'])->pluck('id')->sort()->implode('|');
+            if ($existing->has($key)) {
+                continue;
+            }
+
+            $options = $combo['same'] !== null ? [$same => $combo['same']] : [];
+            $skuParts = $combo['same'] !== null ? [$combo['same']] : [];
+            $components = [];
+            foreach ($combo['pieces'] as $i => $variant) {
+                $size = implode(' / ', array_values(array_diff_key($variant->options ?? [], $same ? [$same => true] : []))) ?: 'único';
+                $label = $pieces[$i]['label'];
+                $options[$label] = $label.' '.$size;
+                $skuParts[] = $size;
+                $components[$variant->id] = ($components[$variant->id] ?? 0) + $pieces[$i]['quantity'];
+            }
+
+            $sku = self::suggestSku($skuBase ?: $product->name, $skuParts, $taken);
+            $taken[] = $sku;
+            $kitVariant = Variant::create([
+                'product_id' => $product->id, 'sku' => $sku, 'options' => $options, 'price_cents' => $price,
+                'cost_cents' => null, 'is_kit' => true, 'position' => $position++,
+            ]);
+            $this->syncComponents($kitVariant, $components);
+            $existing->put($key, true);
+            $added++;
+        }
+
+        return $added;
+    }
+
     /**
      * @param  array<string, int>  $components  variant_id => quantidade
      */

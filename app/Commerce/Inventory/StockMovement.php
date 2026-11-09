@@ -26,6 +26,7 @@ class StockMovement extends Model
         'venda' => 'Venda',
         'cancelamento' => 'Cancelamento',
         'devolucao' => 'Devolução',
+        'troca' => 'Troca (peça voltou)',
         'reserva' => 'Reserva',
         'liberacao' => 'Reserva liberada',
     ];

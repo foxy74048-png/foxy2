@@ -122,7 +122,12 @@ class OrderController
 
     public function show(Order $order): View
     {
-        return view('commerce.orders.show', ['order' => $order->load('items', 'customer', 'fiscalDocuments')]);
+        return view('commerce.orders.show', [
+            'order' => $order->load('items', 'customer', 'fiscalDocuments'),
+            // Peças para troca: primeiro as do mesmo produto (outro tamanho/cor), depois o resto.
+            'swap' => $order->status === 'canceled' ? collect() : Variant::with('product')->where('status', 'active')->orderBy('sku')->limit(3000)->get()
+                ->sortBy(fn ($v) => $order->items->pluck('product_id')->contains($v->product_id) ? 0 : 1)->values(),
+        ]);
     }
 
     public function pay(Request $request, Order $order): RedirectResponse
@@ -159,6 +164,24 @@ class OrderController
         $this->orders->updateDetails($order, $changes);
 
         return back()->with('status', 'Pedido salvo.');
+    }
+
+    /** Troca de peça de um item (tamanho, cor...). */
+    public function exchange(Request $request, Order $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'item_id' => ['required', 'string', 'max:30'],
+            'sku' => ['required', 'string', 'max:55'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:10000'],
+            'price' => ['nullable', 'string', 'max:20'],
+        ], [], ['sku' => 'SKU da peça nova', 'quantity' => 'quantidade']);
+
+        $line = $order->items()->findOrFail($data['item_id']);
+        $new = Variant::where('sku', strtoupper(trim($data['sku'])))->first()
+            ?? throw ValidationException::withMessages(['exchange' => 'Não achamos o SKU '.$data['sku'].' nesta loja.']);
+        $this->orders->exchangeItem($order, $line, $new, (int) $data['quantity'], Money::toCents($data['price'] ?? null));
+
+        return back()->with('status', 'Troca registrada: a peça devolvida voltou ao estoque e a nova saiu.');
     }
 
     public function advance(Request $request, Order $order): RedirectResponse

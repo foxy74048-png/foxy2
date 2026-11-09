@@ -72,6 +72,7 @@ class ProductController
             'kit' => $request->query('tipo') === 'kit',
             'categories' => Category::with('parent')->orderBy('name')->get(),
             'pieces' => $request->query('tipo') === 'kit' ? $this->pieces() : collect(),
+            'setProducts' => $request->query('tipo') === 'kit' ? $this->setProducts() : collect(),
         ]);
     }
 
@@ -81,6 +82,13 @@ class ProductController
         $kit = $request->input('type') === 'kit';
         $data = $this->validateProduct($request) + $this->validatePrice($request);
 
+        if ($kit && $request->input('kit_mode') === 'conjunto') {
+            [$pieces, $same] = $this->setPieces($request);
+            $product = $this->catalog->createSet($data, $pieces, $same);
+
+            return redirect()->route('commerce.products.edit', $product)
+                ->with('status', 'Conjunto criado com '.$product->variants()->count().' combinações. Confira SKUs e preços abaixo; desative as que não for vender.');
+        }
         if ($kit) {
             $product = $this->catalog->createKit($data, $this->components($request));
         } else {
@@ -145,6 +153,7 @@ class ProductController
     public function extendGrid(Request $request, Product $product): RedirectResponse
     {
         $request->validate(['values' => ['required', 'array'], 'values.*' => ['nullable', 'string', 'max:500']]);
+        abort_if($product->isKit(), 404);
         $price = Money::toCents($request->input('price')) ?? (int) $product->variants()->value('price_cents');
 
         $new = [];
@@ -159,11 +168,21 @@ class ProductController
 
     public function updateComponents(Request $request, Product $product): RedirectResponse
     {
-        abort_unless($product->isKit(), 404);
+        abort_unless($product->isKit() && ! $product->isSet(), 404);
         $this->catalog->syncComponents($product->variants()->firstOrFail(), $this->components($request));
         Audit::record('commerce.kit.updated', subject: $product);
 
         return back()->with('status', 'Peças do kit salvas.');
+    }
+
+    /** Conjunto: cria as combinações que faltam (ex.: tamanho novo cadastrado numa das peças). */
+    public function refreshSet(Product $product): RedirectResponse
+    {
+        abort_unless($product->isSet(), 404);
+        $added = $this->catalog->syncSet($product);
+        Audit::record('commerce.set.refreshed', subject: $product, metadata: ['added' => $added]);
+
+        return back()->with('status', $added === 0 ? 'Nenhuma combinação nova: o conjunto já tem todas.' : "{$added} combinação(ões) nova(s) criada(s).");
     }
 
     public function archive(Product $product): RedirectResponse
@@ -266,6 +285,36 @@ class ProductController
         }
 
         return $result;
+    }
+
+    /** @return array{0: array<int, array{product_id: string, label: string, quantity: int}>, 1: ?string} */
+    private function setPieces(Request $request): array
+    {
+        $request->validate([
+            'set.pieces' => ['required', 'array', 'max:4'],
+            'set.pieces.*.product_id' => ['nullable', 'string', 'max:30'],
+            'set.pieces.*.label' => ['nullable', 'string', 'max:30'],
+            'set.pieces.*.quantity' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'set.same' => ['nullable', 'string', 'max:30'],
+        ], [], ['set.same' => 'característica igual']);
+
+        $pieces = [];
+        foreach ($request->input('set.pieces', []) as $row) {
+            if (blank($row['product_id'] ?? null)) {
+                continue;
+            }
+            $product = Product::where('type', '!=', 'kit')->find($row['product_id'])
+                ?? throw ValidationException::withMessages(['set' => 'Uma das peças não existe nesta loja.']);
+            $pieces[] = ['product_id' => $product->id, 'label' => trim($row['label'] ?? '') ?: $product->name, 'quantity' => (int) ($row['quantity'] ?? 1)];
+        }
+
+        return [$pieces, $request->boolean('set.match') ? (trim((string) $request->input('set.same')) ?: 'Cor') : null];
+    }
+
+    /** Produtos (não kits) que podem ser peça de um conjunto. */
+    private function setProducts()
+    {
+        return Product::with('variants')->where('type', '!=', 'kit')->where('status', '!=', 'archived')->orderBy('name')->limit(1000)->get();
     }
 
     /** Variantes que podem entrar num kit (lista de sugestões na tela). */

@@ -8,6 +8,8 @@ use App\Commerce\Catalog\Money;
 use App\Commerce\Catalog\Product;
 use App\Commerce\Catalog\ProductImage;
 use App\Commerce\Catalog\Variant;
+use App\Commerce\Inventory\StockLevel;
+use App\Commerce\Inventory\StockService;
 use App\Commerce\Stores\OpenStore;
 use App\Commerce\Stores\Store;
 use App\Models\User;
@@ -154,6 +156,53 @@ class CatalogTest extends TestCase
         // Repetir não duplica.
         $this->post($this->url("/app/produtos/{$product->id}/grade"), ['values' => ['gg', '']])->assertSessionHas('status');
         $this->assertCount(8, $this->shirt()->variants);
+    }
+
+    public function test_conjunto_com_tamanho_de_cada_peca_e_mesma_cor(): void
+    {
+        $this->actingAs($this->owner);
+        $this->post($this->url('/app/produtos'), ['type' => 'simple', 'name' => 'Sutiã Renda', 'status' => 'active', 'price' => '89,90', 'sku' => 'SUT',
+            'grid' => [['name' => 'Tamanho', 'values' => 'P, M, G'], ['name' => 'Cor', 'values' => 'Preto, Vermelho']]])->assertSessionHasNoErrors();
+        $this->post($this->url('/app/produtos'), ['type' => 'simple', 'name' => 'Calcinha Renda', 'status' => 'active', 'price' => '49,90', 'sku' => 'CAL',
+            'grid' => [['name' => 'Tamanho', 'values' => 'P, M, G, GG'], ['name' => 'Cor', 'values' => 'Preto, Branco']]])->assertSessionHasNoErrors();
+        [$sutia, $calcinha] = $this->inStore(fn () => [Product::where('name', 'Sutiã Renda')->sole(), Product::where('name', 'Calcinha Renda')->sole()]);
+
+        // Uma peça só não é conjunto.
+        $this->post($this->url('/app/produtos'), ['type' => 'kit', 'kit_mode' => 'conjunto', 'name' => 'X', 'status' => 'active', 'price' => '10',
+            'set' => ['pieces' => [['product_id' => $sutia->id, 'label' => 'Sutiã']]]])->assertSessionHasErrors('set');
+
+        $this->post($this->url('/app/produtos'), ['type' => 'kit', 'kit_mode' => 'conjunto', 'name' => 'Conjunto Renda', 'status' => 'active', 'price' => '119,90', 'sku' => 'CONJ',
+            'set' => ['match' => '1', 'same' => 'Cor', 'pieces' => [['product_id' => $sutia->id, 'label' => 'Sutiã'], ['product_id' => $calcinha->id, 'label' => 'Calcinha'], ['product_id' => '']]]])
+            ->assertSessionHasNoErrors();
+
+        $set = $this->inStore(fn () => Product::where('name', 'Conjunto Renda')->with('variants.components.component')->sole());
+        $this->assertTrue($set->isSet());
+        $this->assertSame(['Cor', 'Sutiã', 'Calcinha'], $set->option_names);
+        $this->assertCount(12, $set->variants); // só Preto existe nas duas: 3 sutiãs × 4 calcinhas
+
+        $mg = $set->variants->first(fn ($v) => $v->options === ['Cor' => 'Preto', 'Sutiã' => 'Sutiã M', 'Calcinha' => 'Calcinha G']);
+        $this->assertNotNull($mg);
+        $this->assertSame(11990, $mg->price_cents);
+        $this->assertEqualsCanonicalizing(['SUT-M-PRETO', 'CAL-G-PRETO'], $mg->components->map(fn ($c) => $c->component->sku)->all());
+
+        // Vender o conjunto baixa cada peça certa.
+        $this->inStore(function () use ($mg) {
+            $stock = app(StockService::class);
+            $stock->receive(Variant::where('sku', 'SUT-M-PRETO')->sole(), 5);
+            $stock->receive(Variant::where('sku', 'CAL-G-PRETO')->sole(), 2);
+            $this->assertSame(2, $stock->availability(collect([$mg]))[$mg->id]);
+            $stock->sell($mg, 1);
+            $this->assertSame(4, StockLevel::where('variant_id', Variant::where('sku', 'SUT-M-PRETO')->value('id'))->value('on_hand'));
+        });
+
+        // Calcinha ganhou o vermelho: o botão cria só as combinações que faltam.
+        $this->post($this->url("/app/produtos/{$calcinha->id}/grade"), ['values' => ['', 'Vermelho']])->assertSessionHasNoErrors();
+        $this->post($this->url("/app/produtos/{$set->id}/conjunto"))->assertSessionHasNoErrors();
+        $this->assertSame(24, $this->inStore(fn () => $set->variants()->count()));
+        $this->post($this->url("/app/produtos/{$set->id}/conjunto"))->assertSessionHas('status', 'Nenhuma combinação nova: o conjunto já tem todas.');
+
+        $this->get($this->url("/app/produtos/{$set->id}"))->assertOk()->assertSee('Peças do conjunto')->assertSee('Criar combinações que faltam')->assertDontSee('Acrescentar à grade');
+        $this->get($this->url('/app/produtos/novo?tipo=kit'))->assertOk()->assertSee('Conjunto com tamanho de cada peça')->assertSee('Calcinha Renda');
     }
 
     public function test_kit_e_feito_de_variantes_e_nao_aceita_kit_dentro(): void

@@ -61,6 +61,37 @@
         </table></div>
     </div>
 
+    @if ($order->status !== 'canceled' && $order->items->whereNotNull('variant_id')->isNotEmpty())
+        @php($manualOrder = in_array($order->channel, \App\Commerce\Orders\Order::MANUAL_CHANNELS, true))
+        <div class="card" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Trocar peça</h3>
+            <p class="helper" style="margin-top:0;">A cliente quer outro tamanho ou cor? A peça devolvida volta ao estoque e a nova sai, sem cancelar o pedido.{{ $order->status === 'awaiting_payment' ? ' Como o pedido ainda não foi pago, só a reserva é trocada.' : '' }}</p>
+            <datalist id="swap-skus">@foreach ($swap as $v)<option value="{{ $v->sku }}">{{ $v->fullName() }}</option>@endforeach</datalist>
+            <form method="POST" action="{{ route('commerce.orders.exchange', $order) }}" class="form-grid" style="align-items:end;">
+                @csrf
+                <div>
+                    <label for="x-item">Peça que volta</label>
+                    <select id="x-item" name="item_id">@foreach ($order->items->whereNotNull('variant_id') as $i)<option value="{{ $i->id }}" @selected(old('item_id') === $i->id)>{{ $i->quantity }}× {{ $i->name }}</option>@endforeach</select>
+                </div>
+                <div>
+                    <label for="x-sku">Peça nova (SKU)</label>
+                    <input id="x-sku" name="sku" list="swap-skus" maxlength="55" value="{{ old('sku') }}" placeholder="Digite o SKU ou o nome" autocomplete="off" required>
+                </div>
+                <div>
+                    <label for="x-qty">Quantidade</label>
+                    <input id="x-qty" name="quantity" type="number" min="1" value="{{ old('quantity', 1) }}" required>
+                </div>
+                @if ($manualOrder)
+                    <div>
+                        <label for="x-price">Preço da nova (R$, opcional)</label>
+                        <input id="x-price" name="price" inputmode="decimal" value="{{ old('price') }}" placeholder="Igual ao da peça trocada">
+                    </div>
+                @endif
+                <div><button type="submit">Registrar troca</button></div>
+            </form>
+        </div>
+    @endif
+
     <div class="card" style="margin-top:16px;">
         <h3 style="margin-top:0;">Nota fiscal</h3>
         @forelse ($order->fiscalDocuments as $doc)

@@ -36,7 +36,7 @@
         <div style="margin-top:12px;"><button type="submit">Salvar variantes</button></div>
     </form>
 
-    @if ($product->hasGrid())
+    @if ($product->hasGrid() && ! $product->isKit())
         <form class="card form-grid" method="POST" action="{{ route('commerce.products.grid', $product) }}" style="margin-top:16px;align-items:end;">
             @csrf
             <div style="grid-column: 1 / -1;">
@@ -57,7 +57,24 @@
         </form>
     @endif
 
-    @if ($product->isKit())
+    @if ($product->isSet())
+        @php($setPieces = collect($product->kit_set['pieces'] ?? []))
+        @php($setNames = \App\Commerce\Catalog\Product::whereIn('id', $setPieces->pluck('product_id'))->pluck('name', 'id'))
+        <div class="card" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Peças do conjunto</h3>
+            <ul style="margin:0 0 12px;padding-left:20px;line-height:1.8;">
+                @foreach ($setPieces as $piece)
+                    <li><strong>{{ $piece['label'] }}</strong>: {{ $setNames[$piece['product_id']] ?? 'produto removido' }}{{ ($piece['quantity'] ?? 1) > 1 ? ' × '.$piece['quantity'] : '' }}</li>
+                @endforeach
+            </ul>
+            <p class="helper">{{ $product->kit_set['same'] ? 'Só combina peças com a mesma '.$product->kit_set['same'].'.' : 'Combina todos os tamanhos entre si.' }} Cada combinação acima baixa o estoque das peças dela. Não vai vender alguma? Desmarque "Ativa" na lista.</p>
+            <form method="POST" action="{{ route('commerce.products.set', $product) }}">
+                @csrf
+                <button type="submit" class="secondary">Criar combinações que faltam</button>
+                <span class="helper">Use depois de cadastrar um tamanho ou cor nova numa das peças.</span>
+            </form>
+        </div>
+    @elseif ($product->isKit())
         @php($kitVariant = $product->variants->first())
         <form class="card" method="POST" action="{{ route('commerce.products.kit', $product) }}" style="margin-top:16px;">
             @csrf

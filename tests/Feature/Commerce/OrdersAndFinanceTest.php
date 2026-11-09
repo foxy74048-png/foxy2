@@ -7,6 +7,7 @@ use App\Commerce\Catalog\Variant;
 use App\Commerce\Console\CreateDemo;
 use App\Commerce\Insights\FinanceReport;
 use App\Commerce\Inventory\StockLevel;
+use App\Commerce\Inventory\StockMovement;
 use App\Commerce\Inventory\StockService;
 use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
@@ -157,6 +158,38 @@ class OrdersAndFinanceTest extends TestCase
 
         $this->post($this->url("/app/pedidos/{$order->id}/cancelar"))->assertSessionHasNoErrors();
         $this->post($this->url("/app/pedidos/{$order->id}/editar"), ['notes' => 'x'])->assertSessionHasErrors('order');
+    }
+
+    public function test_trocar_uma_peca_do_pedido(): void
+    {
+        $order = $this->place(['channel' => 'whatsapp', 'paid' => true, 'items' => [['variant' => $this->v['CAM-P'], 'quantity' => 2], ['variant' => $this->v['BONE'], 'quantity' => 1]]]);
+        $item = $this->inStore(fn () => $order->items()->where('sku', 'CAM-P')->sole());
+        $this->actingAs($this->owner);
+
+        $this->get($this->url("/app/pedidos/{$order->id}"))->assertSee('Trocar peça')->assertSee('CAM-M');
+
+        // Troca 1 das 2 camisetas P por M: o item se divide, P volta 1, M sai 1, total igual.
+        $this->post($this->url("/app/pedidos/{$order->id}/trocar"), ['item_id' => $item->id, 'sku' => 'cam-m', 'quantity' => 1])->assertSessionHasNoErrors();
+        $order->refresh();
+        $this->assertSame(9, $this->onHand('CAM-P'));
+        $this->assertSame(9, $this->onHand('CAM-M'));
+        $this->assertSame(['BONE' => 1, 'CAM-M' => 1, 'CAM-P' => 1], $this->inStore(fn () => $order->items()->pluck('quantity', 'sku')->sortKeys()->all()));
+        $this->assertSame(8000 * 2 + 5000, $order->total_cents);
+        $this->assertStringContainsString('1× CAM-P → CAM-M', $order->notes);
+        $this->assertSame('troca', $this->inStore(fn () => StockMovement::where('variant_id', $this->v['CAM-P']->id)->latest('id')->value('type')));
+
+        // Pedido digitado: dá para mudar o preço da peça nova. Quantidade maior que o item é recusada.
+        $this->post($this->url("/app/pedidos/{$order->id}/trocar"), ['item_id' => $item->id, 'sku' => 'BONE', 'quantity' => 1, 'price' => '45,00'])->assertSessionHasNoErrors();
+        $this->assertSame(8000 + 5000 + 4500, $order->fresh()->total_cents);
+        $bone = $this->inStore(fn () => $order->items()->where('sku', 'BONE')->first());
+        $this->post($this->url("/app/pedidos/{$order->id}/trocar"), ['item_id' => $bone->id, 'sku' => 'CAM-P', 'quantity' => 5])->assertSessionHasErrors('exchange');
+        $this->post($this->url("/app/pedidos/{$order->id}/trocar"), ['item_id' => $bone->id, 'sku' => 'XYZ', 'quantity' => 1])->assertSessionHasErrors('exchange');
+
+        // Ainda sem pagamento: troca só a reserva.
+        $pending = $this->place(['channel' => 'whatsapp', 'items' => [['variant' => $this->v['CAM-P'], 'quantity' => 1]]]);
+        $this->post($this->url("/app/pedidos/{$pending->id}/trocar"), ['item_id' => $this->inStore(fn () => $pending->items()->value('id')), 'sku' => 'CAM-M', 'quantity' => 1])->assertSessionHasNoErrors();
+        $this->assertSame(10, $this->onHand('CAM-P'));
+        $this->assertSame(8, $this->available('CAM-M')); // 9 em estoque (1 saiu na primeira troca) − 1 reservada
     }
 
     public function test_reserva_vencida_cancela_e_solta_as_pecas(): void
