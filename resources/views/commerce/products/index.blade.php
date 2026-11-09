@@ -30,6 +30,10 @@
                 @foreach (\App\Commerce\Catalog\Product::STATUSES as $k => $label)<option value="{{ $k }}" @selected(($filters['situacao'] ?? '') === $k)>{{ $label }}</option>@endforeach
             </select>
         </div>
+        <div>
+            <label for="foto">Fotos</label>
+            <select id="foto" name="foto"><option value="">Com ou sem</option><option value="sem" @selected(($filters['foto'] ?? '') === 'sem')>Só os sem foto</option></select>
+        </div>
         <div><button type="submit">Filtrar</button></div>
     </form>
 
@@ -47,6 +51,7 @@
                             <td>
                                 @if ($canManage)<a href="{{ route('commerce.products.edit', $p) }}"><strong>{{ $p->name }}</strong></a>@else<strong>{{ $p->name }}</strong>@endif
                                 @if ($p->isKit())<span class="badge">kit</span>@endif
+                                @if ($p->images->isEmpty())<span class="badge danger" title="Sem foto: aparece sem imagem na loja e os marketplaces recusam o anúncio">sem foto</span>@endif
                                 <div class="helper">{{ $p->variants->count() === 1 ? $p->variants->first()->sku : $p->variants->first()?->sku.' …' }}</div>
                             </td>
                             <td>{{ $p->category?->fullName() ?? '—' }}</td>

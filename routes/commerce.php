@@ -121,6 +121,8 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/produtos/{product}/kit', [ProductController::class, 'updateComponents'])->name('products.kit');
             Route::post('/produtos/{product}/arquivar', [ProductController::class, 'archive'])->name('products.archive');
             Route::post('/produtos/{product}/fotos', [ProductController::class, 'uploadImages'])->middleware('throttle:30,1')->name('products.images');
+            Route::post('/produtos/{product}/fotos/{image}/variacao', [ProductController::class, 'tagImage'])->name('products.images.tag');
+            Route::post('/produtos/{product}/fotos/{image}/capa', [ProductController::class, 'coverImage'])->name('products.images.cover');
             Route::post('/produtos/{product}/fotos/{image}/apagar', [ProductController::class, 'deleteImage'])->name('products.images.delete');
             Route::post('/categorias', [CategoryController::class, 'store'])->name('categories.store');
             Route::post('/categorias/{category}', [CategoryController::class, 'update'])->name('categories.update');

@@ -114,26 +114,50 @@
 
     <div class="card" style="margin-top:16px;">
         <h3 style="margin-top:0;">Fotos <span class="muted">({{ $product->images->count() }}/{{ \App\Commerce\Http\ProductController::MAX_IMAGES }})</span></h3>
-        @if ($product->images->isNotEmpty())
-            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+        @php($imageOptions = $product->imageOptions())
+        @php($optionSelect = function (?string $selected, string $name, string $label) use ($imageOptions) {
+            $html = '<select name="'.$name.'" aria-label="'.e($label).'" style="width:100%;"><option value="">Todas as variações</option>';
+            foreach ($imageOptions as $optName => $values) {
+                $html .= '<optgroup label="'.e($optName).'">';
+                foreach ($values as $value) {
+                    $key = $optName.'='.$value;
+                    $html .= '<option value="'.e($key).'"'.($selected === $key ? ' selected' : '').'>'.e($optName.': '.$value).'</option>';
+                }
+                $html .= '</optgroup>';
+            }
+
+            return $html.'</select>';
+        })
+        @if ($product->images->isEmpty())
+            <div class="alert error" style="margin-bottom:12px;">Este produto ainda não tem foto. Sem foto ele aparece "sem foto" na loja e os marketplaces não aceitam o anúncio.</div>
+        @else
+            <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;">
                 @foreach ($product->images as $img)
-                    <div style="text-align:center;">
-                        <img src="{{ $img->file->url() }}" alt="" style="width:120px;height:120px;object-fit:cover;border-radius:12px;display:block;">
-                        @if ($loop->first)<div class="helper">capa</div>@endif
-                        <form method="POST" action="{{ route('commerce.products.images.delete', [$product, $img->id]) }}">
-                            @csrf
-                            <button type="submit" class="secondary" style="margin-top:4px;">Apagar</button>
-                        </form>
+                    <div style="width:190px;">
+                        <img src="{{ $img->file->url() }}" alt="" style="width:190px;height:190px;object-fit:cover;border-radius:12px;display:block;">
+                        <div class="helper" style="margin:4px 0;">@if ($loop->first)<strong>capa</strong> · @endif{{ $img->optionLabel() ?: 'todas as variações' }}</div>
+                        @if ($imageOptions)
+                            <form method="POST" action="{{ route('commerce.products.images.tag', [$product, $img->id]) }}" style="display:grid;grid-template-columns:1fr auto;gap:4px;">
+                                @csrf
+                                {!! $optionSelect($img->isGeneral() ? null : $img->option_name.'='.$img->option_value, 'option', 'Variação da foto') !!}
+                                <button type="submit" class="secondary" title="Salvar a variação da foto">OK</button>
+                            </form>
+                        @endif
+                        <div style="display:flex;gap:4px;margin-top:4px;">
+                            @unless ($loop->first)<form method="POST" action="{{ route('commerce.products.images.cover', [$product, $img->id]) }}">@csrf<button type="submit" class="secondary" title="Usar como capa (primeira foto)">Capa</button></form>@endunless
+                            <form method="POST" action="{{ route('commerce.products.images.delete', [$product, $img->id]) }}" onsubmit="return confirm('Apagar esta foto?');">@csrf<button type="submit" class="secondary">Apagar</button></form>
+                        </div>
                     </div>
                 @endforeach
             </div>
         @endif
-        <form method="POST" action="{{ route('commerce.products.images', $product) }}" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <form method="POST" action="{{ route('commerce.products.images', $product) }}" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
             @csrf
-            <input type="file" name="images[]" accept="image/jpeg,image/png,image/webp" multiple required aria-label="Escolher fotos">
+            <input type="file" name="images[]" accept="image/jpeg,image/png,image/webp" multiple required aria-label="Escolher fotos" style="width:auto;max-width:340px;">
+            @if ($imageOptions)<span class="muted">Estas fotos são de:</span> <span style="width:220px;">{!! $optionSelect(null, 'option', 'Variação das fotos novas') !!}</span>@endif
             <button type="submit" class="secondary">Enviar fotos</button>
-            <span class="helper">JPG, PNG ou WEBP, até 5 MB cada. Fundo branco ajuda nos marketplaces.</span>
         </form>
+        <p class="helper" style="margin-bottom:0;">JPG, PNG ou WEBP, até 5 MB cada. Fundo branco ajuda nos marketplaces. @if ($imageOptions)Marque a cor de cada foto: na loja, quando a cliente escolhe "Nude", aparecem as fotos do nude; no Mercado Livre, cada cor vai com as suas fotos. Fotos de "todas as variações" aparecem sempre.@endif</p>
     </div>
 
     <form method="POST" action="{{ route('commerce.products.update', $product) }}" style="margin-top:16px;">

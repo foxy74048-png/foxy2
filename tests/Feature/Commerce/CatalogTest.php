@@ -256,6 +256,42 @@ class CatalogTest extends TestCase
         $this->assertSame(1, $this->inStore(fn () => File::count()));
     }
 
+    public function test_foto_por_cor_capa_e_aviso_de_sem_foto(): void
+    {
+        Storage::fake('public');
+        $this->createShirt(); // Tamanho P, M, G × Cor Azul, Preto
+        $product = $this->shirt();
+
+        $this->get($this->url('/app/produtos'))->assertSee('sem foto');
+        $this->get($this->url('/app/produtos?foto=sem'))->assertSee('Camiseta Básica');
+        $this->get($this->url("/app/produtos/{$product->id}"))->assertSee('ainda não tem foto')->assertSee('Cor: Preto');
+
+        $this->post($this->url("/app/produtos/{$product->id}/fotos"), ['images' => [UploadedFile::fake()->image('geral.jpg')]])->assertSessionHasNoErrors();
+        $this->post($this->url("/app/produtos/{$product->id}/fotos"), ['images' => [UploadedFile::fake()->image('preta.jpg')], 'option' => 'Cor=Preto'])
+            ->assertSessionHas('status', 'Fotos enviadas para Cor: Preto.');
+        $this->post($this->url("/app/produtos/{$product->id}/fotos"), ['images' => [UploadedFile::fake()->image('x.jpg')], 'option' => 'Cor=Vermelho'])->assertSessionHasErrors('option');
+
+        $images = $this->inStore(fn () => ProductImage::orderBy('position')->get());
+        $this->assertNull($images[0]->option_name);
+        $this->assertSame(['Cor', 'Preto'], [$images[1]->option_name, $images[1]->option_value]);
+
+        // Variação preta: a foto dela primeiro, depois a geral. Azul: só a geral.
+        $loaded = $this->inStore(fn () => Product::with('images', 'variants')->find($product->id));
+        $this->assertSame([$images[1]->id, $images[0]->id], $loaded->imagesFor(['Tamanho' => 'M', 'Cor' => 'Preto'])->pluck('id')->all());
+        $this->assertSame([$images[0]->id], $loaded->imagesFor(['Tamanho' => 'M', 'Cor' => 'Azul'])->pluck('id')->all());
+
+        // Remarcar a foto, voltar para todas, e trocar a capa.
+        $this->post($this->url("/app/produtos/{$product->id}/fotos/{$images[0]->id}/variacao"), ['option' => 'Cor=Azul'])->assertSessionHasNoErrors();
+        $this->assertSame('Azul', $images[0]->fresh()->option_value);
+        $this->post($this->url("/app/produtos/{$product->id}/fotos/{$images[0]->id}/variacao"), ['option' => ''])->assertSessionHasNoErrors();
+        $this->assertNull($images[0]->fresh()->option_name);
+        $this->post($this->url("/app/produtos/{$product->id}/fotos/{$images[1]->id}/capa"))->assertSessionHasNoErrors();
+        $this->assertSame([0, 1], [$images[1]->fresh()->position, $images[0]->fresh()->position]);
+
+        $this->get($this->url('/app/produtos'))->assertDontSee('sem foto</span>', false);
+        $this->get($this->url("/app/produtos/{$product->id}"))->assertSee('Usar como capa')->assertSee('todas as variações');
+    }
+
     public function test_produto_de_outra_loja_nao_abre(): void
     {
         $this->createShirt();

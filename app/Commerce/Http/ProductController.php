@@ -28,7 +28,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ProductController
 {
-    public const MAX_IMAGES = 10;
+    public const MAX_IMAGES = 20;
 
     public function __construct(private CatalogService $catalog) {}
 
@@ -38,6 +38,7 @@ class ProductController
             'busca' => ['nullable', 'string', 'max:100'],
             'categoria' => ['nullable', 'string', 'max:30'],
             'situacao' => ['nullable', Rule::in(array_keys(Product::STATUSES))],
+            'foto' => ['nullable', 'in:sem'],
         ]);
 
         $products = Product::with(['category', 'variants', 'images.file'])
@@ -46,6 +47,7 @@ class ProductController
                 $q->where(fn ($q) => $q->whereLike('name', $like)->orWhereHas('variants', fn ($v) => $v->whereLike('sku', $like)));
             })
             ->when($filters['categoria'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
+            ->when(($filters['foto'] ?? null) === 'sem', fn ($q) => $q->whereDoesntHave('images'))
             ->when($filters['situacao'] ?? null, fn ($q, $status) => $q->where('status', $status), fn ($q) => $q->where('status', '!=', 'archived'))
             ->orderBy('name');
 
@@ -198,7 +200,9 @@ class ProductController
         $request->validate([
             'images' => ['required', 'array', 'max:'.self::MAX_IMAGES],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'option' => ['nullable', 'string', 'max:100'],
         ], [], ['images.*' => 'foto']);
+        [$optionName, $optionValue] = $this->imageOption($product, $request->input('option'));
 
         $count = $product->images()->count();
         if ($count + count($request->file('images')) > self::MAX_IMAGES) {
@@ -207,10 +211,54 @@ class ProductController
 
         foreach ($request->file('images') as $upload) {
             $file = File::store($upload, 'commerce.product_image', config('commerce.images_disk'), 'commerce/products');
-            ProductImage::create(['product_id' => $product->id, 'file_id' => $file->id, 'position' => $count++]);
+            ProductImage::create(['product_id' => $product->id, 'file_id' => $file->id, 'position' => $count++, 'option_name' => $optionName, 'option_value' => $optionValue]);
         }
 
-        return back()->with('status', 'Fotos enviadas.');
+        return back()->with('status', $optionName ? "Fotos enviadas para {$optionName}: {$optionValue}." : 'Fotos enviadas.');
+    }
+
+    /** Muda para qual variação a foto vale (ou volta a valer para todas). */
+    public function tagImage(Request $request, Product $product, string $image): RedirectResponse
+    {
+        $request->validate(['option' => ['nullable', 'string', 'max:100']]);
+        $image = ProductImage::where('product_id', $product->id)->findOrFail($image);
+        [$name, $value] = $this->imageOption($product, $request->input('option'));
+        $image->update(['option_name' => $name, 'option_value' => $value]);
+
+        return back()->with('status', $name ? "Foto marcada para {$name}: {$value}." : 'A foto vale para todas as variações.');
+    }
+
+    /** A foto vira a capa (primeira da lista). */
+    public function coverImage(Product $product, string $image): RedirectResponse
+    {
+        $cover = ProductImage::where('product_id', $product->id)->findOrFail($image);
+        DB::transaction(function () use ($product, $cover) {
+            $position = 1;
+            foreach (ProductImage::where('product_id', $product->id)->whereKeyNot($cover->id)->orderBy('position')->get() as $other) {
+                $other->update(['position' => $position++]);
+            }
+            $cover->update(['position' => 0]);
+        });
+
+        return back()->with('status', 'Capa trocada.');
+    }
+
+    /**
+     * "Cor=Nude" → ['Cor', 'Nude'] se for um valor da grade do produto; vazio → [null, null] (todas).
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function imageOption(Product $product, ?string $option): array
+    {
+        if (blank($option)) {
+            return [null, null];
+        }
+        [$name, $value] = array_pad(explode('=', $option, 2), 2, null);
+        if (! in_array($value, $product->load('variants')->imageOptions()[$name] ?? [], true)) {
+            throw ValidationException::withMessages(['option' => 'Essa variação não existe neste produto.']);
+        }
+
+        return [$name, $value];
     }
 
     public function deleteImage(Product $product, string $image): RedirectResponse

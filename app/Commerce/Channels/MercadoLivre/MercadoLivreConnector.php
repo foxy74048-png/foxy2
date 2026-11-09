@@ -74,8 +74,11 @@ class MercadoLivreConnector implements ChannelConnector
         $product = $listing->product;
         $extra = $this->listingAttributes($listing);
         $category = $listing->external_category ?: $this->predictCategory($connection, $listing->title);
-        $pictures = ProductImage::with('file')->where('product_id', $product->id)->orderBy('position')->get()
-            ->map(fn ($image) => ['source' => $image->file->url()])->values()->all();
+        // Fotos marcadas por cor vão só na variação daquela cor (as gerais, em todas). Limite do canal: 12.
+        $images = ProductImage::with('file')->where('product_id', $product->id)->orderBy('position')->get()->filter(fn ($image) => $image->file)->take(12);
+        $pictures = $images->map(fn ($image) => ['source' => $image->file->url()])->values()->all();
+        $picturesFor = fn (?array $options) => $images->filter(fn ($image) => $image->appliesTo($options))
+            ->sortBy(fn ($image) => ($image->isGeneral() ? 100000 : 0) + $image->position)->map(fn ($image) => $image->file->url())->values()->all();
 
         $attributes = collect([
             'BRAND' => $product->brand,
@@ -102,7 +105,7 @@ class MercadoLivreConnector implements ChannelConnector
                 'price' => $listing->price_cents / 100,
                 'available_quantity' => $v['quantity'],
                 'attributes' => [['id' => 'SELLER_SKU', 'value_name' => $v['sku']]],
-                'picture_ids' => array_column($pictures, 'source'),
+                'picture_ids' => $picturesFor($v['options'] ?? null) ?: array_column($pictures, 'source'),
             ])->values()->all();
         } else {
             $only = collect($variants)->first();

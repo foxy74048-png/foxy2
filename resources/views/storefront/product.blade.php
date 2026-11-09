@@ -4,11 +4,13 @@
 
     <div class="two">
         <div>
-            @if ($product->images->first()?->file)
-                <img src="{{ $product->images->first()->file->url() }}" alt="{{ $product->name }}" style="width:100%;border-radius:14px;aspect-ratio:1;object-fit:cover;background:#f1eff6;">
-                @if ($product->images->count() > 1)
-                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                        @foreach ($product->images->skip(1) as $img)<img src="{{ $img->file->url() }}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:8px;">@endforeach
+            @php($gallery = $product->imagesFor($first?->options)->merge($product->images)->unique('id')->filter(fn ($i) => $i->file)->values())
+            @if ($gallery->isNotEmpty())
+                {{-- Fotos da variação escolhida primeiro (ex.: as do nude); as outras ficam nas miniaturas. --}}
+                <img id="main-photo" src="{{ $gallery->first()->file->url() }}" alt="{{ $product->name }}" style="width:100%;border-radius:14px;aspect-ratio:1;object-fit:cover;background:#f1eff6;">
+                @if ($gallery->count() > 1)
+                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;" data-thumbs>
+                        @foreach ($gallery as $img)<img src="{{ $img->file->url() }}" alt="{{ $img->optionLabel() ?: $product->name }}" title="{{ $img->optionLabel() }}" data-option-name="{{ $img->option_name }}" data-option-value="{{ $img->option_value }}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="document.getElementById('main-photo').src = this.src">@endforeach
                     </div>
                 @endif
             @else
@@ -42,6 +44,7 @@
                     <script>
                         document.addEventListener('DOMContentLoaded', function () {
                             const variants = @json($pickerData);
+                            const names = @json($optionNames);
                             const picker = document.querySelector('[data-picker]');
                             const full = document.getElementById('variant_id');
                             const selects = [...picker.querySelectorAll('[data-option]')];
@@ -54,6 +57,10 @@
                                 picker.querySelector('[data-picker-price]').textContent = v ? v.price : '';
                                 picker.querySelector('[data-picker-stock]').textContent = !v ? 'Combinação indisponível' : (v.left === 0 ? 'Esgotado' : (v.left <= 3 ? 'Últimas ' + v.left + ' unidades' : ''));
                                 if (v) { full.value = v.id; }
+                                // Foto da cor (ou outra opção) escolhida, se tiver.
+                                const main = document.getElementById('main-photo');
+                                const photo = main && [...document.querySelectorAll('[data-thumbs] img')].find(function (img) { const i = names.indexOf(img.dataset.optionName); return i >= 0 && chosen[i] === img.dataset.optionValue; });
+                                if (photo) { main.src = photo.src; }
                                 button.disabled = !v || v.left === 0;
                                 button.textContent = !v || v.left === 0 ? 'Indisponível' : 'Adicionar ao carrinho';
                             }

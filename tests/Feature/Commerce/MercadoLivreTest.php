@@ -4,6 +4,7 @@ namespace Tests\Feature\Commerce;
 
 use App\Commerce\Catalog\CatalogService;
 use App\Commerce\Catalog\Product;
+use App\Commerce\Catalog\ProductImage;
 use App\Commerce\Catalog\Variant;
 use App\Commerce\Channels\ChannelConnection;
 use App\Commerce\Channels\InboxItem;
@@ -16,9 +17,11 @@ use App\Commerce\Stores\Store;
 use App\Models\User;
 use App\Platform\Context\ContextStore;
 use App\Platform\Context\ExecutionContext;
+use App\Platform\Files\File;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -115,6 +118,32 @@ class MercadoLivreTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         return $this->inStore(fn () => Listing::with('variants.variant')->sole());
+    }
+
+    public function test_cada_variacao_vai_com_as_suas_fotos(): void
+    {
+        $this->fakeMl();
+        $this->inStore(function () {
+            $product = Product::sole();
+            foreach ([[null, null, 'geral'], ['Tamanho', 'P', 'so-p']] as $i => [$name, $value, $file]) {
+                $stored = File::forceCreate(['id' => strtolower((string) Str::ulid()), 'organization_id' => $product->organization_id,
+                    'owner_type' => 'commerce.product_image', 'disk' => 'public', 'path' => "fotos/{$file}.jpg", 'mime' => 'image/jpeg', 'size' => 1]);
+                ProductImage::create(['product_id' => $product->id, 'file_id' => $stored->id, 'position' => $i, 'option_name' => $name, 'option_value' => $value]);
+            }
+        });
+
+        $this->publish();
+
+        Http::assertSent(function (Request $r) {
+            if ($r->url() !== self::API.'/items' || $r->method() !== 'POST') {
+                return false;
+            }
+            $variations = collect($r['variations'])->keyBy(fn ($v) => $v['attributes'][0]['value_name']);
+
+            return count($r['pictures']) === 2
+                && count($variations['CAM-P']['picture_ids']) === 2 && str_ends_with($variations['CAM-P']['picture_ids'][0], 'so-p.jpg')
+                && count($variations['CAM-M']['picture_ids']) === 1 && str_ends_with($variations['CAM-M']['picture_ids'][0], 'geral.jpg');
+        });
     }
 
     public function test_sem_as_chaves_no_env_o_mercado_livre_fica_em_breve(): void

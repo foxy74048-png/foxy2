@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /**
  * Produto: o que o lojista cadastra uma vez. Vende-se a variante (tamanho/cor); produto sem grade tem uma.
@@ -42,6 +43,28 @@ class Product extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class)->orderBy('position');
+    }
+
+    /**
+     * Fotos de uma variação: primeiro as da cor/opção dela, depois as do produto todo.
+     *
+     * @return Collection<int, ProductImage>
+     */
+    public function imagesFor(?array $options)
+    {
+        return $this->images->filter(fn (ProductImage $i) => $i->appliesTo($options))
+            ->sortBy(fn (ProductImage $i) => ($i->isGeneral() ? 100000 : 0) + $i->position)->values();
+    }
+
+    /** Valores que dá para escolher numa foto: ["Cor" => ["Preto", "Nude"], "Tamanho" => [...]] a partir das variantes. */
+    public function imageOptions(): array
+    {
+        $result = [];
+        foreach ($this->option_names ?? [] as $name) {
+            $result[$name] = $this->variants->map(fn (Variant $v) => $v->options[$name] ?? null)->filter()->unique()->values()->all();
+        }
+
+        return $result;
     }
 
     public function isKit(): bool
