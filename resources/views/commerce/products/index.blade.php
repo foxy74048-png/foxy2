@@ -51,6 +51,7 @@
                             <td>
                                 @if ($canManage)<a href="{{ route('commerce.products.edit', $p) }}"><strong>{{ $p->name }}</strong></a>@else<strong>{{ $p->name }}</strong>@endif
                                 @if ($p->isKit())<span class="badge">kit</span>@endif
+                                @if ($p->supply_mode)<span class="badge" title="{{ $p->supplier }}">{{ $p->supply_mode === 'consignado' ? 'consignado' : 'comprado' }}{{ $p->supplier ? ' · '.$p->supplier : '' }}</span>@endif
                                 @if ($p->images->isEmpty())<span class="badge danger" title="Sem foto: aparece sem imagem na loja e os marketplaces recusam o anúncio">sem foto</span>@endif
                                 <div class="helper">{{ $p->variants->count() === 1 ? $p->variants->first()->sku : $p->variants->first()?->sku.' …' }}</div>
                             </td>

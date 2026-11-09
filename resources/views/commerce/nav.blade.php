@@ -21,7 +21,7 @@
     <x-core::nav-link href="{{ route('commerce.channels') }}" :active="request()->routeIs('commerce.channels*')" icon="home">Marketplaces</x-core::nav-link>
 @endif
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.stock.view'))
-    <x-core::nav-link href="{{ route('commerce.stock') }}" :active="request()->routeIs('commerce.stock*')" icon="calendar">Estoque</x-core::nav-link>
+    <x-core::nav-link href="{{ route('commerce.stock') }}" :active="request()->routeIs('commerce.stock*') || request()->routeIs('commerce.supply*')" icon="calendar">Estoque</x-core::nav-link>
 @endif
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.store.manage'))
     <x-core::nav-link href="{{ route('commerce.store.settings') }}" :active="request()->routeIs('commerce.store.*')" icon="home">Loja própria</x-core::nav-link>

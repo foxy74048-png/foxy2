@@ -335,6 +335,8 @@ class ProductController
             'name' => ['required', 'string', 'max:255'],
             'category_id' => ['nullable', Rule::exists('commerce_categories', 'id')->where('organization_id', $organizationId)],
             'brand' => ['nullable', 'string', 'max:80'],
+            'supplier' => ['nullable', 'string', 'max:120'],
+            'supply_mode' => ['nullable', Rule::in(['compra', 'consignado'])],
             'description' => ['nullable', 'string', 'max:10000'],
             'status' => [$withStatus ? 'required' : 'nullable', Rule::in(['active', 'draft'])],
             'specs.weight_g' => ['nullable', 'integer', 'min:0', 'max:1000000'],

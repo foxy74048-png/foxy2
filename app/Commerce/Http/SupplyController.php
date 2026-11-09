@@ -1,0 +1,164 @@
+<?php
+
+namespace App\Commerce\Http;
+
+use App\Commerce\Access;
+use App\Commerce\Catalog\Category;
+use App\Commerce\Catalog\Money;
+use App\Commerce\Insights\Export;
+use App\Commerce\Inventory\StockService;
+use App\Commerce\Supply\ReceiptParser;
+use App\Commerce\Supply\SupplyBatch;
+use App\Commerce\Supply\SupplyItem;
+use App\Commerce\Supply\SupplyService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * Remessas de fornecedor: importar o comprovante (PDF ou texto), conferir e lançar; acerto da consignação.
+ */
+class SupplyController
+{
+    public function __construct(private SupplyService $supply) {}
+
+    public function index(Request $request): View|Response
+    {
+        $this->guard($request);
+        $batches = SupplyBatch::withCount('items')->latest('received_on')->latest('created_at');
+        if ($format = Export::requested($request)) {
+            return (new Export('Remessas de fornecedor'))
+                ->section(null, ['Recebida em' => 'date', 'Fornecedora' => 'text', 'Nº' => 'text', 'Fechamento' => 'date', 'Itens' => 'int', 'Total do comprovante' => 'money', 'Situação' => 'text'],
+                    $batches->get()->map(fn (SupplyBatch $b) => [$b->received_on, $b->supplier, $b->document_number, $b->closing_on, $b->items_count, $b->total_cents, SupplyBatch::STATUSES[$b->status] ?? $b->status]))
+                ->download($format);
+        }
+
+        return view('commerce.supply.index', ['batches' => $batches->paginate(30)]);
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $this->guard($request);
+        $data = $request->validate([
+            'file' => ['nullable', 'file', 'mimes:pdf,txt', 'max:10240'],
+            'text' => ['nullable', 'string', 'max:500000'],
+            'basis' => ['required', Rule::in(['venda', 'custo'])],
+            'percent' => ['required', 'numeric', 'min:0', 'max:500'],
+        ], [], ['file' => 'comprovante', 'basis' => 'preço do comprovante', 'percent' => 'percentual']);
+
+        $text = $request->hasFile('file')
+            ? ($request->file('file')->getClientOriginalExtension() === 'txt' ? $request->file('file')->get() : rescue(fn () => ReceiptParser::textFromPdf($request->file('file')->getRealPath()), '', report: false))
+            : (string) ($data['text'] ?? '');
+        if (trim($text) === '') {
+            throw ValidationException::withMessages(['file' => 'Envie o PDF do comprovante ou cole o texto dele.']);
+        }
+
+        $batch = $this->supply->draft(ReceiptParser::parse($text), $data['basis'], (float) $data['percent']);
+
+        return redirect()->route('commerce.supply.show', $batch)->with('status', 'Comprovante lido. Confira os produtos e clique em "Lançar no estoque".');
+    }
+
+    public function show(Request $request, SupplyBatch $batch): View|Response
+    {
+        $this->guard($request);
+        $batch->load('items.variant.product');
+        if ($format = Export::requested($request)) {
+            return (new Export('Remessa '.$batch->label()))
+                ->filters(['Recebida em' => $batch->received_on?->format('d/m/Y'), 'Fechamento' => $batch->closing_on?->format('d/m/Y'), 'Situação' => SupplyBatch::STATUSES[$batch->status]])
+                ->section(null, ['Descrição' => 'text', 'Código de barras' => 'text', 'Origem' => 'text', 'Qtd.' => 'int', 'Preço no comprovante' => 'money', 'Custo' => 'money', 'Devolvido' => 'int', 'Vendido' => 'int'],
+                    $batch->items->map(fn (SupplyItem $i) => [$i->description, $i->barcode, $i->mode === 'compra' ? 'Comprado' : 'Consignado', $i->quantity, $i->document_price_cents, $i->cost_cents, $i->returned, $i->sold]))
+                ->download($format);
+        }
+
+        $onHand = $batch->status === 'aberta'
+            ? app(StockService::class)->availability($batch->items->pluck('variant')->filter())
+            : [];
+
+        return view('commerce.supply.show', [
+            'batch' => $batch,
+            'categories' => Category::with('parent')->orderBy('name')->get(),
+            'onHand' => $onHand,
+        ]);
+    }
+
+    /** Lança a remessa com o que foi ajustado na conferência. */
+    public function confirm(Request $request, SupplyBatch $batch): RedirectResponse
+    {
+        $this->guard($request);
+        $data = $request->validate([
+            'supplier' => ['required', 'string', 'max:120'],
+            'document_number' => ['nullable', 'string', 'max:40'],
+            'closing_on' => ['nullable', 'date'],
+            'groups' => ['required', 'array'],
+            'groups.*.name' => ['required', 'string', 'max:150'],
+            'groups.*.mode' => ['required', Rule::in(array_keys(SupplyBatch::MODES))],
+            'groups.*.category_id' => ['nullable', 'string', 'max:30'],
+            'groups.*.sale' => ['required', 'string', 'max:20'],
+            'groups.*.cost' => ['required', 'string', 'max:20'],
+            'groups.*.skip' => ['nullable', 'boolean'],
+            'groups.*.lines' => ['required', 'array'],
+            'groups.*.lines.*.color' => ['nullable', 'string', 'max:40'],
+            'groups.*.lines.*.size' => ['nullable', 'string', 'max:20'],
+            'groups.*.lines.*.quantity' => ['required', 'integer', 'min:0', 'max:100000'],
+        ], [], ['supplier' => 'fornecedora', 'groups.*.name' => 'nome do produto', 'groups.*.sale' => 'preço de venda', 'groups.*.cost' => 'custo']);
+
+        $draft = $batch->groups ?? [];
+        $groups = [];
+        foreach ($data['groups'] as $g => $input) {
+            if (! isset($draft[$g])) {
+                continue;
+            }
+            $lines = [];
+            foreach ($draft[$g]['lines'] as $l => $line) {
+                $edit = $input['lines'][$l] ?? [];
+                if ((int) ($edit['quantity'] ?? $line['quantity']) <= 0) {
+                    continue;
+                }
+                $lines[] = ['color' => trim($edit['color'] ?? $line['color']), 'size' => mb_strtoupper(trim($edit['size'] ?? $line['size'])),
+                    'quantity' => (int) ($edit['quantity'] ?? $line['quantity'])] + $line;
+            }
+            $sale = Money::toCents($input['sale']) ?? 0;
+            if (! ($input['skip'] ?? false) && ($lines === [] || $sale <= 0)) {
+                throw ValidationException::withMessages(["groups.$g.sale" => "Confira o preço de venda de \"{$input['name']}\"."]);
+            }
+            $groups[] = ['name' => trim($input['name']), 'mode' => $input['mode'], 'category_id' => Category::find($input['category_id'] ?? null)?->id,
+                'sale_cents' => $sale, 'cost_cents' => Money::toCents($input['cost']) ?? 0, 'skip' => (bool) ($input['skip'] ?? false),
+                'product_id' => $draft[$g]['product_id'] ?? null, 'lines' => $lines];
+        }
+
+        $batch->update(['supplier' => $data['supplier'], 'document_number' => $data['document_number'] ?? null, 'closing_on' => $data['closing_on'] ?? null]);
+        $this->supply->confirm($batch, $groups);
+
+        return redirect()->route('commerce.supply.show', $batch)->with('status', 'Remessa lançada: produtos cadastrados e estoque atualizado.'.($batch->items()->where('mode', 'compra')->exists() ? ' As peças compradas viraram conta a pagar no fechamento.' : ''));
+    }
+
+    public function settle(Request $request, SupplyBatch $batch): RedirectResponse
+    {
+        $this->guard($request);
+        $data = $request->validate(['returns' => ['nullable', 'array'], 'returns.*' => ['nullable', 'integer', 'min:0'], 'due' => ['nullable', 'date']]);
+        $owed = $this->supply->settle($batch, array_map('intval', $data['returns'] ?? []), isset($data['due']) ? Carbon::parse($data['due']) : null);
+
+        return back()->with('status', 'Acerto feito. As devoluções saíram do estoque'.($owed > 0 ? ' e o valor do vendido ('.Money::format($owed).') está em Financeiro › A pagar.' : '.'));
+    }
+
+    public function destroy(Request $request, SupplyBatch $batch): RedirectResponse
+    {
+        $this->guard($request);
+        if ($batch->status !== 'rascunho') {
+            throw ValidationException::withMessages(['status' => 'Só dá para descartar uma remessa que ainda não foi lançada.']);
+        }
+        $batch->delete();
+
+        return redirect()->route('commerce.supply')->with('status', 'Leitura descartada.');
+    }
+
+    /** Remessa mexe em catálogo e estoque: quem pode os dois. */
+    private function guard(Request $request): void
+    {
+        abort_unless(Access::allows($request->attributes->get('commerce.membership'), 'commerce.catalog.manage'), 403);
+    }
+}

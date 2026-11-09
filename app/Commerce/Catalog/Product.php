@@ -21,7 +21,7 @@ class Product extends Model
 
     protected $table = 'commerce_products';
 
-    protected $fillable = ['category_id', 'type', 'name', 'description', 'brand', 'status', 'option_names', 'specs', 'kit_set'];
+    protected $fillable = ['category_id', 'type', 'name', 'description', 'brand', 'status', 'option_names', 'specs', 'kit_set', 'supplier', 'supply_mode'];
 
     protected $attributes = ['type' => 'simple', 'status' => 'active'];
 

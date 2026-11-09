@@ -16,6 +16,18 @@
     <label for="brand">Marca</label>
     <input id="brand" name="brand" value="{{ old('brand', $p?->brand) }}" maxlength="80">
 </div>
+<div>
+    <label for="supply_mode">Origem</label>
+    <select id="supply_mode" name="supply_mode">
+        <option value="" @selected(old('supply_mode', $p?->supply_mode) === null)>Própria (estoque meu)</option>
+        <option value="compra" @selected(old('supply_mode', $p?->supply_mode) === 'compra')>Comprado de fornecedora</option>
+        <option value="consignado" @selected(old('supply_mode', $p?->supply_mode) === 'consignado')>Consignado (devolvo o que não vender)</option>
+    </select>
+</div>
+<div>
+    <label for="supplier">Fornecedora</label>
+    <input id="supplier" name="supplier" value="{{ old('supplier', $p?->supplier) }}" maxlength="120" placeholder="Ex.: Miza">
+</div>
 @if (! $p || $p->status !== 'archived')
     <div>
         <label for="status">Situação</label>

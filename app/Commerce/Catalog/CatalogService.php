@@ -66,6 +66,8 @@ class CatalogService
                 'status' => $data['status'] ?? 'active',
                 'option_names' => $optionNames ?: null,
                 'specs' => $data['specs'] ?? null,
+                'supplier' => $data['supplier'] ?? null,
+                'supply_mode' => $data['supply_mode'] ?? null,
             ]);
 
             $this->addVariants($product, $combinations, $data['sku'] ?? null, $data['price_cents'], $data['cost_cents'] ?? null);

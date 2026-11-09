@@ -15,6 +15,7 @@ use App\Commerce\Http\OrderController;
 use App\Commerce\Http\ProductController;
 use App\Commerce\Http\ReportController;
 use App\Commerce\Http\StockController;
+use App\Commerce\Http\SupplyController;
 use App\Commerce\Http\StoreController;
 use App\Commerce\Http\StorefrontController;
 use App\Commerce\Http\StoreSettingsController;
@@ -198,6 +199,12 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
         });
         Route::middleware('commerce.can:commerce.stock.adjust')->group(function () {
             Route::post('/estoque/entrada', [StockController::class, 'receive'])->name('stock.receive');
+            Route::get('/remessas', [SupplyController::class, 'index'])->name('supply');
+            Route::post('/remessas', [SupplyController::class, 'import'])->middleware('throttle:20,1')->name('supply.import');
+            Route::get('/remessas/{batch}', [SupplyController::class, 'show'])->name('supply.show');
+            Route::post('/remessas/{batch}/lancar', [SupplyController::class, 'confirm'])->name('supply.confirm');
+            Route::post('/remessas/{batch}/acerto', [SupplyController::class, 'settle'])->name('supply.settle');
+            Route::post('/remessas/{batch}/descartar', [SupplyController::class, 'destroy'])->name('supply.destroy');
             Route::post('/estoque/{variant}/ajuste', [StockController::class, 'adjust'])->name('stock.adjust');
             Route::post('/estoque/{variant}/minimo', [StockController::class, 'minimum'])->name('stock.minimum');
         });
