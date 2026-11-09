@@ -2,9 +2,12 @@
 
 namespace App\Commerce\Inventory;
 
+use App\Commerce\Catalog\Variant;
+use App\Models\User;
 use App\Platform\Organizations\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
 /**
@@ -35,6 +38,16 @@ class StockMovement extends Model
     {
         static::updating(fn () => throw new LogicException('Movimento de estoque não pode ser alterado.'));
         static::deleting(fn () => throw new LogicException('Movimento de estoque não pode ser apagado.'));
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(Variant::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function label(): string

@@ -3,33 +3,14 @@
 
     @include('commerce.status')
     @php($canAdjust = \App\Commerce\Access::allows($currentMembership, 'commerce.stock.adjust'))
+    @include('commerce.stock._tabs', ['tab' => 'posicao'])
     @php($labels = ['negativo' => ['Negativo', 'danger'], 'zerado' => ['Zerado', 'danger'], 'baixo' => ['Baixo', ''], 'ok' => ['OK', 'success']])
 
-    <div class="grid cards">
+    <div class="grid cards" style="margin-top:0;">
         <a class="card" href="{{ route('commerce.stock', ['filtro' => 'baixo']) }}"><div class="muted">Baixo ou zerado</div><h2 style="margin:4px 0;">{{ ($counts['baixo'] ?? 0) + ($counts['zerado'] ?? 0) + ($counts['negativo'] ?? 0) }}</h2></a>
         <a class="card" href="{{ route('commerce.stock', ['filtro' => 'negativo']) }}"><div class="muted">Negativo (vendeu sem ter)</div><h2 style="margin:4px 0;color:var(--danger-text);">{{ $counts['negativo'] ?? 0 }}</h2></a>
     </div>
 
-    @if ($canAdjust)
-        <form class="card" method="POST" action="{{ route('commerce.stock.receive') }}" style="margin-top:16px;">
-            @csrf
-            <h3 style="margin-top:0;">Entrada de mercadoria</h3>
-            <p class="helper" style="margin-top:0;">Chegou mercadoria? Digite o SKU e a quantidade de cada item. Linhas vazias são ignoradas.</p>
-            <datalist id="stock-skus">@foreach ($rows->where('variant.is_kit', false) as $r)<option value="{{ $r['variant']->sku }}">{{ $r['variant']->fullName() }}</option>@endforeach</datalist>
-            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-                @for ($i = 0; $i < 6; $i++)
-                    <div style="display:flex;gap:8px;">
-                        <input name="items[{{ $i }}][sku]" list="stock-skus" placeholder="SKU" maxlength="55" aria-label="SKU {{ $i + 1 }}">
-                        <input name="items[{{ $i }}][quantity]" type="number" min="1" placeholder="Qtd." style="max-width:90px;" aria-label="Quantidade {{ $i + 1 }}">
-                    </div>
-                @endfor
-            </div>
-            <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap;">
-                <input name="reason" maxlength="200" placeholder="Observação (ex.: NF 1234 do fornecedor)" style="max-width:360px;">
-                <button type="submit">Registrar entrada</button>
-            </div>
-        </form>
-    @endif
 
     <form class="card form-grid" method="GET" action="{{ route('commerce.stock') }}" style="margin-top:16px;grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items:end;">
         <div>

@@ -2,6 +2,7 @@
 
 namespace App\Commerce\Http;
 
+use App\Commerce\Access;
 use App\Commerce\Catalog\Variant;
 use App\Commerce\Inventory\StockLevel;
 use App\Commerce\Inventory\StockMovement;
@@ -29,7 +30,12 @@ class StockController
         $filters = $request->validate([
             'busca' => ['nullable', 'string', 'max:100'],
             'filtro' => ['nullable', Rule::in(['baixo', 'zerado', 'negativo'])],
+            'aba' => ['nullable', Rule::in(['posicao', 'entrada'])],
         ]);
+
+        if (($filters['aba'] ?? null) === 'entrada' && Access::allows($request->attributes->get('commerce.membership'), 'commerce.stock.adjust')) {
+            return $this->receiveForm();
+        }
 
         $variants = Variant::with('product')
             ->where('status', 'active')
@@ -59,6 +65,20 @@ class StockController
         };
 
         return view('commerce.stock.index', ['rows' => $rows->values(), 'filters' => $filters, 'counts' => $counts]);
+    }
+
+    /** Aba "Entrada de mercadoria": catálogo para achar o SKU enquanto digita e as últimas entradas. */
+    private function receiveForm(): View
+    {
+        $variants = Variant::with('product')->where('status', 'active')->where('is_kit', false)
+            ->whereHas('product', fn ($q) => $q->where('status', '!=', 'archived'))
+            ->orderBy('sku')->limit(5000)->get();
+        $levels = StockLevel::whereIn('variant_id', $variants->pluck('id'))->pluck('on_hand', 'variant_id');
+
+        $catalog = $variants->mapWithKeys(fn (Variant $v) => [$v->sku => ['name' => $v->fullName(), 'on_hand' => (int) ($levels[$v->id] ?? 0)]]);
+        $recent = StockMovement::with(['variant.product', 'user'])->where('type', 'entrada')->latest()->latest('id')->limit(15)->get();
+
+        return view('commerce.stock.receive', ['catalog' => $catalog, 'recent' => $recent]);
     }
 
     public function show(Variant $variant): View

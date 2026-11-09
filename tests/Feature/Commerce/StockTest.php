@@ -92,6 +92,10 @@ class StockTest extends TestCase
         // SKU inexistente: nada é gravado.
         $this->post($this->url('/app/estoque/entrada'), ['items' => [['sku' => 'BONE', 'quantity' => 1], ['sku' => 'XXX', 'quantity' => 1]]])->assertSessionHasErrors('items');
         $this->assertSame(4, $this->level('BONE')->on_hand);
+
+        // Aba de entrada: catálogo para achar o SKU (sem kits) e as últimas entradas.
+        $this->get($this->url('/app/estoque?aba=entrada'))->assertOk()
+            ->assertSee('Últimas entradas')->assertSee('NF 1234')->assertSee('"CAM-M"', false)->assertDontSee('"KIT"', false);
     }
 
     public function test_contagem_saida_e_minimo(): void
@@ -184,6 +188,7 @@ class StockTest extends TestCase
         Membership::create(['organization_id' => $this->store->organization_id, 'user_id' => $attendant->id, 'role' => 'attendant']);
 
         $this->actingAs($attendant)->get($this->url('/app/estoque'))->assertOk()->assertSee('CAM-P')->assertDontSee('Entrada de mercadoria');
+        $this->actingAs($attendant)->get($this->url('/app/estoque?aba=entrada'))->assertOk()->assertDontSee('Últimas entradas');
         $this->actingAs($attendant)->post($this->url("/app/estoque/{$this->v['BONE']->id}/ajuste"), ['type' => 'entrada', 'quantity' => 5])->assertForbidden();
 
         $bia = User::factory()->create();
