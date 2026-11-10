@@ -7,6 +7,19 @@
 
     @include('commerce.status')
 
+    {{-- Dinheiro que pede ação: atrasos, vencimentos da semana e acertos de consignação --}}
+    @if ($alerts)
+        @php($fmt = fn ($c) => \App\Commerce\Catalog\Money::format($c))
+        <div class="grid cards" style="margin-bottom:16px;">
+            <a class="card" href="{{ route('commerce.finance', ['situacao' => 'vencidas']) }}"><div class="muted">Clientes com conta vencida</div><h2 @style(['margin:4px 0', 'color:var(--danger-text)' => $alerts['overdue'] > 0])>{{ $fmt($alerts['overdue']) }}</h2><div class="helper">{{ $alerts['overdue_count'] }} conta(s) · cobrar pelo WhatsApp</div></a>
+            <a class="card" href="{{ route('commerce.finance', ['de' => today()->toDateString(), 'ate' => today()->addDays(7)->toDateString()]) }}"><div class="muted">A receber em 7 dias</div><h2 style="margin:4px 0;">{{ $fmt($alerts['receive_week']) }}</h2></a>
+            <a class="card" href="{{ route('commerce.finance', ['aba' => 'pagar', 'ate' => today()->addDays(7)->toDateString()]) }}"><div class="muted">A pagar até 7 dias</div><h2 @style(['margin:4px 0', 'color:var(--danger-text)' => $alerts['pay_overdue'] > 0])>{{ $fmt($alerts['pay_week']) }}</h2><div class="helper">{{ $alerts['pay_overdue'] ? $alerts['pay_overdue'].' já vencida(s)' : 'em dia' }}</div></a>
+            @foreach ($alerts['settlements'] as $batch)
+                <a class="card" href="{{ route('commerce.supply.show', $batch) }}" style="border-color:var(--danger);"><div class="muted">Acerto da consignação</div><h2 style="margin:4px 0;font-size:1.1rem;">{{ $batch->supplier }}</h2><div class="helper" style="color:var(--danger-text);">{{ $batch->closing_on->isPast() ? 'atrasado desde' : ($batch->closing_on->isToday() ? 'é hoje,' : 'em') }} {{ $batch->closing_on->format('d/m') }}</div></a>
+            @endforeach
+        </div>
+    @endif
+
     {{-- Operação: o que pede ação agora --}}
     <div class="grid cards">
         @if ($can('commerce.orders.manage'))

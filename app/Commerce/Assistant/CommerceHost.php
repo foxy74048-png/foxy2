@@ -5,9 +5,14 @@ namespace App\Commerce\Assistant;
 use App\Commerce\Access;
 use App\Commerce\Channels\ChannelConnection;
 use App\Commerce\Channels\Listing;
+use App\Commerce\Finance\Payable;
+use App\Commerce\Finance\Receivable;
 use App\Commerce\Insights\FinanceReport;
 use App\Commerce\Inventory\StockLevel;
+use App\Commerce\Inventory\StockService;
+use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
+use App\Commerce\Supply\SupplyBatch;
 use App\Platform\Memberships\Membership;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -28,11 +33,16 @@ class CommerceHost
         'pedido_buscar' => 'commerce.orders.manage',
         'estoque_baixo' => 'commerce.stock.view',
         'anuncios_com_erro' => 'commerce.channels.manage',
+        'contas_a_receber' => 'commerce.finance.manage',
+        'contas_a_pagar' => 'commerce.finance.manage',
+        'remessas_em_aberto' => 'commerce.catalog.manage',
+        'cliente_buscar' => 'commerce.orders.manage',
     ];
 
     public const TOOL_LABELS = [
         'vendas_resumo' => 'Financeiro', 'vendas_mais_vendidos' => 'Financeiro', 'pedidos_pendentes' => 'Pedidos',
         'pedido_buscar' => 'Pedidos', 'estoque_baixo' => 'Estoque', 'anuncios_com_erro' => 'Anúncios',
+        'contas_a_receber' => 'Financeiro', 'contas_a_pagar' => 'Financeiro', 'remessas_em_aberto' => 'Remessas', 'cliente_buscar' => 'Clientes',
     ];
 
     /** @return string[] consultas que esta pessoa pode usar */
@@ -55,7 +65,7 @@ class CommerceHost
         return <<<'MD'
         # Manual do Foxy Commerce
 
-        O menu fica à esquerda: Painel, Pedidos, Clientes, Produtos, Categorias, Anúncios, Marketplaces, Estoque, Equipe e Assinatura. Cada pessoa vê só o que o papel dela permite.
+        O menu fica à esquerda: Painel, Relatórios, Pedidos, Clientes, Financeiro, WhatsApp, Produtos, Categorias, Anúncios, Marketplaces, Estoque, Loja própria, Equipe, Assinatura e Suporte. Cada pessoa vê só o que o papel dela permite. Toda lista e relatório tem os botões Planilha e PDF no alto (exportam o que está filtrado).
 
         ## Papéis
         - **Dono(a):** tudo, inclusive assinatura e equipe.
@@ -68,8 +78,10 @@ class CommerceHost
         - **Editar SKU, preço, custo e código de barras:** abra o produto › tabela de variantes › Salvar variantes.
         - **Tamanho novo:** abra o produto › "Acrescentar à grade" › só as combinações novas são criadas.
         - **Kit:** Produtos › Novo kit › peças por SKU e quantidade. O kit não tem estoque próprio: o disponível vem das peças, e vender um kit baixa cada peça.
-        - **Fotos:** abra o produto › Fotos › até 10, JPG/PNG/WEBP. A primeira é a capa.
-        - **Arquivar:** some das listas sem apagar o histórico. "Reativar produto" traz de volta.
+        - **Fotos:** abra o produto › Fotos › até 20, JPG/PNG/WEBP. Em "Estas fotos são de", marque a cor (ex.: Cor: Nude): na loja e no Mercado Livre, cada cor mostra as suas fotos. "Capa" escolhe a primeira. Produto sem foto aparece com a etiqueta "sem foto".
+        - **Conjunto com tamanho de cada peça** (ex.: sutiã 44 com calcinha M): Produtos › Novo kit › "Conjunto com tamanho de cada peça" › escolha os produtos e marque "combinar só a mesma Cor". Cada combinação baixa as peças certas. Tamanho novo numa peça: abra o conjunto › "Criar combinações que faltam".
+        - **Desativar:** some das listas e da loja sem apagar o histórico. "Reativar" traz de volta.
+        - **Origem e fornecedora:** no produto, Origem (própria, comprado ou consignado) e Fornecedora.
         - Peso, medidas e NCM ficam em "Dados para envio e nota" (os marketplaces pedem).
 
         ## Estoque
@@ -81,7 +93,10 @@ class CommerceHost
         - Toda mudança de estoque atualiza sozinha os anúncios no ar.
 
         ## Pedidos
-        - **Venda no balcão, WhatsApp ou Instagram:** Pedidos › Novo pedido › canal, cliente, itens por SKU. "Já está pago" baixa o estoque; sem isso, as peças ficam reservadas por 48 h.
+        - **Venda no balcão, WhatsApp ou Instagram:** Pedidos › Novo pedido › canal; cliente (busque pelo nome ou telefone; mostra se ela deve algo; nome novo vira cliente nova); itens: produto e depois tamanho/cor (mostra quanto tem). "+ Produto que não está cadastrado" cadastra na hora. "Já está pago" baixa o estoque; sem isso, as peças ficam reservadas por 48 h.
+        - **Crediário / fiado:** no novo pedido, forma de pagamento "Crediário / fiado", número de parcelas e 1º vencimento. A peça sai do estoque e as parcelas ficam em Financeiro › A receber, no nome da cliente.
+        - **Trocar tamanho ou cor:** abra o pedido › Trocar peça › peça que volta e peça nova. A devolvida volta ao estoque e a nova sai.
+        - **Editar observação, frete, desconto ou forma de pagamento:** abra o pedido › Editar dados do pedido.
         - **Confirmar pagamento:** abra o pedido › Confirmar pagamento.
         - **Andamento:** abra o pedido › Separando › Enviado (com código de rastreio) › Concluído.
         - **Cancelar:** abra o pedido › Cancelar pedido (só dono e gerente). As peças voltam ao estoque.
@@ -105,6 +120,26 @@ class CommerceHost
         - Filtros de período, canal, forma de pagamento e categoria, sempre no topo.
         - Lucro bruto = faturamento − frete − taxas dos canais − custo das mercadorias. Não inclui despesas fixas.
         - Para o lucro ficar certo, preencha o custo de cada variante (abra o produto).
+
+        ## Financeiro (dono e gerente)
+        - **A receber:** parcelas do crediário e contas avulsas. "Recebi" dá baixa no valor todo; recebeu uma parte, em outra data ou quer escolher a forma? Abra a conta › Registrar recebimento (o que faltar continua em aberto). Lançou errado? "Desfazer recebimento".
+        - **A pagar:** fornecedor, aluguel, etc. Uma vez, parcelado (divide o valor) ou todo mês. Cancelar pode levar as próximas da série.
+        - **Fluxo de caixa:** entradas e saídas previstas por semana, com as vencidas na primeira linha.
+        - O Painel avisa: contas vencidas, o que vence em 7 dias e acertos de consignação chegando.
+
+        ## WhatsApp da loja (dono e gerente)
+        - **Conectar:** WhatsApp › Gerar QR Code › no celular da loja: WhatsApp › Aparelhos conectados › Conectar um aparelho.
+        - **Cobrar:** em Financeiro › A receber (ou na ficha da cliente) › Cobrar. Conectado: sai pelo número da loja, com o valor e o Pix copia e cola. Sem conexão: abre o seu WhatsApp com o texto pronto.
+        - **Lembretes automáticos:** WhatsApp › ligue e escolha dias antes, no dia e dias depois de vencer. Saem das 9h às 19h, uma vez por etapa. Os textos se editam ali ({cliente}, {valor}, {vencimento}, {pix}...).
+
+        ## Remessas de fornecedor e consignação
+        - **Importar:** Estoque › Remessas de fornecedor › envie o PDF do comprovante (ou cole o texto) e diga se o preço é o de venda (com a sua comissão) ou o custo (com a sua margem).
+        - **Conferir e lançar:** por produto, consignado ou comprado, categoria, preço e custo › Lançar no estoque. Os produtos ficam com o código de barras; a próxima remessa só soma o estoque. Peças compradas viram conta a pagar no fechamento.
+        - **Acerto da consignação:** abra a remessa › Acerto › "Devolver" já vem com o que sobrou › Fazer o acerto. O devolvido sai do estoque e o vendido vira conta a pagar à fornecedora.
+
+        ## Loja própria
+        - Loja própria › Pix (chave, nome e cidade), entregas e Publicar. O endereço é ecommerce.foxy.net.br/nome-da-loja. A cliente paga por Pix direto para a loja; confirme o pagamento no pedido.
+        - O rodapé tem o aviso de Privacidade (LGPD) da loja.
 
         ## Assinatura
         - Assinatura › escolha o plano › pagamento no Stripe. Assinando durante o teste grátis, a cobrança começa quando o teste acaba.
@@ -138,6 +173,18 @@ class CommerceHost
             ['name' => 'estoque_baixo', 'risk' => 'read', 'permission' => 'commerce.stock.view',
                 'description' => 'Variantes com estoque negativo, zerado ou no mínimo.',
                 'input_schema' => ['type' => 'object', 'properties' => ['limite' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 50]]]],
+            ['name' => 'contas_a_receber', 'risk' => 'read', 'permission' => 'commerce.finance.manage',
+                'description' => 'Quem está devendo: contas a receber em aberto (crediário/fiado e avulsas), vencidas primeiro, com cliente, telefone, valor, vencimento e dias de atraso; e o total vencido.',
+                'input_schema' => ['type' => 'object', 'properties' => ['so_vencidas' => ['type' => 'boolean'], 'limite' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 50]]]],
+            ['name' => 'contas_a_pagar', 'risk' => 'read', 'permission' => 'commerce.finance.manage',
+                'description' => 'Contas a pagar em aberto até uma data (padrão: 30 dias), vencidas primeiro, com fornecedor, categoria e valor.',
+                'input_schema' => ['type' => 'object', 'properties' => ['ate' => $date]]],
+            ['name' => 'remessas_em_aberto', 'risk' => 'read', 'permission' => 'commerce.catalog.manage',
+                'description' => 'Remessas de fornecedor ainda não acertadas (consignação): fornecedora, fechamento, peças que vieram, quanto ainda há em estoque e a estimativa do valor do vendido a pagar no acerto.',
+                'input_schema' => ['type' => 'object', 'properties' => (object) []]],
+            ['name' => 'cliente_buscar', 'risk' => 'read', 'permission' => 'commerce.orders.manage',
+                'description' => 'Ficha de uma cliente pelo nome ou telefone: contato, total comprado, últimos pedidos e o que deve em aberto.',
+                'input_schema' => ['type' => 'object', 'properties' => ['busca' => ['type' => 'string', 'maxLength' => 80]], 'required' => ['busca']]],
             ['name' => 'anuncios_com_erro', 'risk' => 'read', 'permission' => 'commerce.channels.manage',
                 'description' => 'Anúncios que o marketplace recusou e contas de marketplace que precisam de atenção, com a mensagem do canal.',
                 'input_schema' => ['type' => 'object', 'properties' => (object) []]],
@@ -161,6 +208,10 @@ class CommerceHost
             'pedido_buscar' => $this->findOrder((string) $input['numero']),
             'estoque_baixo' => $this->lowStock((int) ($input['limite'] ?? 20)),
             'anuncios_com_erro' => $this->listingProblems(),
+            'contas_a_receber' => $this->receivables((bool) ($input['so_vencidas'] ?? false), (int) ($input['limite'] ?? 20)),
+            'contas_a_pagar' => $this->payables($input['ate'] ?? null),
+            'remessas_em_aberto' => $this->openBatches(),
+            'cliente_buscar' => $this->findCustomer((string) $input['busca']),
         };
     }
 
@@ -221,6 +272,66 @@ class CommerceHost
                 ->map(fn (Listing $l) => ['titulo' => $l->title, 'canal' => $l->connection->label(), 'mensagem_do_canal' => $l->last_error])->all(),
             'contas' => ChannelConnection::where('status', 'needs_attention')->get()
                 ->map(fn ($c) => ['canal' => $c->label(), 'conta' => $c->name, 'mensagem' => $c->last_error])->all(),
+        ];
+    }
+
+    private function receivables(bool $overdueOnly, int $limit): array
+    {
+        $base = Receivable::with('customer')->open();
+        $rows = (clone $base)->when($overdueOnly, fn ($q) => $q->where('due_date', '<', today()->toDateString()))
+            ->orderBy('due_date')->limit(min(50, max(1, $limit)))->get();
+
+        return [
+            'total_vencido' => self::money((int) (clone $base)->where('due_date', '<', today()->toDateString())->sum('amount_cents')),
+            'total_em_aberto' => self::money((int) (clone $base)->sum('amount_cents')),
+            'contas' => $rows->map(fn ($r) => ['cliente' => $r->customer?->name, 'telefone' => $r->customer?->phone, 'descricao' => trim($r->description.' '.$r->installmentLabel()),
+                'valor' => self::money($r->amount_cents), 'vencimento' => $r->due_date->format('d/m/Y'), 'dias_de_atraso' => $r->daysLate(),
+                'lembretes_enviados' => count($r->reminders ?? [])])->all(),
+        ];
+    }
+
+    private function payables(?string $until): array
+    {
+        $until = $until ? Carbon::parse($until)->toDateString() : today()->addDays(30)->toDateString();
+        $rows = Payable::open()->where('due_date', '<=', $until)->orderBy('due_date')->limit(50)->get();
+
+        return [
+            'ate' => Carbon::parse($until)->format('d/m/Y'), 'total' => self::money((int) $rows->sum('amount_cents')),
+            'contas' => $rows->map(fn ($p) => ['descricao' => trim($p->description.' '.$p->installmentLabel()), 'fornecedor' => $p->supplier,
+                'categoria' => Payable::CATEGORIES[$p->category] ?? $p->category, 'valor' => self::money($p->amount_cents),
+                'vencimento' => $p->due_date->format('d/m/Y'), 'vencida' => $p->isOverdue()])->all(),
+        ];
+    }
+
+    private function openBatches(): array
+    {
+        return SupplyBatch::with('items.variant')->where('status', 'aberta')->orderBy('closing_on')->get()->map(function ($batch) {
+            $consigned = $batch->items->where('mode', 'consignado');
+            $available = app(StockService::class)->availability($consigned->pluck('variant')->filter());
+            $left = $consigned->sum(fn ($i) => max(0, min($i->quantity, $available[$i->variant_id] ?? 0)));
+            $owed = $consigned->sum(fn ($i) => ($i->quantity - max(0, min($i->quantity, $available[$i->variant_id] ?? 0))) * $i->cost_cents);
+
+            return ['remessa' => $batch->label(), 'fechamento' => $batch->closing_on?->format('d/m/Y'), 'pecas_consignadas' => $consigned->sum('quantity'),
+                'ainda_em_estoque' => $left, 'estimativa_a_pagar_no_acerto' => self::money($owed)];
+        })->all();
+    }
+
+    private function findCustomer(string $term): array
+    {
+        $like = '%'.str_replace(['%', '_'], ['\%', '\_'], trim($term)).'%';
+        $customer = Customer::where(fn ($q) => $q->whereLike('name', $like)->orWhereLike('phone', $like))->first();
+        if (! $customer) {
+            return ['encontrada' => false];
+        }
+        $orders = $customer->orders()->latest('placed_at')->limit(5)->get();
+        $open = Receivable::open()->where('customer_id', $customer->id)->orderBy('due_date')->get();
+
+        return [
+            'nome' => $customer->name, 'whatsapp' => $customer->phone, 'cidade' => $customer->city,
+            'total_comprado' => self::money((int) $customer->orders()->whereIn('status', Order::SOLD)->sum('total_cents')),
+            'ultimos_pedidos' => $orders->map(fn ($o) => '#'.$o->number.' em '.$o->placed_at->format('d/m/Y').' — '.self::money($o->total_cents).' ('.$o->statusLabel().')')->all(),
+            'deve_em_aberto' => self::money((int) $open->sum('amount_cents')),
+            'parcelas_em_aberto' => $open->map(fn ($r) => $r->due_date->format('d/m/Y').': '.self::money($r->amount_cents).($r->isOverdue() ? ' (vencida)' : ''))->all(),
         ];
     }
 

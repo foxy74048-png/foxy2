@@ -65,7 +65,7 @@
     <div class="wrap">
         <strong>{{ $store->name }}</strong>@if ($store->about) — {{ $store->about }}@endif
         @if ($store->whatsapp)<div>WhatsApp: {{ $store->whatsapp }}</div>@endif
-        <div style="margin-top:6px;">Loja feita com Foxy Commerce</div>
+        <div style="margin-top:6px;"><a href="{{ route('commerce.storefront.privacy', $store->slug) }}" style="color:inherit;">Privacidade</a> · Loja feita com Foxy Commerce</div>
     </div>
 </footer>
 </body>

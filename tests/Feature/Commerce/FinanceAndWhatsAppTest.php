@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Commerce;
 
+use App\Commerce\Assistant\CommerceHost;
 use App\Commerce\Catalog\CatalogService;
 use App\Commerce\Catalog\Category;
 use App\Commerce\Catalog\Variant;
@@ -15,6 +16,7 @@ use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
 use App\Commerce\Stores\OpenStore;
 use App\Commerce\Stores\Store;
+use App\Commerce\Supply\SupplyBatch;
 use App\Commerce\WhatsApp\StoreWhatsApp;
 use App\Models\User;
 use App\Platform\Context\ContextStore;
@@ -183,6 +185,40 @@ class FinanceAndWhatsAppTest extends TestCase
         Membership::create(['organization_id' => $this->store->organization_id, 'user_id' => $attendant->id, 'role' => 'attendant']);
         $this->actingAs($attendant)->postJson($this->url('/app/produtos/rapido'), ['name' => 'X', 'price' => '10'])->assertForbidden();
         $this->get($this->url('/app/pedidos/novo'))->assertOk()->assertDontSee('Produto que não está cadastrado');
+    }
+
+    public function test_painel_avisa_vencidas_e_raposa_sabe_quem_deve(): void
+    {
+        $this->inStore(function () {
+            $ana = Customer::create(['name' => 'Ana Souza', 'phone' => '11988887777']);
+            app(FinanceService::class)->installments(['customer_id' => $ana->id, 'description' => 'Fiado'], 15000, 1, Carbon::parse('2026-11-01'));
+            app(FinanceService::class)->payables(['description' => 'Aluguel', 'category' => 'aluguel', 'amount_cents' => 90000, 'due_date' => '2026-11-12']);
+            SupplyBatch::create(['supplier' => 'Miza', 'document_number' => '1945', 'status' => 'aberta', 'closing_on' => '2026-11-14']);
+        });
+
+        $this->get($this->url('/app'))->assertOk()->assertSee('Clientes com conta vencida')->assertSee('R$ 150,00')->assertSee('R$ 900,00')->assertSee('Acerto da consignação')->assertSee('Miza');
+
+        $host = app(CommerceHost::class);
+        $all = array_keys(CommerceHost::TOOLS);
+        $owing = $this->inStore(fn () => $host->run('contas_a_receber', ['so_vencidas' => true], $all));
+        $this->assertSame(['R$ 150,00', 'Ana Souza', 9], [$owing['total_vencido'], $owing['contas'][0]['cliente'], $owing['contas'][0]['dias_de_atraso']]);
+        $this->assertSame('R$ 900,00', $this->inStore(fn () => $host->run('contas_a_pagar', [], $all))['total']);
+        $this->assertSame('Miza nº 1945', $this->inStore(fn () => $host->run('remessas_em_aberto', [], $all))[0]['remessa']);
+        $this->assertSame('R$ 150,00', $this->inStore(fn () => $host->run('cliente_buscar', ['busca' => '8888'], $all))['deve_em_aberto']);
+
+        // Atendente: não recebe as consultas de dinheiro nem vê os avisos.
+        $attendant = User::factory()->create();
+        $membership = Membership::create(['organization_id' => $this->store->organization_id, 'user_id' => $attendant->id, 'role' => 'attendant']);
+        $this->assertNotContains('contas_a_receber', CommerceHost::toolsFor($membership));
+        $this->assertContains('cliente_buscar', CommerceHost::toolsFor($membership));
+        $this->actingAs($attendant)->get($this->url('/app'))->assertOk()->assertDontSee('Clientes com conta vencida');
+    }
+
+    public function test_loja_propria_tem_aviso_de_privacidade(): void
+    {
+        $this->store->update(['published_at' => now(), 'whatsapp' => '11999990000', 'delivery' => ['pickup' => true]]);
+        $this->get($this->url('/fran-lingerie'))->assertOk()->assertSee('Privacidade');
+        $this->get($this->url('/fran-lingerie/privacidade'))->assertOk()->assertSee('Como usamos os seus dados')->assertSee('LGPD')->assertSee('11999990000')->assertSee('Não vendemos');
     }
 
     public function test_atendente_nao_ve_o_financeiro(): void

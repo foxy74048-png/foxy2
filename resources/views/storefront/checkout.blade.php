@@ -24,7 +24,7 @@
             <div><label for="city">Cidade</label><input id="city" name="city" value="{{ old('city') }}" maxlength="80"></div>
             <div><label for="notes">Observação</label><textarea id="notes" name="notes" rows="2" maxlength="1000">{{ old('notes') }}</textarea></div>
             <button class="btn" type="submit">Fazer pedido e ver o Pix</button>
-            <p class="muted" style="margin:0;">O pagamento é por Pix direto para a loja. As peças ficam reservadas por 48 horas.</p>
+            <p class="muted" style="margin:0;">O pagamento é por Pix direto para a loja. As peças ficam reservadas por 48 horas. Usamos os seus dados só para este pedido e o contato sobre ele — <a href="{{ route('commerce.storefront.privacy', $store->slug) }}" target="_blank">veja como</a>.</p>
         </form>
 
         <div class="card">

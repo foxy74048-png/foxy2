@@ -5,10 +5,13 @@ namespace App\Commerce\Http;
 use App\Commerce\Access;
 use App\Commerce\Catalog\Category;
 use App\Commerce\Catalog\Money;
+use App\Commerce\Finance\Payable;
+use App\Commerce\Finance\Receivable;
 use App\Commerce\Insights\Export;
 use App\Commerce\Insights\FinanceReport;
 use App\Commerce\Inventory\StockLevel;
 use App\Commerce\Orders\Order;
+use App\Commerce\Supply\SupplyBatch;
 use App\Platform\Context\ExecutionContext;
 use App\Platform\Memberships\Membership;
 use Illuminate\Http\Request;
@@ -79,7 +82,24 @@ class DashboardController
             'awaiting' => Order::where('status', 'awaiting_payment')->count(),
             'withoutInvoice' => Order::sold()->where('placed_at', '>=', now()->subDays(29)->startOfDay())->whereDoesntHave('fiscalDocuments')->count(),
             'finance' => null,
+            'alerts' => null,
         ];
+
+        // Contas e acertos que pedem ação (dono e gerente).
+        if (Access::allows($request->attributes->get('commerce.membership'), 'commerce.finance.manage')) {
+            $today = today()->toDateString();
+            $week = today()->addDays(7)->toDateString();
+            $receivables = Receivable::open();
+            $payables = Payable::open();
+            $data['alerts'] = [
+                'overdue' => (int) (clone $receivables)->where('due_date', '<', $today)->sum('amount_cents'),
+                'overdue_count' => (clone $receivables)->where('due_date', '<', $today)->count(),
+                'receive_week' => (int) (clone $receivables)->whereBetween('due_date', [$today, $week])->sum('amount_cents'),
+                'pay_week' => (int) (clone $payables)->where('due_date', '<=', $week)->sum('amount_cents'),
+                'pay_overdue' => (clone $payables)->where('due_date', '<', $today)->count(),
+                'settlements' => SupplyBatch::where('status', 'aberta')->whereNotNull('closing_on')->where('closing_on', '<=', $week)->orderBy('closing_on')->get(),
+            ];
+        }
 
         if (Access::allows($request->attributes->get('commerce.membership'), 'commerce.reports.view')) {
             $report = new FinanceReport($filters);

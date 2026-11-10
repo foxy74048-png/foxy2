@@ -29,6 +29,12 @@ class StorefrontController
 {
     public function __construct(private Cart $cart, private StockService $stock) {}
 
+    /** Aviso de privacidade (LGPD) da loja: o que coleta, para quê e como pedir correção ou exclusão. */
+    public function privacy(Request $request): View
+    {
+        return view('storefront.privacy');
+    }
+
     public function home(Request $request): View
     {
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:80'], 'categoria' => ['nullable', 'string', 'max:30']]);

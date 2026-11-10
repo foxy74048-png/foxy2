@@ -3,14 +3,17 @@
 namespace App\Commerce\Http;
 
 use App\Commerce\Access;
+use App\Commerce\Billing\Plans;
 use App\Commerce\Catalog\Category;
 use App\Commerce\Catalog\Money;
+use App\Commerce\Catalog\Product;
 use App\Commerce\Insights\Export;
 use App\Commerce\Inventory\StockService;
 use App\Commerce\Supply\ReceiptParser;
 use App\Commerce\Supply\SupplyBatch;
 use App\Commerce\Supply\SupplyItem;
 use App\Commerce\Supply\SupplyService;
+use App\Platform\Context\ExecutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -130,6 +133,12 @@ class SupplyController
                 'product_id' => $draft[$g]['product_id'] ?? null, 'lines' => $lines];
         }
 
+        // Limite de produtos do plano vale também para a importação.
+        $limit = Plans::limit(ExecutionContext::current()->organization, 'products');
+        $new = collect($groups)->filter(fn ($g) => ! $g['skip'] && ! $g['product_id'])->count();
+        if ($limit !== null && Product::where('status', '!=', 'archived')->count() + $new > $limit) {
+            throw ValidationException::withMessages(['groups' => "Esta remessa criaria {$new} produto(s) novo(s) e o seu plano permite até {$limit}. Marque \"Não lançar\" em alguns ou mude de plano em Assinatura."]);
+        }
         $batch->update(['supplier' => $data['supplier'], 'document_number' => $data['document_number'] ?? null, 'closing_on' => $data['closing_on'] ?? null]);
         $this->supply->confirm($batch, $groups);
 

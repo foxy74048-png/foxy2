@@ -160,6 +160,19 @@ class SupplyTest extends TestCase
         $this->post($this->url("/app/remessas/{$batch->id}/acerto"), ['returns' => []])->assertSessionHasErrors('status');
     }
 
+    public function test_importacao_respeita_o_limite_de_produtos_do_plano(): void
+    {
+        config(['commerce.trial_limits.products' => 1]);
+        $this->post($this->url('/app/remessas'), ['file' => $this->receiptPdf(), 'basis' => 'venda', 'percent' => 30]);
+        $batch = $this->inStore(fn () => SupplyBatch::sole());
+        $this->post($this->url("/app/remessas/{$batch->id}/lancar"), ['supplier' => 'Miza', 'groups' => [
+            ['name' => 'Calcinha', 'mode' => 'consignado', 'sale' => '26,90', 'cost' => '20,00', 'lines' => [['quantity' => 1], ['quantity' => 1], ['quantity' => 2]]],
+            ['name' => 'Sutiã', 'mode' => 'consignado', 'sale' => '59,90', 'cost' => '40,00', 'lines' => [['quantity' => 2]]],
+        ]])->assertSessionHasErrors('groups');
+        $this->assertSame(0, $this->inStore(fn () => Product::count()));
+        $this->assertSame('rascunho', $batch->fresh()->status);
+    }
+
     public function test_comprovante_sem_itens_e_atendente(): void
     {
         $this->post($this->url('/app/remessas'), ['text' => 'texto qualquer', 'basis' => 'venda', 'percent' => 30])->assertSessionHasErrors('file');
