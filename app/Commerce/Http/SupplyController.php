@@ -9,7 +9,9 @@ use App\Commerce\Catalog\Money;
 use App\Commerce\Catalog\Product;
 use App\Commerce\Insights\Export;
 use App\Commerce\Inventory\StockService;
+use App\Commerce\Supply\NfeParser;
 use App\Commerce\Supply\ReceiptParser;
+use App\Commerce\Supply\SupplierMemory;
 use App\Commerce\Supply\SupplyBatch;
 use App\Commerce\Supply\SupplyItem;
 use App\Commerce\Supply\SupplyService;
@@ -47,28 +49,31 @@ class SupplyController
     {
         $this->guard($request);
         $data = $request->validate([
-            'file' => ['nullable', 'file', 'mimes:pdf,txt', 'max:10240'],
+            'file' => ['nullable', 'file', 'extensions:pdf,txt,xml', 'max:10240'],
             'text' => ['nullable', 'string', 'max:500000'],
-            'basis' => ['required', Rule::in(['venda', 'custo'])],
-            'percent' => ['required', 'numeric', 'min:0', 'max:500'],
-        ], [], ['file' => 'comprovante', 'basis' => 'preço do comprovante', 'percent' => 'percentual']);
+            'basis' => ['nullable', Rule::in(['auto', 'venda', 'custo'])],
+            'percent' => ['nullable', 'numeric', 'min:0', 'max:500'],
+        ], [], ['file' => 'comprovante ou nota', 'basis' => 'preço do documento', 'percent' => 'percentual']);
 
-        $text = $request->hasFile('file')
-            ? ($request->file('file')->getClientOriginalExtension() === 'txt' ? $request->file('file')->get() : rescue(fn () => ReceiptParser::textFromPdf($request->file('file')->getRealPath()), '', report: false))
+        $file = $request->file('file');
+        $text = $file
+            ? (in_array(strtolower($file->getClientOriginalExtension()), ['txt', 'xml'], true) ? (string) $file->get() : rescue(fn () => ReceiptParser::textFromPdf($file->getRealPath()), '', report: false))
             : (string) ($data['text'] ?? '');
         if (trim($text) === '') {
-            throw ValidationException::withMessages(['file' => 'Envie o PDF do comprovante ou cole o texto dele.']);
+            throw ValidationException::withMessages(['file' => 'Envie o PDF do comprovante, o XML da nota fiscal ou cole o texto do comprovante.']);
         }
 
-        $batch = $this->supply->draft(ReceiptParser::parse($text), $data['basis'], (float) $data['percent']);
+        $parsed = NfeParser::looksLike($text) ? NfeParser::parse($text) : ReceiptParser::parse($text);
+        $basis = in_array($data['basis'] ?? null, ['venda', 'custo'], true) ? $data['basis'] : null;
+        $batch = $this->supply->draft($parsed, $basis, isset($data['percent']) ? (float) $data['percent'] : null);
 
-        return redirect()->route('commerce.supply.show', $batch)->with('status', 'Comprovante lido. Confira os produtos e clique em "Lançar no estoque".');
+        return redirect()->route('commerce.supply.show', $batch)->with('status', ($parsed['source'] === 'nfe' ? 'Nota fiscal lida.' : 'Comprovante lido.').' Confira os produtos e clique em "Lançar no estoque".');
     }
 
     public function show(Request $request, SupplyBatch $batch): View|Response
     {
         $this->guard($request);
-        $batch->load('items.variant.product');
+        $batch->load('items.variant.product', 'supplierRecord');
         if ($format = Export::requested($request)) {
             return (new Export('Remessa '.$batch->label()))
                 ->filters(['Recebida em' => $batch->received_on?->format('d/m/Y'), 'Fechamento' => $batch->closing_on?->format('d/m/Y'), 'Situação' => SupplyBatch::STATUSES[$batch->status]])
@@ -85,6 +90,7 @@ class SupplyController
             'batch' => $batch,
             'categories' => Category::with('parent')->orderBy('name')->get(),
             'onHand' => $onHand,
+            'knownSupplier' => $batch->supplierRecord && $batch->status === 'rascunho' && app(SupplierMemory::class)->known($batch->supplierRecord),
         ]);
     }
 

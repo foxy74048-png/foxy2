@@ -21,26 +21,36 @@ use Illuminate\Validation\ValidationException;
  */
 class SupplyService
 {
-    public function __construct(private GridMatcher $grid, private StockService $stock, private FinanceService $finance) {}
+    public function __construct(private GridMatcher $grid, private StockService $stock, private FinanceService $finance, private SupplierMemory $memory) {}
 
-    /** Rascunho para conferir: grupos com preço de venda e custo sugeridos. */
-    public function draft(array $parsed, string $basis = 'venda', float $percent = 30): SupplyBatch
+    /**
+     * Rascunho para conferir: grupos com preço de venda e custo sugeridos. A fornecedora é reconhecida pelo
+     * CNPJ/nome e as peças já conferidas antes voltam no produto, cor e tamanho de antes. Sem $basis/$percent,
+     * vale o jeito da última remessa desta fornecedora.
+     */
+    public function draft(array $parsed, ?string $basis = null, ?float $percent = null): SupplyBatch
     {
         if ($parsed['items'] === []) {
-            throw ValidationException::withMessages(['file' => 'Não encontramos itens neste comprovante. Confira se é o PDF da remessa ou cole o texto dele.']);
+            throw ValidationException::withMessages(['file' => 'Não encontramos itens neste documento. Confira se é o PDF do comprovante, o XML da nota fiscal ou cole o texto do comprovante.']);
         }
 
-        $groups = array_map(function (array $group) use ($basis, $percent) {
+        $supplier = $this->memory->supplier($parsed);
+        $percent ??= $basis === null || $basis === $supplier->price_basis ? $supplier->percent : ($basis === 'custo' ? 100.0 : 30.0);
+        $basis ??= $supplier->price_basis;
+        $mode = ($parsed['source'] ?? null) === 'nfe' ? (empty($parsed['consigned']) ? 'compra' : 'consignado') : $supplier->mode;
+
+        $groups = array_map(function (array $group) use ($basis, $percent, $mode) {
             $doc = (int) round(collect($group['lines'])->avg('price_cents'));
             [$sale, $cost] = self::prices($doc, $basis, $percent);
-            $match = $this->existing($group);
+            $match = ! empty($group['product_id']) ? Product::with('variants')->find($group['product_id']) : $this->existing($group);
 
-            return $group + ['mode' => 'consignado', 'category_id' => $match?->category_id, 'sale_cents' => $match ? (int) $match->variants->min('price_cents') : $sale,
-                'cost_cents' => $cost, 'doc_price_cents' => $doc, 'product_id' => $match?->id, 'product_name' => $match?->name];
-        }, ReceiptParser::group($parsed['items']));
+            return ['mode' => $mode, 'category_id' => $match?->category_id, 'sale_cents' => $match ? (int) $match->variants->min('price_cents') : $sale,
+                'cost_cents' => $cost, 'doc_price_cents' => $doc, 'product_id' => $match?->id, 'product_name' => $match?->name] + $group;
+        }, $this->memory->recall($supplier, ReceiptParser::group($parsed['items'])));
 
         $batch = SupplyBatch::create([
-            'supplier' => Str::limit($parsed['supplier'] ?: 'Fornecedor', 120, ''),
+            'supplier' => Str::limit($supplier->name, 120, ''), 'supplier_id' => $supplier->id, 'source' => $parsed['source'] ?? 'comprovante',
+            'installments' => ($parsed['installments'] ?? []) ?: null,
             'document_number' => $parsed['number'], 'received_on' => $parsed['date'] ?? today()->toDateString(), 'closing_on' => $parsed['closing'],
             'price_basis' => $basis, 'percent' => $percent,
             'total_cents' => (int) collect($parsed['items'])->sum(fn ($i) => $i['price_cents'] * $i['quantity']),
@@ -80,6 +90,7 @@ class SupplyService
         return DB::transaction(function () use ($batch, $groups) {
             $reason = 'Remessa '.$batch->label();
             $purchase = 0;
+            $supplier = $batch->supplier_id ? Supplier::find($batch->supplier_id) : null;
             foreach ($groups as $group) {
                 if (! empty($group['skip'])) {
                     continue;
@@ -89,6 +100,9 @@ class SupplyService
                     $variant = $this->variantFor($product, $line, $group);
                     $variant->update(['gtin' => $line['barcode'] ?: $variant->gtin, 'cost_cents' => $group['cost_cents'], 'status' => 'active']);
                     $this->stock->receive($variant, (int) $line['quantity'], $reason);
+                    if ($supplier) {
+                        $this->memory->remember($supplier, $line, $variant);
+                    }
                     SupplyItem::create([
                         'batch_id' => $batch->id, 'variant_id' => $variant->id, 'description' => Str::limit($line['description'], 200, ''),
                         'barcode' => $line['barcode'] ?: null, 'mode' => $group['mode'], 'quantity' => (int) $line['quantity'],
@@ -101,8 +115,12 @@ class SupplyService
             }
 
             if ($purchase > 0) {
-                $this->finance->payables(['description' => $reason.' (peças compradas)', 'supplier' => $batch->supplier, 'category' => 'fornecedor',
-                    'amount_cents' => $purchase, 'due_date' => ($batch->closing_on ?? today())->toDateString()]);
+                $this->purchasePayables($batch, $reason, $purchase);
+            }
+            if ($supplier) {
+                $modes = collect($groups)->reject(fn ($g) => ! empty($g['skip']))->countBy('mode');
+                $supplier->update(['name' => $batch->supplier, 'price_basis' => $batch->price_basis, 'percent' => $batch->percent]
+                    + ($modes->isNotEmpty() && $batch->source !== 'nfe' ? ['mode' => $modes->sortDesc()->keys()->first()] : []));
             }
             $batch->update(['status' => 'aberta', 'groups' => null]);
             Audit::record('commerce.supply.confirmed', subject: $batch, metadata: ['purchase' => $purchase]);
@@ -142,6 +160,29 @@ class SupplyService
 
             return $owed;
         });
+    }
+
+    /**
+     * Conta a pagar das peças compradas: nas parcelas da nota (duplicatas), proporcional ao valor de cada
+     * uma, ou numa conta só no fechamento.
+     */
+    private function purchasePayables(SupplyBatch $batch, string $reason, int $purchase): void
+    {
+        $dues = $batch->installments ?? [];
+        $total = array_sum(array_column($dues, 'cents'));
+        if (count($dues) < 2 || $total <= 0) {
+            $this->finance->payables(['description' => $reason.' (peças compradas)', 'supplier' => $batch->supplier, 'category' => 'fornecedor',
+                'amount_cents' => $purchase, 'due_date' => ($dues[0]['due'] ?? $batch->closing_on?->toDateString()) ?? today()->toDateString()]);
+
+            return;
+        }
+        $left = $purchase;
+        foreach ($dues as $i => $due) {
+            $amount = $i === count($dues) - 1 ? $left : (int) round($purchase * $due['cents'] / $total);
+            $left -= $amount;
+            $this->finance->payables(['description' => $reason.' (peças compradas), parcela '.($i + 1).'/'.count($dues), 'supplier' => $batch->supplier,
+                'category' => 'fornecedor', 'amount_cents' => $amount, 'due_date' => $due['due']]);
+        }
     }
 
     private function existing(array $group): ?Product

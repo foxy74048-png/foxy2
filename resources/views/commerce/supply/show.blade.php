@@ -9,7 +9,11 @@
     @if ($batch->status === 'rascunho')
         @php($groups = $batch->groups ?? [])
         @php($pieces = collect($groups)->sum(fn ($g) => collect($g['lines'])->sum('quantity')))
-        <div class="alert info" style="margin-bottom:16px;">Lemos <b>{{ $pieces }} peças</b> em <b>{{ count($groups) }} produto(s)</b>{{ $batch->total_cents ? ', total de '.$money($batch->total_cents) : '' }}. Confira nomes, cores, tamanhos e preços. Nada entra no estoque até você clicar em <b>Lançar no estoque</b>.</div>
+        @php($recognized = collect($groups)->sum(fn ($g) => collect($g['lines'])->where('known', true)->sum('quantity')))
+        <div class="alert info" style="margin-bottom:16px;">Lemos <b>{{ $pieces }} peças</b> em <b>{{ count($groups) }} produto(s)</b>{{ $batch->source === 'nfe' ? ' da nota fiscal' : '' }}{{ $batch->total_cents ? ', total de '.$money($batch->total_cents) : '' }}. Confira nomes, cores, tamanhos e preços. Nada entra no estoque até você clicar em <b>Lançar no estoque</b>.
+            @if ($knownSupplier)<br>✔ Fornecedora já conhecida{{ $batch->supplierRecord->document ? ' (CNPJ '.$batch->supplierRecord->documentLabel().')' : '' }}: <b>{{ $recognized }} de {{ $pieces }} peças</b> reconhecidas das remessas anteriores, já no produto, cor e tamanho que você conferiu.@endif
+            @if (count($batch->installments ?? []) > 1)<br>A nota tem {{ count($batch->installments) }} parcelas: as peças compradas viram contas a pagar nessas datas.@endif
+        </div>
 
         <form method="POST" action="{{ route('commerce.supply.confirm', $batch) }}" class="stack">
             @csrf
@@ -48,7 +52,7 @@
                         <tbody>
                             @foreach ($group['lines'] as $l => $line)
                                 <tr>
-                                    <td class="helper">{{ $line['description'] }}</td>
+                                    <td class="helper">{{ $line['description'] }}@if (! empty($line['known']))<div><span class="badge success">reconhecida</span></div>@endif</td>
                                     <td><input name="groups[{{ $g }}][lines][{{ $l }}][color]" value="{{ old("groups.$g.lines.$l.color", $line['color']) }}" maxlength="40" aria-label="Cor"></td>
                                     <td><input name="groups[{{ $g }}][lines][{{ $l }}][size]" value="{{ old("groups.$g.lines.$l.size", $line['size']) }}" maxlength="20" aria-label="Tamanho"></td>
                                     <td class="helper">{{ $line['barcode'] }}</td>

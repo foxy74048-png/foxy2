@@ -17,13 +17,16 @@ class ReceiptParser
 {
     private const MONEY = '\d{1,3}(?:\.\d{3})*,\d{2}';
 
+    /** Tamanhos de etiqueta: letras (PP a EGG, G1-G4, U), numeração (36-60) e sutiã (40B, 44C). */
+    private const SIZES = 'PP|P|M|G|GG|XG|XGG|XXG|EG|EGG|EXG|G[1-4]|U|UN|UNICO|ÚNICO|TU|\d{2}(?:[A-F]{1,2})?';
+
     public static function textFromPdf(string $path): string
     {
         return (new Parser)->parseFile($path)->getText();
     }
 
     /**
-     * @return array{supplier: ?string, number: ?string, date: ?string, closing: ?string, total_cents: ?int, items: array<int, array>}
+     * @return array{source: string, supplier: ?string, document: ?string, number: ?string, date: ?string, closing: ?string, total_cents: ?int, items: array<int, array>}
      */
     public static function parse(string $text): array
     {
@@ -59,6 +62,8 @@ class ReceiptParser
         $supplier = preg_match('/Empresa\s*:\s*(?:\([A-Z]\)\s*)?(.+?)(?:\s+(?:LTDA|EIRELI|ME|S\/?A)\b|\s*\(|\s+CPF|\s+Num\.)/iu', $flat, $s) ? Str::title(Str::squish($s[1])) : null;
 
         return [
+            'source' => 'comprovante',
+            'document' => preg_match('/CNPJ\s*:?\s*(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})/u', $flat, $c) ? preg_replace('/\D/', '', $c[1]) : null,
             'supplier' => $supplier ?? (collect($items)->pluck('brand')->filter()->first() ? Str::title(collect($items)->pluck('brand')->filter()->first()) : null),
             'number' => preg_match('/Num\.?\s*(?:venda|pedido|documento)?\s*:?\s*(\d{1,10})/iu', $flat, $n) ? $n[1] : null,
             'date' => $date('Data'),
@@ -79,8 +84,10 @@ class ReceiptParser
         foreach ($items as $item) {
             [$left, $size] = str_contains($item['description'], '|')
                 ? array_map('trim', [Str::beforeLast($item['description'], '|'), Str::afterLast($item['description'], '|')])
-                : [$item['description'], ''];
-            $key = $item['ref'] ?? Str::upper(implode(' ', array_slice(explode(' ', $left), 0, 3)));
+                : self::splitSize($item['description']);
+            // Sem referência: as primeiras palavras do nome, deixando de fora a última (quase sempre a cor).
+            $words = explode(' ', Str::squish($left));
+            $key = $item['ref'] ?? Str::upper(implode(' ', array_slice($words, 0, max(2, min(3, count($words) - 1)))));
             $groups[$key]['ref'] = $item['ref'];
             $groups[$key]['lines'][] = $item + ['left' => $left, 'size' => $size];
         }
@@ -105,12 +112,31 @@ class ReceiptParser
                 'name' => Str::ucfirst(Str::lower($name)),
                 'ref' => $group['ref'],
                 'lines' => array_map(fn ($l) => [
-                    'description' => $l['description'], 'barcode' => $l['barcode'], 'price_cents' => $l['price_cents'], 'quantity' => $l['quantity'],
+                    'description' => $l['description'], 'barcode' => $l['barcode'], 'code' => $l['code'] ?? null, 'price_cents' => $l['price_cents'], 'quantity' => $l['quantity'],
                     'color' => $distinct ? Str::title(Str::lower(trim(Str::after(Str::upper($l['left']), Str::upper($name))))) : '',
                     'size' => Str::upper($l['size']),
                 ], $group['lines']),
             ];
         }, $groups));
+    }
+
+    /**
+     * Tamanho quando a descrição não tem "|": "... TAM M ...", "... TAMANHO: 44" ou a última palavra ("... PRETO M",
+     * "... PRETO-GG", "... /42").
+     *
+     * @return array{0: string, 1: string}
+     */
+    public static function splitSize(string $description): array
+    {
+        $description = Str::squish($description);
+        if (preg_match('/^(.*?)[\s\-\/]*\bTAM(?:ANHO)?\.?\s*:?\s*('.self::SIZES.')\b(.*)$/iu', $description, $m)) {
+            return [Str::squish($m[1].' '.$m[3]), Str::upper($m[2])];
+        }
+        if (preg_match('/^(.+?)[\s\-\/]+('.self::SIZES.')$/iu', $description, $m)) {
+            return [trim($m[1], ' -/'), Str::upper($m[2])];
+        }
+
+        return [$description, ''];
     }
 
     private static function cents(string $value): int

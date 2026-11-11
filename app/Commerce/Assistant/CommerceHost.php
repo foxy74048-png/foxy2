@@ -133,8 +133,9 @@ class CommerceHost
         - **Lembretes automáticos:** WhatsApp › ligue e escolha dias antes, no dia e dias depois de vencer. Saem das 9h às 19h, uma vez por etapa. Os textos se editam ali ({cliente}, {valor}, {vencimento}, {pix}...).
 
         ## Remessas de fornecedor e consignação
-        - **Importar:** Estoque › Remessas de fornecedor › envie o PDF do comprovante (ou cole o texto) e diga se o preço é o de venda (com a sua comissão) ou o custo (com a sua margem).
-        - **Conferir e lançar:** por produto, consignado ou comprado, categoria, preço e custo › Lançar no estoque. Os produtos ficam com o código de barras; a próxima remessa só soma o estoque. Peças compradas viram conta a pagar no fechamento.
+        - **Importar:** Estoque › Remessas de fornecedor › envie o PDF do comprovante, o **XML da nota fiscal** (vale para qualquer fornecedora; peça o XML a ela) ou cole o texto do comprovante. Diga se o preço é o de venda (com a sua comissão) ou o custo (com a sua margem) — ou deixe "Como na última remessa desta fornecedora".
+        - **Conferir e lançar:** por produto, consignado ou comprado, categoria, preço e custo › Lançar no estoque. Peças compradas viram conta a pagar no fechamento (nota com parcelas: uma conta por parcela, nas datas da nota).
+        - **O sistema aprende:** a fornecedora é reconhecida pelo CNPJ (ou pelo nome) e cada peça pelo código de barras, pelo código do fornecedor ou pela descrição. Na próxima remessa, as peças já vêm no produto, cor e tamanho que você conferiu (marcadas "reconhecida"), inclusive o que você corrigiu; só as novas pedem atenção.
         - **Acerto da consignação:** abra a remessa › Acerto › "Devolver" já vem com o que sobrou › Fazer o acerto. O devolvido sai do estoque e o vendido vira conta a pagar à fornecedora.
 
         ## Importar planilhas e fotos (trazer o que a loja já tem)
