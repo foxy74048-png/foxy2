@@ -1,6 +1,6 @@
 <x-core::layout title="Financeiro" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:actions>@include('commerce.export.buttons')</x-slot:actions>
+    <x-slot:actions>@include('commerce.export.buttons')@if ($tab !== 'fluxo')@include('commerce._add', ['label' => $tab === 'receber' ? 'Nova conta a receber' : 'Nova conta a pagar', 'target' => 'nova-conta'])@else @include('commerce._add', ['label' => 'Nova conta a receber', 'href' => route('commerce.finance', ['aba' => 'receber']).'#nova-conta']) @include('commerce._add', ['label' => 'Nova conta a pagar', 'href' => route('commerce.finance', ['aba' => 'pagar']).'#nova-conta'])@endif</x-slot:actions>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
     @php($methods = \App\Commerce\Http\FinanceController::METHODS)
 
@@ -50,7 +50,7 @@
         </div>
 
         {{-- Lançar --}}
-        <details class="card" style="margin-top:16px;" @if ($errors->any()) open @endif>
+        <details class="card" id="nova-conta" style="margin-top:16px;" @if ($errors->any() || $summary['open_count'] === 0) open @endif>
             <summary style="cursor:pointer;font-weight:600;">{{ $receivable ? '+ Nova conta a receber' : '+ Nova conta a pagar' }}</summary>
             @if ($receivable)
                 <form method="POST" action="{{ route('commerce.finance.receivables.store') }}" class="form-grid" style="margin-top:12px;align-items:end;">

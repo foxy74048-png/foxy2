@@ -1,6 +1,6 @@
 <x-core::layout title="Anúncios" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:actions>@include('commerce.export.buttons') @if ($connections->isNotEmpty())<a class="button" href="{{ route('commerce.listings.create') }}">Novo anúncio</a>@endif</x-slot:actions>
+    <x-slot:actions>@include('commerce.export.buttons') @if ($connections->isNotEmpty())@include('commerce._add', ['label' => 'Novo anúncio', 'href' => route('commerce.listings.create')])@endif</x-slot:actions>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
 
     @include('commerce.status')

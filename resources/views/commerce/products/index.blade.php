@@ -4,8 +4,8 @@
     <x-slot:actions>
         @include('commerce.export.buttons')
         @if ($canManage)
-            <a class="button secondary" href="{{ route('commerce.products.create', ['tipo' => 'kit']) }}">Novo kit</a>
-            <a class="button" href="{{ route('commerce.products.create') }}">Novo produto</a>
+            <a class="button secondary" href="{{ route('commerce.products.create', ['tipo' => 'kit']) }}">+ Novo kit</a>
+            @include('commerce._add', ['label' => 'Novo produto', 'href' => route('commerce.products.create')])
         @endif
     </x-slot:actions>
 

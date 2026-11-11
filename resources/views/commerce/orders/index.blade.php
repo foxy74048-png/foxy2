@@ -3,7 +3,7 @@
     <x-slot:head>@include('commerce.charts.assets')</x-slot:head>
     <x-slot:actions>
         @include('commerce.export.buttons')
-        <a class="button" href="{{ route('commerce.orders.create') }}">Novo pedido</a>
+        @include('commerce._add', ['label' => 'Novo pedido', 'href' => route('commerce.orders.create')])
     </x-slot:actions>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
 

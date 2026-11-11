@@ -1,11 +1,11 @@
 <x-core::layout title="Equipe" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:actions>@include('commerce.export.buttons')</x-slot:actions>
+    <x-slot:actions>@include('commerce.export.buttons')@if ($canManage)@include('commerce._add', ['label' => 'Convidar pessoa', 'target' => 'convidar'])@endif</x-slot:actions>
 
     @include('commerce.status')
 
     @if ($canManage)
-        <form class="card form-grid" method="POST" action="{{ route('commerce.team.invite') }}" style="align-items:end;">
+        <form class="card form-grid" id="convidar" method="POST" action="{{ route('commerce.team.invite') }}" style="align-items:end;">
             @csrf
             <div style="grid-column: 1 / -1;">
                 <h3 style="margin:0;">Convidar alguém</h3>

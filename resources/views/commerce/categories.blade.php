@@ -1,13 +1,13 @@
 <x-core::layout title="Categorias" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:actions>@include('commerce.export.buttons')</x-slot:actions>
+    <x-slot:actions>@include('commerce.export.buttons')@if (\App\Commerce\Access::allows($currentMembership, 'commerce.catalog.manage'))@include('commerce._add', ['label' => 'Nova categoria', 'target' => 'nova-categoria'])@endif</x-slot:actions>
 
     @include('commerce.status')
     @php($canManage = \App\Commerce\Access::allows($currentMembership, 'commerce.catalog.manage'))
     @php($roots = $categories->whereNull('parent_id'))
 
     @if ($canManage)
-        <form class="card form-grid" method="POST" action="{{ route('commerce.categories.store') }}" style="align-items:end;">
+        <form class="card form-grid" id="nova-categoria" method="POST" action="{{ route('commerce.categories.store') }}" style="align-items:end;">
             @csrf
             <div style="grid-column: 1 / -1;"><h3 style="margin:0;">Nova categoria</h3></div>
             <div>

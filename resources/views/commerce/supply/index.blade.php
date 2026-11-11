@@ -1,12 +1,12 @@
 <x-core::layout title="Estoque" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:actions>@include('commerce.export.buttons')</x-slot:actions>
+    <x-slot:actions>@include('commerce.export.buttons')@include('commerce._add', ['label' => 'Importar comprovante', 'target' => 'importar'])</x-slot:actions>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
 
     @include('commerce.status')
     @include('commerce.stock._tabs', ['tab' => 'remessas'])
 
-    <form class="card stack" method="POST" action="{{ route('commerce.supply.import') }}" enctype="multipart/form-data">
+    <form class="card stack" id="importar" method="POST" action="{{ route('commerce.supply.import') }}" enctype="multipart/form-data">
         @csrf
         <h3 style="margin:0;">Importar comprovante de remessa</h3>
         <p class="helper" style="margin:0;">Chegou mercadoria de fornecedora (consignação ou compra)? Envie o PDF do comprovante — ou abra o PDF, selecione tudo, copie e cole o texto abaixo. O sistema lê as peças, agrupa por produto (cor e tamanho) e mostra uma prévia para você conferir antes de lançar.</p>

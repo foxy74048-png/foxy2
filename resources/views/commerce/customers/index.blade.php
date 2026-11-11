@@ -1,11 +1,11 @@
 <x-core::layout title="Clientes" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:actions>@include('commerce.export.buttons')<a class="button" href="#nova-cliente" onclick="document.getElementById('nova-cliente').open = true">Nova cliente</a></x-slot:actions>
+    <x-slot:actions>@include('commerce.export.buttons')@include('commerce._add', ['label' => 'Nova cliente', 'target' => 'nova-cliente'])</x-slot:actions>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
 
     @include('commerce.status')
 
-    <details class="card" id="nova-cliente" style="margin-bottom:16px;" @if ($errors->any()) open @endif>
+    <details class="card" id="nova-cliente" style="margin-bottom:16px;" @if ($errors->any() || ($customers->isEmpty() && empty($filters['busca']))) open @endif>
         <summary style="cursor:pointer;font-weight:600;">Cadastrar cliente</summary>
         <form method="POST" action="{{ route('commerce.customers.store') }}" class="form-grid" style="margin-top:12px;align-items:end;">
             @csrf

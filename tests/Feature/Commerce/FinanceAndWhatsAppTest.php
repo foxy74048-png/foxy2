@@ -289,4 +289,23 @@ class FinanceAndWhatsAppTest extends TestCase
         $this->artisan('commerce:lembretes')->assertSuccessful();
         $this->assertSame(3, $this->inStore(fn () => WhatsAppMessage::count()));
     }
+
+    public function test_toda_tela_tem_o_botao_de_adicionar_no_topo(): void
+    {
+        // Painel: atalhos para lançar tudo.
+        $this->get($this->url('/app'))->assertOk()
+            ->assertSee('+ Novo pedido')->assertSee('+ Novo produto')->assertSee('+ Nova cliente')
+            ->assertSee('+ Conta a receber')->assertSee('+ Conta a pagar')->assertSee('+ Entrada de estoque')->assertSee('+ Remessa da fornecedora');
+
+        // Financeiro sem nada lançado: botão no topo e formulário já aberto.
+        $this->get($this->url('/app/financeiro'))->assertOk()
+            ->assertSee('+ Nova conta a receber')->assertSee('data-add-target="nova-conta"', false);
+        $this->assertMatchesRegularExpression('/id="nova-conta"[^>]*\sopen[\s>]/', $this->get($this->url('/app/financeiro'))->getContent());
+        $this->get($this->url('/app/financeiro?aba=pagar'))->assertOk()->assertSee('+ Nova conta a pagar');
+
+        foreach (['/app/produtos' => '+ Novo produto', '/app/pedidos' => '+ Novo pedido', '/app/clientes' => '+ Nova cliente', '/app/categorias' => '+ Nova categoria',
+            '/app/estoque' => '+ Entrada de mercadoria', '/app/remessas' => '+ Importar comprovante', '/app/equipe' => '+ Convidar pessoa'] as $path => $label) {
+            $this->get($this->url($path))->assertOk()->assertSee($label);
+        }
+    }
 }

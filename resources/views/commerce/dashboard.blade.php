@@ -7,6 +7,25 @@
 
     @include('commerce.status')
 
+    {{-- Atalhos: o que dá para lançar, cada um conforme a permissão --}}
+    @php($shortcuts = array_filter([
+        'Novo pedido' => $can('commerce.orders.manage') ? route('commerce.orders.create') : null,
+        'Novo produto' => $can('commerce.catalog.manage') ? route('commerce.products.create') : null,
+        'Nova cliente' => $can('commerce.orders.manage') ? route('commerce.customers').'#nova-cliente' : null,
+        'Conta a receber' => $can('commerce.finance.manage') ? route('commerce.finance', ['aba' => 'receber']).'#nova-conta' : null,
+        'Conta a pagar' => $can('commerce.finance.manage') ? route('commerce.finance', ['aba' => 'pagar']).'#nova-conta' : null,
+        'Entrada de estoque' => $can('commerce.stock.adjust') ? route('commerce.stock', ['aba' => 'entrada']) : null,
+        'Remessa da fornecedora' => $can('commerce.catalog.manage') ? route('commerce.supply') : null,
+    ]))
+    @if ($shortcuts)
+        <div class="card" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <strong style="margin-right:4px;">Lançar:</strong>
+            @foreach ($shortcuts as $label => $url)
+                <a @class(['button', 'secondary' => ! $loop->first]) href="{{ $url }}">+ {{ $label }}</a>
+            @endforeach
+        </div>
+    @endif
+
     {{-- Dinheiro que pede ação: atrasos, vencimentos da semana e acertos de consignação --}}
     @if ($alerts)
         @php($fmt = fn ($c) => \App\Commerce\Catalog\Money::format($c))

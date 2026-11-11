@@ -67,3 +67,21 @@
         </script>
     @endif
 @endif
+{{-- Botões "+ ..." (commerce._add) e links com #id: abrem o formulário da página, rolam até ele e focam o 1º campo. --}}
+<script>
+(function () {
+    function openForm(id) {
+        var el = document.getElementById(id);
+        if (!el) return false;
+        if (el.tagName === 'DETAILS') el.open = true;
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(function () { var f = el.querySelector('input:not([type=hidden]):not([type=checkbox]),select,textarea'); if (f) f.focus({ preventScroll: true }); }, 400);
+        return true;
+    }
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('[data-add-target]');
+        if (a && openForm(a.getAttribute('data-add-target'))) { e.preventDefault(); history.replaceState(null, '', '#' + a.getAttribute('data-add-target')); }
+    });
+    document.addEventListener('DOMContentLoaded', function () { if (location.hash.length > 1) openForm(location.hash.slice(1)); });
+})();
+</script>
