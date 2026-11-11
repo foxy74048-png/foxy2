@@ -15,6 +15,7 @@
         'Conta a receber' => $can('commerce.finance.manage') ? route('commerce.finance', ['aba' => 'receber']).'#nova-conta' : null,
         'Conta a pagar' => $can('commerce.finance.manage') ? route('commerce.finance', ['aba' => 'pagar']).'#nova-conta' : null,
         'Entrada de estoque' => $can('commerce.stock.adjust') ? route('commerce.stock', ['aba' => 'entrada']) : null,
+        'Maleta / consignado' => $can('commerce.orders.manage') ? route('commerce.consignments.create') : null,
         'Remessa da fornecedora' => $can('commerce.catalog.manage') ? route('commerce.supply') : null,
         'Importar planilha ou fotos' => $can('commerce.catalog.manage') || $can('commerce.finance.manage') ? route('commerce.imports') : null,
     ]))
@@ -36,6 +37,14 @@
             <a class="card" href="{{ route('commerce.finance', ['aba' => 'pagar', 'ate' => today()->addDays(7)->toDateString()]) }}"><div class="muted">A pagar até 7 dias</div><h2 @style(['margin:4px 0', 'color:var(--danger-text)' => $alerts['pay_overdue'] > 0])>{{ $fmt($alerts['pay_week']) }}</h2><div class="helper">{{ $alerts['pay_overdue'] ? $alerts['pay_overdue'].' já vencida(s)' : 'em dia' }}</div></a>
             @foreach ($alerts['settlements'] as $batch)
                 <a class="card" href="{{ route('commerce.supply.show', $batch) }}" style="border-color:var(--danger);"><div class="muted">Acerto da consignação</div><h2 style="margin:4px 0;font-size:1.1rem;">{{ $batch->supplier }}</h2><div class="helper" style="color:var(--danger-text);">{{ $batch->closing_on->isPast() ? 'atrasado desde' : ($batch->closing_on->isToday() ? 'é hoje,' : 'em') }} {{ $batch->closing_on->format('d/m') }}</div></a>
+            @endforeach
+        </div>
+    @endif
+
+    @if ($maletas->isNotEmpty())
+        <div class="grid cards" style="margin-bottom:16px;">
+            @foreach ($maletas as $m)
+                <a class="card" href="{{ route('commerce.consignments.show', $m) }}" @if ($m->isLate()) style="border-color:var(--danger);" @endif><div class="muted">Acerto da maleta #{{ $m->number }}</div><h2 style="margin:4px 0;font-size:1.1rem;">{{ $m->customer?->name }}</h2><div class="helper" @if ($m->isLate()) style="color:var(--danger-text);" @endif>{{ $m->isLate() ? 'atrasado desde' : ($m->due_on->isToday() ? 'é hoje,' : 'em') }} {{ $m->due_on->format('d/m') }}</div></a>
             @endforeach
         </div>
     @endif

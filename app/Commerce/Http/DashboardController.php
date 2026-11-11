@@ -5,6 +5,7 @@ namespace App\Commerce\Http;
 use App\Commerce\Access;
 use App\Commerce\Catalog\Category;
 use App\Commerce\Catalog\Money;
+use App\Commerce\Consignment\Consignment;
 use App\Commerce\Finance\Payable;
 use App\Commerce\Finance\Receivable;
 use App\Commerce\Insights\Export;
@@ -83,6 +84,9 @@ class DashboardController
             'withoutInvoice' => Order::sold()->where('placed_at', '>=', now()->subDays(29)->startOfDay())->whereDoesntHave('fiscalDocuments')->count(),
             'finance' => null,
             'alerts' => null,
+            'maletas' => Access::allows($request->attributes->get('commerce.membership'), 'commerce.orders.manage')
+                ? Consignment::with('customer')->where('status', 'aberta')->whereNotNull('due_on')->where('due_on', '<=', today()->addDays(2)->toDateString())->orderBy('due_on')->limit(6)->get()
+                : collect(),
         ];
 
         // Contas e acertos que pedem ação (dono e gerente).

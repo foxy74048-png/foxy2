@@ -32,6 +32,7 @@ class Order extends Model
         'whatsapp' => 'WhatsApp',
         'instagram' => 'Instagram',
         'loja' => 'Loja própria',
+        'consignacao' => 'Consignação (maleta)',
         'mercadolivre' => 'Mercado Livre',
         'shopee' => 'Shopee',
         'magalu' => 'Magalu',

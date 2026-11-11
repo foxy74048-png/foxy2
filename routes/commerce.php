@@ -4,6 +4,7 @@ use App\Commerce\Http\AuthController;
 use App\Commerce\Http\BillingController;
 use App\Commerce\Http\CategoryController;
 use App\Commerce\Http\ChannelController;
+use App\Commerce\Http\ConsignmentController;
 use App\Commerce\Http\CustomerController;
 use App\Commerce\Http\DashboardController;
 use App\Commerce\Http\FinanceController;
@@ -117,6 +118,17 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
         Route::post('/importar/{type}', [ImportController::class, 'upload'])->whereIn('type', array_keys(ImportController::TYPES))->middleware('throttle:20,1')->name('imports.upload');
         Route::get('/importar/{type}/{token}', [ImportController::class, 'preview'])->whereIn('type', array_keys(ImportController::TYPES))->name('imports.preview');
         Route::post('/importar/{type}/{token}', [ImportController::class, 'apply'])->whereIn('type', array_keys(ImportController::TYPES))->middleware('throttle:20,1')->name('imports.apply');
+
+        // Consignação: maletas enviadas (pedidos) e recebidas das fornecedoras (catálogo, checado no controller).
+        Route::middleware('commerce.can:commerce.orders.manage')->group(function () {
+            Route::get('/consignacao', [ConsignmentController::class, 'index'])->name('consignments');
+            Route::get('/consignacao/nova', [ConsignmentController::class, 'create'])->name('consignments.create');
+            Route::post('/consignacao', [ConsignmentController::class, 'store'])->middleware('throttle:30,1')->name('consignments.store');
+            Route::get('/consignacao/{consignment}', [ConsignmentController::class, 'show'])->name('consignments.show');
+            Route::post('/consignacao/{consignment}/pecas', [ConsignmentController::class, 'add'])->middleware('throttle:30,1')->name('consignments.add');
+            Route::post('/consignacao/{consignment}/acerto', [ConsignmentController::class, 'settle'])->middleware('throttle:30,1')->name('consignments.settle');
+        });
+        Route::get('/consignacao-recebida', [ConsignmentController::class, 'received'])->middleware('commerce.can:commerce.stock.adjust')->name('consignments.received');
 
         // Catálogo (fatia 3)
         Route::middleware('commerce.can:commerce.catalog.view')->group(function () {

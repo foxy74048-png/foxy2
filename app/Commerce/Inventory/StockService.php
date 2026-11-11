@@ -57,14 +57,14 @@ class StockService
         $this->apply($variant, in_array($type, ['cancelamento', 'devolucao', 'troca'], true) ? $type : 'cancelamento', $this->positive($quantity), 0, $orderId);
     }
 
-    public function reserve(Variant $variant, int $quantity, ?string $orderId = null): void
+    public function reserve(Variant $variant, int $quantity, ?string $orderId = null, ?string $reason = null): void
     {
-        $this->apply($variant, 'reserva', 0, $this->positive($quantity), $orderId);
+        $this->apply($variant, 'reserva', 0, $this->positive($quantity), $orderId, $reason);
     }
 
-    public function release(Variant $variant, int $quantity, ?string $orderId = null): void
+    public function release(Variant $variant, int $quantity, ?string $orderId = null, ?string $reason = null): void
     {
-        $this->apply($variant, 'liberacao', 0, -$this->positive($quantity), $orderId);
+        $this->apply($variant, 'liberacao', 0, -$this->positive($quantity), $orderId, $reason);
     }
 
     public function setMinimum(Variant $variant, ?int $minimum): void

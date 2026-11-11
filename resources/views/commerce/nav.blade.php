@@ -7,6 +7,7 @@
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.orders.manage'))
     <x-core::nav-link href="{{ route('commerce.orders') }}" :active="request()->routeIs('commerce.orders*')" icon="send">Pedidos</x-core::nav-link>
     <x-core::nav-link href="{{ route('commerce.customers') }}" :active="request()->routeIs('commerce.customers*')" icon="users">Clientes</x-core::nav-link>
+    <x-core::nav-link href="{{ route('commerce.consignments') }}" :active="request()->routeIs('commerce.consignments*')" icon="copy">Consignação (maletas)</x-core::nav-link>
 @endif
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.finance.manage'))
     <x-core::nav-link href="{{ route('commerce.finance') }}" :active="request()->routeIs('commerce.finance*')" icon="wallet">Financeiro</x-core::nav-link>

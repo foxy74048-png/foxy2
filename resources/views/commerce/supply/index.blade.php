@@ -44,6 +44,7 @@
 
     <div class="card" style="margin-top:16px;">
         <h3 style="margin-top:0;">Remessas</h3>
+        <p class="helper" style="margin-top:0;">Quanto já vendeu, quanto já deve e o lucro de cada remessa consignada: <a href="{{ route('commerce.consignments.received') }}">Consignação › Recebidas</a>.</p>
         @if ($batches->isEmpty())
             <div class="empty">Nenhuma remessa ainda.</div>
         @else

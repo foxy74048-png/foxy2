@@ -145,6 +145,13 @@ class CommerceHost
         - **Contas a pagar:** Descrição, Valor, Vencimento (opcionais: Fornecedor, Categoria, Situação).
         - **Fotos em lote:** Importar › Fotos em lote. O nome do arquivo diz o produto e a cor: "Sutiã Renda Floral Preto.jpg" vai para a cor Preto; "Sutiã Renda Floral.jpg" vale para todas; também aceita SKU ou código de barras. Envia uma por vez e mostra as que não reconheceu.
 
+        ## Consignação (maletas)
+        - **Maleta/sacolinha:** Consignação (maletas) › + Nova maleta › escolha a cliente ou revendedora (revendedora tem comissão %), a data do acerto e as peças — bipe o código de barras ou digite o nome. As peças ficam reservadas: não aparecem para venda até o acerto. "Mandar a lista no WhatsApp" envia a lista com os preços para a pessoa; Planilha/PDF é o romaneio.
+        - **Reposição:** na maleta aberta › Acrescentar peças.
+        - **Acerto:** abra a maleta › confira o que voltou › "Recebi agora" (forma de pagamento) ou "Fica a receber" (parcelas) › Fazer o acerto. O que voltou fica disponível de novo; o que ficou vira um pedido no canal "Consignação (maleta)", com a comissão da revendedora como desconto, e entra nos relatórios.
+        - **Painel:** maletas com acerto atrasado ou nos próximos 2 dias aparecem no Painel.
+        - **Recebidas (fornecedoras):** Consignação › Recebidas mostra, por remessa em aberto, quanto já vendeu, quanto já deve à fornecedora, o seu lucro, quantos dias faltam para o acerto e as peças paradas (sem nenhuma venda).
+
         ## Loja própria
         - **Dois jeitos:** em Loja própria › "Como a loja funciona" escolha **Só catálogo (pedido pelo WhatsApp)** — a cliente vê fotos, preços, cores e tamanhos disponíveis e toca em "Pedir pelo WhatsApp", que abre a conversa com o pedido escrito; para publicar basta o WhatsApp da loja — ou **Loja com carrinho** (carrinho, entrega e Pix; precisa do Pix e de uma forma de entrega).
         - "Mostrar só o que tem disponível" esconde da vitrine o que esgotou; o estoque do sistema manda.
