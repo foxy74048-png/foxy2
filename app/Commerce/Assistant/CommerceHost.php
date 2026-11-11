@@ -146,7 +146,10 @@ class CommerceHost
         - **Fotos em lote:** Importar › Fotos em lote. O nome do arquivo diz o produto e a cor: "Sutiã Renda Floral Preto.jpg" vai para a cor Preto; "Sutiã Renda Floral.jpg" vale para todas; também aceita SKU ou código de barras. Envia uma por vez e mostra as que não reconheceu.
 
         ## Loja própria
-        - Loja própria › Pix (chave, nome e cidade), entregas e Publicar. O endereço é ecommerce.foxy.net.br/nome-da-loja. A cliente paga por Pix direto para a loja; confirme o pagamento no pedido.
+        - **Dois jeitos:** em Loja própria › "Como a loja funciona" escolha **Só catálogo (pedido pelo WhatsApp)** — a cliente vê fotos, preços, cores e tamanhos disponíveis e toca em "Pedir pelo WhatsApp", que abre a conversa com o pedido escrito; para publicar basta o WhatsApp da loja — ou **Loja com carrinho** (carrinho, entrega e Pix; precisa do Pix e de uma forma de entrega).
+        - "Mostrar só o que tem disponível" esconde da vitrine o que esgotou; o estoque do sistema manda.
+        - **Divulgar:** em Loja própria e na tela de cada produto há "Compartilhar no WhatsApp" e "Copiar link"; o link chega com a foto, o nome e o preço.
+        - Loja com carrinho: Pix (chave, nome e cidade), entregas e Publicar. O endereço é ecommerce.foxy.net.br/nome-da-loja. A cliente paga por Pix direto para a loja; confirme o pagamento no pedido.
         - O rodapé tem o aviso de Privacidade (LGPD) da loja.
 
         ## Assinatura

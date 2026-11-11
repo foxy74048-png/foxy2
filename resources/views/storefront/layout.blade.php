@@ -1,4 +1,4 @@
-@props(['title' => null])
+@props(['title' => null, 'image' => null, 'description' => null])
 {{-- Loja própria: visual da loja do lojista (cor e logo dele), separado do visual do Core. --}}
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -6,6 +6,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ? $title.' — ' : '' }}{{ $store->name }}</title>
+    {{-- Prévia do link no WhatsApp/Instagram: foto, nome e preço. --}}
+    @php($ogDescription = \Illuminate\Support\Str::limit($description ?: ($store->about ?: ($store->isCatalog() ? 'Veja o catálogo e peça pelo WhatsApp.' : 'Compre online.')), 200))
+    @php($ogImage = $image ?: $store->logo?->url())
+    @php($ogImage = $ogImage && ! str_starts_with($ogImage, 'http') ? url($ogImage) : $ogImage)
+    <meta name="description" content="{{ $ogDescription }}">
+    <meta property="og:type" content="{{ $title ? 'product' : 'website' }}">
+    <meta property="og:site_name" content="{{ $store->name }}">
+    <meta property="og:title" content="{{ $title ?: $store->name }}">
+    <meta property="og:description" content="{{ $ogDescription }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    @if ($ogImage)<meta property="og:image" content="{{ $ogImage }}">@endif
+    <meta name="twitter:card" content="{{ $ogImage ? 'summary_large_image' : 'summary' }}">
     <style>
         :root { --brand: {{ $store->color() }}; --ink: #1d1b26; --muted: #6b6a75; --line: #e8e6ef; --bg: #faf9fc; }
         * { box-sizing: border-box; }
@@ -51,7 +63,11 @@
     <div class="wrap">
         <a class="brand" href="{{ route('commerce.storefront.home', $store->slug) }}">@if ($store->logo)<img src="{{ $store->logo->url() }}" alt="">@endif<span>{{ $store->name }}</span></a>
         <form class="search" method="GET" action="{{ route('commerce.storefront.home', $store->slug) }}"><input name="q" value="{{ request('q') }}" placeholder="Buscar produtos" aria-label="Buscar produtos"></form>
-        <a class="cart-link" href="{{ route('commerce.storefront.cart', $store->slug) }}">Carrinho<span>{{ $cartCount ?? 0 }}</span></a>
+        @if ($store->isCatalog())
+            @if ($chat = $store->whatsappLink('Olá! Vi o catálogo da '.$store->name.' e queria tirar uma dúvida.'))<a class="cart-link" href="{{ $chat }}" target="_blank" rel="noopener">Falar no WhatsApp</a>@endif
+        @else
+            <a class="cart-link" href="{{ route('commerce.storefront.cart', $store->slug) }}">Carrinho<span>{{ $cartCount ?? 0 }}</span></a>
+        @endif
     </div>
 </header>
 <main>

@@ -234,6 +234,7 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
 Route::prefix('{slug}')->where(['slug' => '[a-z0-9-]+'])->middleware('commerce.public')->name('storefront.')->group(function () {
     Route::get('/', [StorefrontController::class, 'home'])->name('home');
     Route::get('/p/{product}', [StorefrontController::class, 'product'])->name('product');
+    Route::get('/p/{product}/whatsapp', [StorefrontController::class, 'ask'])->middleware('throttle:60,1')->name('ask');
     Route::get('/carrinho', [StorefrontController::class, 'cart'])->name('cart');
     Route::post('/carrinho', [StorefrontController::class, 'add'])->middleware('throttle:60,1')->name('cart.add');
     Route::post('/carrinho/atualizar', [StorefrontController::class, 'update'])->middleware('throttle:60,1')->name('cart.update');

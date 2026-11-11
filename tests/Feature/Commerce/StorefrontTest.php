@@ -156,4 +156,50 @@ class StorefrontTest extends TestCase
         $this->get($this->url('/entrar'))->assertOk()->assertSee('Entrar');
         $this->get($this->url('/loja-que-nao-existe'))->assertNotFound();
     }
+
+    public function test_modo_catalogo_pede_pelo_whatsapp_sem_carrinho_e_esconde_o_que_esgotou(): void
+    {
+        $this->inStore(fn () => app(CatalogService::class)->create(['name' => 'Body Renda', 'price_cents' => 12990, 'sku' => 'BOD'], [], [])); // sem estoque
+        $settings = ['name' => 'Moda da Ana', 'whatsapp' => '(11) 98888-7777', 'mode' => 'catalogo', 'hide_sold_out' => '1', 'about' => 'Lingerie com pronta entrega.'];
+
+        // Catálogo publica só com o WhatsApp (sem Pix nem entrega).
+        $this->actingAs($this->owner)->post($this->url('/app/loja'), $settings)->assertSessionHasNoErrors();
+        $this->post($this->url('/app/loja/publicar'), ['publish' => 1])->assertSessionHasNoErrors();
+        $this->assertTrue($this->store->fresh()->isPublished());
+        $product = $this->v['CAM-P']->product_id;
+        $this->get($this->url("/app/produtos/{$product}"))->assertSee('Compartilhar no WhatsApp')->assertSee(rawurlencode('Camiseta Básica — R$ 79,90'), false);
+        auth()->logout();
+
+        $this->get($this->url('/moda-da-ana'))->assertOk()->assertSee('Camiseta Básica')->assertDontSee('Body Renda')
+            ->assertSee('Falar no WhatsApp')->assertDontSee('Carrinho<span>', false)
+            ->assertSee('<meta property="og:description" content="Lingerie com pronta entrega.">', false);
+        $this->get($this->url("/moda-da-ana/p/{$product}"))->assertOk()->assertSee('Pedir pelo WhatsApp')->assertDontSee('Adicionar ao carrinho')
+            ->assertSee('<meta property="og:title" content="Camiseta Básica">', false)->assertSee('R$ 79,90', false);
+
+        // O pedido vai escrito para o WhatsApp da loja; nada é reservado.
+        $location = $this->get($this->url("/moda-da-ana/p/{$product}/whatsapp?variant_id={$this->v['CAM-P']->id}&quantity=2"))->assertRedirect()->headers->get('Location');
+        $this->assertStringStartsWith('https://wa.me/5511988887777?text=', $location);
+        $text = rawurldecode(substr($location, strpos($location, 'text=') + 5));
+        $this->assertStringContainsString('2× Camiseta Básica — P — R$ 79,90', $text);
+        $this->assertStringContainsString('/moda-da-ana/p/'.$product, $text);
+        $this->assertSame(0, $this->inStore(fn () => (int) StockLevel::where('variant_id', $this->v['CAM-P']->id)->value('reserved')));
+        $this->get($this->url("/moda-da-ana/p/{$product}/whatsapp?variant_id={$this->v['CAM-M']->id}"))->assertSessionHasErrors('quantity'); // esgotado
+        $this->get($this->url("/moda-da-ana/p/{$product}/whatsapp?variant_id=outra-coisa"))->assertNotFound();
+
+        // Carrinho e finalizar não existem no catálogo.
+        $this->post($this->url('/moda-da-ana/carrinho'), ['variant_id' => $this->v['CAM-P']->id])->assertRedirect($this->url('/moda-da-ana'));
+        $this->get($this->url('/moda-da-ana/carrinho'))->assertRedirect($this->url('/moda-da-ana'));
+        $this->post($this->url('/moda-da-ana/finalizar'), ['name' => 'X', 'phone' => '11977776666'])->assertRedirect($this->url('/moda-da-ana'));
+        $this->assertSame(0, $this->inStore(fn () => Order::count()));
+
+        // Sem esconder, o esgotado aparece marcado.
+        $this->actingAs($this->owner)->post($this->url('/app/loja'), ['hide_sold_out' => '0'] + $settings)->assertSessionHasNoErrors();
+        auth()->logout();
+        $this->get($this->url('/moda-da-ana'))->assertSee('Body Renda')->assertSee('Esgotado');
+
+        // Trocar para loja com carrinho sem Pix tira do ar e explica o que falta.
+        $this->actingAs($this->owner)->post($this->url('/app/loja'), ['mode' => 'loja'] + $settings)->assertSessionHas('status', fn ($s) => str_contains($s, 'tirada do ar'));
+        $this->assertFalse($this->store->fresh()->isPublished());
+        $this->post($this->url('/app/loja/publicar'), ['publish' => 1])->assertSessionHasErrors('publish');
+    }
 }

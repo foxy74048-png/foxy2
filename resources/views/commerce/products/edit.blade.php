@@ -2,6 +2,13 @@
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
     <x-slot:actions>
         <a class="button secondary" href="{{ route('commerce.products') }}">Voltar aos produtos</a>
+        @if ($product->status === 'active' && $currentStore->isPublished())
+            @php($shareUrl = route('commerce.storefront.product', [$currentStore->slug, $product->id]))
+            @php($sharePrices = $product->variants->where('status', 'active')->pluck('price_cents'))
+            @php($shareText = $product->name.($sharePrices->isNotEmpty() ? ' — '.($sharePrices->min() !== $sharePrices->max() ? 'a partir de ' : '').\App\Commerce\Catalog\Money::format($sharePrices->min()) : '')."\n".$shareUrl)
+            <a class="button secondary" href="https://wa.me/?text={{ rawurlencode($shareText) }}" target="_blank" rel="noopener" title="Abre o WhatsApp para você escolher para quem mandar; o link chega com a foto, o nome e o preço">Compartilhar no WhatsApp</a>
+            <a class="button secondary" href="{{ $shareUrl }}" data-copy="{{ $shareUrl }}" onclick="if (navigator.clipboard) { event.preventDefault(); navigator.clipboard.writeText(this.dataset.copy); this.textContent = 'Link copiado'; }">Copiar link</a>
+        @endif
         @if ($product->status === 'active' && \App\Commerce\Access::allows($currentMembership, 'commerce.channels.manage'))<a class="button" href="{{ route('commerce.listings.create', ['produto' => $product->id]) }}">Anunciar</a>@endif
     </x-slot:actions>
 

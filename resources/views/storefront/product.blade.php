@@ -1,6 +1,10 @@
-<x-storefront::layout :title="$product->name">
-    @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
-    @php($first = $product->variants->first(fn ($v) => ($available[$v->id] ?? 0) > 0))
+@php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
+@php($first = $product->variants->first(fn ($v) => ($available[$v->id] ?? 0) > 0))
+@php($prices = $product->variants->pluck('price_cents'))
+@php($cover = $product->images->first(fn ($i) => $i->file)?->file?->url())
+@php($catalog = $store->isCatalog())
+@php($cta = $catalog ? 'Pedir pelo WhatsApp' : 'Adicionar ao carrinho')
+<x-storefront::layout :title="$product->name" :image="$cover" :description="($prices->isEmpty() ? '' : ($prices->min() !== $prices->max() ? 'A partir de ' : '').$money($prices->min())).($first ? '' : ' · esgotado').($product->description ? ' · '.$product->description : '')">
 
     <div class="two">
         <div>
@@ -21,8 +25,12 @@
             <h1 style="margin-top:0;">{{ $product->name }}</h1>
             @if ($product->brand)<div class="muted">{{ $product->brand }}</div>@endif
 
+            @if ($catalog)
+            <form method="GET" action="{{ route('commerce.storefront.ask', [$store->slug, $product->id]) }}" target="_blank" style="margin-top:16px;display:grid;gap:14px;">
+            @else
             <form method="POST" action="{{ route('commerce.storefront.cart.add', $store->slug) }}" style="margin-top:16px;display:grid;gap:14px;">
                 @csrf
+            @endif
                 @if ($product->variants->count() > 1 && $product->hasGrid())
                     {{-- Uma escolha por característica (Cor, Tamanho; no conjunto, o tamanho de cada peça). O select completo abaixo continua valendo sem JavaScript. --}}
                     @php($optionNames = array_values($product->option_names))
@@ -62,7 +70,7 @@
                                 const photo = main && [...document.querySelectorAll('[data-thumbs] img')].find(function (img) { const i = names.indexOf(img.dataset.optionName); return i >= 0 && chosen[i] === img.dataset.optionValue; });
                                 if (photo) { main.src = photo.src; }
                                 button.disabled = !v || v.left === 0;
-                                button.textContent = !v || v.left === 0 ? 'Indisponível' : 'Adicionar ao carrinho';
+                                button.textContent = !v || v.left === 0 ? 'Indisponível' : @json($cta);
                             }
                             selects.forEach(function (s) { s.addEventListener('change', sync); });
                             sync();
@@ -84,7 +92,8 @@
                     <div class="price" style="font-size:1.5rem;">{{ $money($product->variants->first()?->price_cents) }}</div>
                 @endif
                 <div style="max-width:120px;"><label for="quantity">Quantidade</label><input id="quantity" type="number" name="quantity" value="1" min="1" max="99"></div>
-                <button class="btn" type="submit" @disabled(! $first)>{{ $first ? 'Adicionar ao carrinho' : 'Esgotado' }}</button>
+                <button class="btn" type="submit" @disabled(! $first)>{{ $first ? $cta : 'Esgotado' }}</button>
+                @if ($catalog)<div class="muted">Abre o WhatsApp da loja com o seu pedido escrito. A loja confirma a disponibilidade, a entrega e o pagamento com você.</div>@endif
             </form>
 
             @if ($product->description)<div style="margin-top:24px;white-space:pre-line;">{{ $product->description }}</div>@endif

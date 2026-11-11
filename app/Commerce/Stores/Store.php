@@ -21,12 +21,12 @@ class Store extends Model
 
     protected $fillable = [
         'organization_id', 'slug', 'name', 'whatsapp', 'published_at', 'pix_key', 'pix_name', 'pix_city', 'payment_instructions',
-        'delivery', 'primary_color', 'logo_file_id', 'about', 'whatsapp_settings',
+        'delivery', 'primary_color', 'logo_file_id', 'about', 'whatsapp_settings', 'mode', 'hide_sold_out',
     ];
 
     protected function casts(): array
     {
-        return ['published_at' => 'datetime', 'delivery' => 'array', 'whatsapp_settings' => 'array'];
+        return ['published_at' => 'datetime', 'delivery' => 'array', 'whatsapp_settings' => 'array', 'hide_sold_out' => 'boolean'];
     }
 
     public function logo(): BelongsTo
@@ -37,6 +37,24 @@ class Store extends Model
     public function isPublished(): bool
     {
         return $this->published_at !== null;
+    }
+
+    /** Modo catálogo: sem carrinho nem Pix; a cliente pede pelo WhatsApp da loja. */
+    public function isCatalog(): bool
+    {
+        return $this->mode === 'catalogo';
+    }
+
+    /** O que falta para publicar (vazio = pode publicar). */
+    public function publishProblem(): ?string
+    {
+        if ($this->isCatalog()) {
+            return preg_replace('/\D/', '', (string) $this->whatsapp) === '' ? 'Para publicar o catálogo, preencha o WhatsApp da loja: é para ele que as clientes mandam o pedido.' : null;
+        }
+
+        return ! $this->pixReady() || $this->deliveryOptions() === []
+            ? 'Para publicar a loja com carrinho, preencha o Pix (chave, nome e cidade do recebedor) e ligue pelo menos uma forma de entrega. Ou escolha "Só catálogo": aí basta o WhatsApp.'
+            : null;
     }
 
     public function pixReady(): bool

@@ -27,6 +27,8 @@ class StoreSettingsController
         $store = $request->attributes->get('commerce.store');
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
+            'mode' => ['nullable', 'in:loja,catalogo'],
+            'hide_sold_out' => ['nullable', 'boolean'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'about' => ['nullable', 'string', 'max:2000'],
             'primary_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
@@ -47,7 +49,7 @@ class StoreSettingsController
 
         $d = $data['delivery'] ?? [];
         $store->fill([
-            'name' => $data['name'], 'whatsapp' => $data['whatsapp'] ?? null, 'about' => $data['about'] ?? null, 'primary_color' => $data['primary_color'] ?? null,
+            'name' => $data['name'], 'mode' => $data['mode'] ?? $store->mode ?? 'loja', 'hide_sold_out' => (bool) ($data['hide_sold_out'] ?? false), 'whatsapp' => $data['whatsapp'] ?? null, 'about' => $data['about'] ?? null, 'primary_color' => $data['primary_color'] ?? null,
             'pix_key' => isset($data['pix_key']) ? trim($data['pix_key']) : null, 'pix_name' => $data['pix_name'] ?? null, 'pix_city' => $data['pix_city'] ?? null,
             'payment_instructions' => $data['payment_instructions'] ?? null,
             'delivery' => [
@@ -63,11 +65,16 @@ class StoreSettingsController
             $old?->purge();
         }
 
+        // Mudou para um modo que não fecha (ex.: loja com carrinho sem Pix): sai do ar até completar.
+        $problem = $store->isPublished() ? $store->publishProblem() : null;
+        if ($problem) {
+            $store->published_at = null;
+        }
         $store->save();
         AccountSync::sync(ExecutionContext::current()->organization);
         Audit::record('commerce.store.updated', subject: $store);
 
-        return back()->with('status', 'Loja salva.');
+        return back()->with('status', $problem ? 'Loja salva e tirada do ar. '.$problem : 'Loja salva.');
     }
 
     public function publish(Request $request): RedirectResponse
@@ -75,8 +82,8 @@ class StoreSettingsController
         $store = $request->attributes->get('commerce.store');
         $publish = $request->boolean('publish');
 
-        if ($publish && (! $store->pixReady() || $store->deliveryOptions() === [])) {
-            throw ValidationException::withMessages(['publish' => 'Para publicar, preencha o Pix (chave, nome e cidade do recebedor) e ligue pelo menos uma forma de entrega.']);
+        if ($publish && $problem = $store->publishProblem()) {
+            throw ValidationException::withMessages(['publish' => $problem]);
         }
 
         $store->update(['published_at' => $publish ? ($store->published_at ?? now()) : null]);
