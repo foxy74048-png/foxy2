@@ -4,6 +4,8 @@
     <x-slot:actions>
         @include('commerce.export.buttons')
         @if ($canManage)
+            <a class="button secondary" href="{{ route('commerce.imports') }}#produtos">Importar planilha</a>
+            <a class="button secondary" href="{{ route('commerce.imports.photos') }}">Fotos em lote</a>
             <a class="button secondary" href="{{ route('commerce.products.create', ['tipo' => 'kit']) }}">+ Novo kit</a>
             @include('commerce._add', ['label' => 'Novo produto', 'href' => route('commerce.products.create')])
         @endif
@@ -39,7 +41,7 @@
 
     <div class="card" style="margin-top:16px;">
         @if ($products->isEmpty())
-            <div class="empty">Nenhum produto encontrado.@if ($canManage) Comece por <a href="{{ route('commerce.products.create') }}">Novo produto</a>: com a grade de tamanho e cor, o sistema cria todas as variantes de uma vez.@endif</div>
+            <div class="empty">Nenhum produto encontrado.@if ($canManage) Comece por <a href="{{ route('commerce.products.create') }}">Novo produto</a> (com a grade de tamanho e cor, o sistema cria todas as variantes de uma vez) ou traga tudo de uma vez pela <a href="{{ route('commerce.imports') }}#produtos">planilha</a> ou pelo <a href="{{ route('commerce.supply') }}">comprovante da fornecedora</a>.@endif</div>
         @else
             <div class="table-wrap"><table>
                 <thead><tr><th></th><th>Produto</th><th>Categoria</th><th>Variantes</th><th>Preço</th><th>Situação</th>@if ($canManage)<th style="text-align:right;">Ações</th>@endif</tr></thead>

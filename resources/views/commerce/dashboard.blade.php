@@ -16,6 +16,7 @@
         'Conta a pagar' => $can('commerce.finance.manage') ? route('commerce.finance', ['aba' => 'pagar']).'#nova-conta' : null,
         'Entrada de estoque' => $can('commerce.stock.adjust') ? route('commerce.stock', ['aba' => 'entrada']) : null,
         'Remessa da fornecedora' => $can('commerce.catalog.manage') ? route('commerce.supply') : null,
+        'Importar planilha ou fotos' => $can('commerce.catalog.manage') || $can('commerce.finance.manage') ? route('commerce.imports') : null,
     ]))
     @if ($shortcuts)
         <div class="card" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">

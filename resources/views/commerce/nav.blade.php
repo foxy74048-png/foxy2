@@ -23,6 +23,9 @@
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.stock.view'))
     <x-core::nav-link href="{{ route('commerce.stock') }}" :active="request()->routeIs('commerce.stock*') || request()->routeIs('commerce.supply*')" icon="calendar">Estoque</x-core::nav-link>
 @endif
+@if (\App\Commerce\Access::allows($currentMembership, 'commerce.catalog.manage') || \App\Commerce\Access::allows($currentMembership, 'commerce.finance.manage'))
+    <x-core::nav-link href="{{ route('commerce.imports') }}" :active="request()->routeIs('commerce.imports*')" icon="copy">Importar planilhas e fotos</x-core::nav-link>
+@endif
 @if (\App\Commerce\Access::allows($currentMembership, 'commerce.store.manage'))
     <x-core::nav-link href="{{ route('commerce.store.settings') }}" :active="request()->routeIs('commerce.store.*')" icon="home">Loja própria</x-core::nav-link>
 @endif

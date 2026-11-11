@@ -137,6 +137,13 @@ class CommerceHost
         - **Conferir e lançar:** por produto, consignado ou comprado, categoria, preço e custo › Lançar no estoque. Os produtos ficam com o código de barras; a próxima remessa só soma o estoque. Peças compradas viram conta a pagar no fechamento.
         - **Acerto da consignação:** abra a remessa › Acerto › "Devolver" já vem com o que sobrou › Fazer o acerto. O devolvido sai do estoque e o vendido vira conta a pagar à fornecedora.
 
+        ## Importar planilhas e fotos (trazer o que a loja já tem)
+        - **Onde:** menu Importar planilhas e fotos (ou Produtos › Importar planilha, Financeiro › Importar planilha). Aceita .xlsx (Excel/Google Planilhas) e .csv. Cada opção tem "Baixar modelo". Sempre mostra uma prévia antes de lançar.
+        - **Produtos e estoque:** uma linha por variação: Produto, Cor, Tamanho, Quantidade, Preço de venda (opcionais: Categoria, Custo, Código de barras, Fornecedora, Origem consignado/comprado). Mesmo nome = um produto com a grade. Na prévia, escolha "Somar" (mercadoria que chegou) ou "Deixar igual" (contagem do estoque de hoje). Categoria que não existe é criada.
+        - **Contas a receber (fiado):** Cliente, Valor, Vencimento (opcionais: WhatsApp, Descrição, Parcela, Situação aberto/pago). Uma linha por parcela; cliente achada pelo WhatsApp ou nome, senão cadastrada.
+        - **Contas a pagar:** Descrição, Valor, Vencimento (opcionais: Fornecedor, Categoria, Situação).
+        - **Fotos em lote:** Importar › Fotos em lote. O nome do arquivo diz o produto e a cor: "Sutiã Renda Floral Preto.jpg" vai para a cor Preto; "Sutiã Renda Floral.jpg" vale para todas; também aceita SKU ou código de barras. Envia uma por vez e mostra as que não reconheceu.
+
         ## Loja própria
         - Loja própria › Pix (chave, nome e cidade), entregas e Publicar. O endereço é ecommerce.foxy.net.br/nome-da-loja. A cliente paga por Pix direto para a loja; confirme o pagamento no pedido.
         - O rodapé tem o aviso de Privacidade (LGPD) da loja.

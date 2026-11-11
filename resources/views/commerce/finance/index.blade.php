@@ -1,6 +1,6 @@
 <x-core::layout title="Financeiro" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:actions>@include('commerce.export.buttons')@if ($tab !== 'fluxo')@include('commerce._add', ['label' => $tab === 'receber' ? 'Nova conta a receber' : 'Nova conta a pagar', 'target' => 'nova-conta'])@else @include('commerce._add', ['label' => 'Nova conta a receber', 'href' => route('commerce.finance', ['aba' => 'receber']).'#nova-conta']) @include('commerce._add', ['label' => 'Nova conta a pagar', 'href' => route('commerce.finance', ['aba' => 'pagar']).'#nova-conta'])@endif</x-slot:actions>
+    <x-slot:actions>@include('commerce.export.buttons')<a class="button secondary" href="{{ route('commerce.imports') }}#{{ $tab === 'pagar' ? 'pagar' : 'receber' }}">Importar planilha</a>@if ($tab !== 'fluxo')@include('commerce._add', ['label' => $tab === 'receber' ? 'Nova conta a receber' : 'Nova conta a pagar', 'target' => 'nova-conta'])@else @include('commerce._add', ['label' => 'Nova conta a receber', 'href' => route('commerce.finance', ['aba' => 'receber']).'#nova-conta']) @include('commerce._add', ['label' => 'Nova conta a pagar', 'href' => route('commerce.finance', ['aba' => 'pagar']).'#nova-conta'])@endif</x-slot:actions>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
     @php($methods = \App\Commerce\Http\FinanceController::METHODS)
 

@@ -9,6 +9,7 @@ use App\Commerce\Http\DashboardController;
 use App\Commerce\Http\FinanceController;
 use App\Commerce\Http\FiscalController;
 use App\Commerce\Http\FoxController;
+use App\Commerce\Http\ImportController;
 use App\Commerce\Http\InvitationController;
 use App\Commerce\Http\ListingController;
 use App\Commerce\Http\OrderController;
@@ -107,6 +108,15 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/assinatura/gerenciar', [BillingController::class, 'portal'])->middleware('throttle:10,1')->name('billing.portal');
             Route::get('/assinatura/obrigado', [BillingController::class, 'thanks'])->name('billing.thanks');
         });
+
+        // Importar planilhas (produtos e estoque, a receber, a pagar) e fotos em lote; permissão por tipo no controller.
+        Route::get('/importar', [ImportController::class, 'index'])->name('imports');
+        Route::get('/importar/fotos', [ImportController::class, 'photos'])->name('imports.photos');
+        Route::post('/importar/fotos', [ImportController::class, 'photo'])->middleware('throttle:240,1')->name('imports.photo');
+        Route::get('/importar/modelo/{type}', [ImportController::class, 'template'])->whereIn('type', array_keys(ImportController::TYPES))->name('imports.template');
+        Route::post('/importar/{type}', [ImportController::class, 'upload'])->whereIn('type', array_keys(ImportController::TYPES))->middleware('throttle:20,1')->name('imports.upload');
+        Route::get('/importar/{type}/{token}', [ImportController::class, 'preview'])->whereIn('type', array_keys(ImportController::TYPES))->name('imports.preview');
+        Route::post('/importar/{type}/{token}', [ImportController::class, 'apply'])->whereIn('type', array_keys(ImportController::TYPES))->middleware('throttle:20,1')->name('imports.apply');
 
         // Catálogo (fatia 3)
         Route::middleware('commerce.can:commerce.catalog.view')->group(function () {

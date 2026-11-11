@@ -2,7 +2,7 @@
 
 namespace App\Commerce\Supply;
 
-use App\Commerce\Catalog\CatalogService;
+use App\Commerce\Catalog\GridMatcher;
 use App\Commerce\Catalog\Product;
 use App\Commerce\Catalog\Variant;
 use App\Commerce\Finance\FinanceService;
@@ -21,7 +21,7 @@ use Illuminate\Validation\ValidationException;
  */
 class SupplyService
 {
-    public function __construct(private CatalogService $catalog, private StockService $stock, private FinanceService $finance) {}
+    public function __construct(private GridMatcher $grid, private StockService $stock, private FinanceService $finance) {}
 
     /** Rascunho para conferir: grupos com preço de venda e custo sugeridos. */
     public function draft(array $parsed, string $basis = 'venda', float $percent = 30): SupplyBatch
@@ -144,67 +144,22 @@ class SupplyService
         });
     }
 
-    /** Produto que já existe para o grupo: pelo código de barras de alguma linha ou pelo mesmo nome. */
     private function existing(array $group): ?Product
     {
-        $barcodes = collect($group['lines'])->pluck('barcode')->filter()->all();
-        $variant = $barcodes ? Variant::with('product.variants')->whereIn('gtin', $barcodes)->first() : null;
-
-        return $variant?->product ?? Product::with('variants')->where('type', '!=', 'kit')->whereRaw('lower(name) = ?', [Str::lower($group['name'])])->first();
+        return $this->grid->existing($group);
     }
 
     private function productFor(array $group, string $supplier): Product
     {
-        $names = self::axes($group['lines']);
-        $product = ! empty($group['product_id']) ? Product::with('variants')->find($group['product_id']) : $this->existing($group);
-        // Produto existente com outra grade (ex.: sem cor) não recebe estas combinações: vira um produto novo.
-        if ($product && array_values($product->option_names ?? []) !== $names) {
-            $product = null;
-            $group['name'] .= ' ('.$supplier.')';
-        }
-
-        if (! $product) {
-            $values = array_map(fn ($axis) => collect($group['lines'])->pluck($axis === 'Tamanho' ? 'size' : 'color')->filter()->unique()->values()->all(), $names);
-            $product = $this->catalog->create(['name' => Str::limit($group['name'], 150, ''), 'category_id' => $group['category_id'] ?: null, 'brand' => $supplier,
-                'price_cents' => (int) $group['sale_cents'], 'cost_cents' => (int) $group['cost_cents'], 'status' => 'active'], $names, $values);
-            // Combinações que não vieram na remessa ficam desativadas (aparecem se vierem numa próxima).
-            $wanted = collect($group['lines'])->map(fn ($l) => $this->optionKey($names, $l))->all();
-            $product->variants()->get()->each(fn (Variant $v) => in_array($this->optionKey($names, $v->options ?? [], true), $wanted, true) || $v->update(['status' => 'inactive']));
-        }
-
+        $product = $this->grid->productFor($group, ['brand' => $supplier], $supplier);
         $product->update(['supplier' => $supplier, 'supply_mode' => $group['mode'], 'category_id' => $group['category_id'] ?: $product->category_id]);
 
-        return $product->load('variants');
+        return $product;
     }
 
     private function variantFor(Product $product, array $line, array $group): Variant
     {
-        $names = $product->option_names ?? [];
-        $variant = ($line['barcode'] ? Variant::where('product_id', $product->id)->where('gtin', $line['barcode'])->first() : null)
-            ?? $product->variants()->get()->first(fn (Variant $v) => $this->optionKey($names, $v->options ?? [], true) === $this->optionKey($names, $line));
-
-        if (! $variant) {
-            $new = [];
-            foreach ($names as $i => $name) {
-                $value = $name === 'Tamanho' ? $line['size'] : $line['color'];
-                $new[$i] = in_array($value, collect($product->variants)->pluck("options.{$name}")->all(), true) ? [] : [$value];
-            }
-            $this->catalog->extendGrid($product, $new, (int) $group['sale_cents']);
-            $variant = $product->variants()->get()->first(fn (Variant $v) => $this->optionKey($names, $v->options ?? [], true) === $this->optionKey($names, $line));
-        }
-
-        return $variant ?? throw ValidationException::withMessages(['groups' => "Não deu para achar a variação de {$line['description']}."]);
-    }
-
-    /** @return string[] características da grade presentes nas linhas (Cor antes de Tamanho, como numa etiqueta) */
-    private static function axes(array $lines): array
-    {
-        return array_values(array_filter([collect($lines)->pluck('color')->filter()->isNotEmpty() ? 'Cor' : null, collect($lines)->pluck('size')->filter()->isNotEmpty() ? 'Tamanho' : null]));
-    }
-
-    private function optionKey(array $names, array $source, bool $fromOptions = false): string
-    {
-        return Str::upper(implode('|', array_map(fn ($n) => $fromOptions ? ($source[$n] ?? '') : ($n === 'Tamanho' ? ($source['size'] ?? '') : ($source['color'] ?? '')), $names)));
+        return $this->grid->variantFor($product, $line, (int) $group['sale_cents']);
     }
 
     private function userId(): ?string
