@@ -85,23 +85,22 @@ class DashboardController
             'finance' => null,
             'alerts' => null,
             'maletas' => Access::allows($request->attributes->get('commerce.membership'), 'commerce.orders.manage')
-                ? Consignment::with('customer')->where('status', 'aberta')->whereNotNull('due_on')->where('due_on', '<=', today()->addDays(2)->toDateString())->orderBy('due_on')->limit(6)->get()
+                ? Consignment::with('customer')->where('status', 'aberta')->whereNotNull('due_on')->where('due_on', '<', today()->addDays(3)->toDateString())->orderBy('due_on')->limit(6)->get()
                 : collect(),
         ];
 
         // Contas e acertos que pedem ação (dono e gerente).
         if (Access::allows($request->attributes->get('commerce.membership'), 'commerce.finance.manage')) {
             $today = today()->toDateString();
-            $week = today()->addDays(7)->toDateString();
             $receivables = Receivable::open();
             $payables = Payable::open();
             $data['alerts'] = [
                 'overdue' => (int) (clone $receivables)->where('due_date', '<', $today)->sum('amount_cents'),
                 'overdue_count' => (clone $receivables)->where('due_date', '<', $today)->count(),
-                'receive_week' => (int) (clone $receivables)->whereBetween('due_date', [$today, $week])->sum('amount_cents'),
-                'pay_week' => (int) (clone $payables)->where('due_date', '<=', $week)->sum('amount_cents'),
+                'receive_week' => (int) (clone $receivables)->where('due_date', '>=', $today)->where('due_date', '<', today()->addDays(8)->toDateString())->sum('amount_cents'),
+                'pay_week' => (int) (clone $payables)->where('due_date', '<', today()->addDays(8)->toDateString())->sum('amount_cents'),
                 'pay_overdue' => (clone $payables)->where('due_date', '<', $today)->count(),
-                'settlements' => SupplyBatch::where('status', 'aberta')->whereNotNull('closing_on')->where('closing_on', '<=', $week)->orderBy('closing_on')->get(),
+                'settlements' => SupplyBatch::where('status', 'aberta')->whereNotNull('closing_on')->where('closing_on', '<', today()->addDays(8)->toDateString())->orderBy('closing_on')->get(),
             ];
         }
 

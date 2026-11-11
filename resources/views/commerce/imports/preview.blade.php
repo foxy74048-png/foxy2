@@ -41,7 +41,7 @@
                                 @if (! empty($g['error']))<div><span class="badge danger">{{ $g['error'] }}</span></div>
                                 @elseif ($g['product_id'])<div><span class="badge">já existe{{ Str::lower($g['existing_name']) !== Str::lower($g['name']) ? ': '.$g['existing_name'] : '' }}</span></div>
                                 @else<div><span class="badge success">novo</span></div>@endif
-                                @if ($g['supplier'] || $g['mode'])<div class="helper">{{ $g['supplier'] }}{{ $g['mode'] ? ' · '.($g['mode'] === 'compra' ? 'comprado' : 'consignado') : '' }}</div>@endif
+                                @if ($g['supplier'] || $g['mode'])<div class="helper">{{ implode(' · ', array_filter([$g['supplier'], $g['mode'] ? ($g['mode'] === 'compra' ? 'comprado' : 'consignado') : null])) }}</div>@endif
                             </td>
                             <td>{{ $g['category'] ?: '—' }}</td>
                             <td style="font-size:.9rem;">{{ collect($g['lines'])->map(fn ($l) => trim(implode(' · ', array_filter([$l['color'], $l['size']])).' ×'.$l['quantity']))->implode(', ') }}</td>

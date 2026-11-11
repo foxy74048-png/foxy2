@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /** Maleta/sacolinha deixada com uma cliente ou revendedora. Aberta → acertada (o que ficou vira pedido). */
 class Consignment extends Model
@@ -28,6 +29,18 @@ class Consignment extends Model
     protected function casts(): array
     {
         return ['sent_on' => 'date', 'due_on' => 'date', 'settled_at' => 'datetime', 'commission_percent' => 'float', 'number' => 'integer'];
+    }
+
+    /** Só a data (sem hora), como nas contas: comparar "até o dia X" funciona igual no SQLite e no PostgreSQL. */
+    public function setSentOnAttribute(mixed $value): void
+    {
+        $this->attributes['sent_on'] = $value === null || $value === '' ? null : Carbon::parse($value)->toDateString();
+    }
+
+    /** Só a data (sem hora), como nas contas: comparar "até o dia X" funciona igual no SQLite e no PostgreSQL. */
+    public function setDueOnAttribute(mixed $value): void
+    {
+        $this->attributes['due_on'] = $value === null || $value === '' ? null : Carbon::parse($value)->toDateString();
     }
 
     public function items(): HasMany

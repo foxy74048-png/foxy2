@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /** Remessa de fornecedor (comprovante importado). Rascunho → aberta (estoque lançado) → acertada. */
 class SupplyBatch extends Model
@@ -26,6 +27,18 @@ class SupplyBatch extends Model
     protected function casts(): array
     {
         return ['received_on' => 'date', 'closing_on' => 'date', 'groups' => 'array', 'installments' => 'array', 'settled_at' => 'datetime', 'percent' => 'float', 'total_cents' => 'integer'];
+    }
+
+    /** Só a data (sem hora), como nas contas: comparar "até o dia X" funciona igual no SQLite e no PostgreSQL. */
+    public function setReceivedOnAttribute(mixed $value): void
+    {
+        $this->attributes['received_on'] = $value === null || $value === '' ? null : Carbon::parse($value)->toDateString();
+    }
+
+    /** Só a data (sem hora), como nas contas: comparar "até o dia X" funciona igual no SQLite e no PostgreSQL. */
+    public function setClosingOnAttribute(mixed $value): void
+    {
+        $this->attributes['closing_on'] = $value === null || $value === '' ? null : Carbon::parse($value)->toDateString();
     }
 
     public function supplierRecord(): BelongsTo

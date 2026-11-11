@@ -114,9 +114,12 @@ class ConsignmentTest extends TestCase
         $customer = $this->inStore(fn () => Customer::create(['name' => 'Bia Cliente', 'phone' => '11988887777']));
         $this->post($this->url('/app/consignacao'), ['customer_id' => $customer->id, 'kind' => 'cliente', 'commission_percent' => 50, 'sent_on' => today()->subDays(5)->toDateString(),
             'due_on' => today()->subDay()->toDateString(), 'items' => [$this->v['CR-M']->id => 2]])->assertSessionHasNoErrors();
-        $maleta = $this->inStore(fn () => Consignment::sole());
+        $maleta = $this->inStore(fn () => Consignment::where('number', 1)->sole());
         $this->assertSame(0.0, $maleta->commission_percent); // cliente não tem comissão
-        $this->get($this->url('/app'))->assertSee('Acerto da maleta #1')->assertSee('atrasado desde');
+        // Acerto daqui a 2 dias também avisa (o próprio dia conta: a data é gravada sem hora).
+        $this->post($this->url('/app/consignacao'), ['customer_id' => $customer->id, 'kind' => 'cliente', 'due_on' => today()->addDays(2)->toDateString(), 'items' => [$this->v['CR-P']->id => 1]])->assertSessionHasNoErrors();
+        $this->assertSame(today()->addDays(2)->toDateString(), $this->inStore(fn () => Consignment::where('number', 2)->toBase()->value('due_on')));
+        $this->get($this->url('/app'))->assertSee('Acerto da maleta #1')->assertSee('atrasado desde')->assertSee('Acerto da maleta #2');
         $this->get($this->url('/app/consignacao'))->assertSee('1 com o acerto atrasado');
 
         $this->post($this->url("/app/consignacao/{$maleta->id}/acerto"), ['payment' => 'pago', 'method' => 'pix'])->assertSessionHasNoErrors(); // padrão: tudo voltou
