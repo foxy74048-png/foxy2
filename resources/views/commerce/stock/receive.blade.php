@@ -9,7 +9,7 @@
     <form class="card" method="POST" action="{{ route('commerce.stock.receive') }}" id="receive-form">
         @csrf
         <h3 style="margin-top:0;">Entrada de mercadoria</h3>
-        <p class="helper" style="margin-top:0;">Digite o SKU (ou comece pelo nome e escolha na lista) e a quantidade. <strong>Enter</strong> passa para o próximo item.</p>
+        <p class="helper" style="margin-top:0;">Digite o SKU (ou comece pelo nome e escolha na lista) e a quantidade. <strong>Enter</strong> passa para o próximo item. Muitas peças de uma vez? <a href="{{ route('commerce.imports') }}#produtos">Entrada em lote por planilha ou PDF</a> · chegou de fornecedora com comprovante ou nota? <a href="{{ route('commerce.supply') }}#importar">Remessa de fornecedor</a>.</p>
 
         <datalist id="stock-skus">@foreach ($catalog as $sku => $item)<option value="{{ $sku }}">{{ $item['name'] }}</option>@endforeach</datalist>
 

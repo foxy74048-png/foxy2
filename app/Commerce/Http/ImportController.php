@@ -64,7 +64,9 @@ class ImportController
     {
         $this->guard($request, $type);
         $request->validate(['file' => ['required', 'file', 'max:10240']], [], ['file' => 'planilha']);
-        $rows = Sheet::read($request->file('file')->getRealPath(), $request->file('file')->getClientOriginalName());
+        // No PDF, os títulos conhecidos ajudam a achar a tabela no meio do relatório.
+        $known = array_merge(...array_values($type === 'produtos' ? ProductImport::COLUMNS : FinanceImport::COLUMNS));
+        $rows = Sheet::read($request->file('file')->getRealPath(), $request->file('file')->getClientOriginalName(), $known);
         $preview = $type === 'produtos' ? $this->products->preview($rows) : $this->finance->preview($type, $rows);
         if ($preview['missing'] !== []) {
             throw ValidationException::withMessages(['file' => 'Faltou a coluna '.implode(' e ', array_map(fn ($c) => "\"{$c}\"", $preview['missing'])).' na planilha. Confira os títulos da primeira linha (veja o modelo).']);

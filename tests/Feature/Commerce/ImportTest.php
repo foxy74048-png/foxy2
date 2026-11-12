@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Platform\Context\ContextStore;
 use App\Platform\Context\ExecutionContext;
 use App\Platform\Memberships\Membership;
+use Dompdf\Dompdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -114,7 +115,7 @@ class ImportTest extends TestCase
         $this->assertSame('2026-12-10', Sheet::date('2026-12-10'));
         $this->assertSame('2026-11-11', Sheet::date('46337'));
         $this->assertNull(Sheet::date('31/02/2026'));
-        $this->assertSame('preco de venda r', Sheet::key('Preço de venda (R$)'));
+        $this->assertSame('preco de venda', Sheet::key('Preço de venda (R$)'));
         $this->assertFalse(Sheet::int('três'));
     }
 
@@ -278,5 +279,56 @@ class ImportTest extends TestCase
         Membership::create(['organization_id' => $this->store->organization_id, 'user_id' => $manager->id, 'role' => 'manager']);
         $this->actingAs($manager)->post($preview)->assertSessionHasErrors('file');
         $this->inStore(fn () => $this->assertSame(0, Payable::count()));
+    }
+
+    /** PDF de relatório como o de outro sistema: título, títulos centralizados, células centralizadas na altura. */
+    private function pdf(string $html, string $name = 'relatorio.pdf'): UploadedFile
+    {
+        $pdf = new Dompdf;
+        $pdf->loadHtml('<meta charset="utf-8"><style>td,th{font-family:Arial;font-size:11px;padding:4px;border:1px solid #999} table{border-collapse:collapse}</style>'.$html, 'UTF-8');
+        $pdf->render();
+        $path = tempnam(sys_get_temp_dir(), 'pdf');
+        file_put_contents($path, $pdf->output());
+
+        return new UploadedFile($path, $name, 'application/pdf', null, true);
+    }
+
+    public function test_pdf_de_estoque_de_outro_sistema_vira_entrada_em_lote(): void
+    {
+        $rows = '';
+        for ($i = 1; $i <= 60; $i++) { // passa de uma página
+            $name = $i % 10 === 0 ? 'Sutiã Renda Floral com bojo e aro reforçado, edição especial' : ($i % 2 ? 'Calcinha Renda Floral' : 'Sutiã Básico sem Bojo');
+            $rows .= "<tr><td>REF-$i</td><td style='width:150px'>$name</td><td>".['Preto', 'Nude', 'Vinho'][$i % 3].'</td><td>'.['P', 'M', 'G'][$i % 3]."</td><td style='text-align:right'>2</td><td style='text-align:right'>R$ 49,90</td></tr>";
+        }
+        $file = $this->pdf("<h2>Relatório de estoque</h2><p>Sistema Antigo · emitido em 10/11/2026</p><table><thead><tr><th>Código</th><th>Descrição</th><th>Cor</th><th>Tamanho</th><th>Qtd</th><th>Preço (R$)</th></tr></thead><tbody>$rows</tbody></table><p>Total: 120 peças</p>", 'estoque.pdf');
+
+        $preview = $this->upload('produtos', $file);
+        $this->get($preview)->assertOk()->assertSee('Sutiã Renda Floral com bojo e aro reforçado, edição especial')->assertSee('Calcinha Renda Floral')->assertSee('Lançar 3 produto(s)');
+        $this->post($preview, ['stock_mode' => 'somar'])->assertSessionHasNoErrors();
+
+        $this->inStore(function () {
+            $this->assertSame(3, Product::count());
+            $calcinha = Product::with('variants')->where('name', 'Calcinha Renda Floral')->sole();
+            $this->assertSame(['Cor', 'Tamanho'], $calcinha->option_names);
+            $this->assertSame(120, (int) StockLevel::sum('on_hand')); // 60 linhas de 2 peças (o PDF tem mais de uma página)
+            $this->assertSame(4990, $calcinha->variants->first()->price_cents);
+            $this->assertNotNull($calcinha->variants->first(fn ($v) => $v->sku === 'REF-1')); // o código do outro sistema vira o SKU
+        });
+    }
+
+    public function test_pdf_do_fiado_e_pdf_sem_tabela_ou_escaneado(): void
+    {
+        $preview = $this->upload('receber', $this->pdf('<h3>Contas a receber</h3><table><tr><th>Cliente</th><th>Telefone</th><th>Valor</th><th>Vencimento</th></tr>'
+            .'<tr><td>Bruna Martins</td><td>(11) 98111-2222</td><td>R$ 43,30</td><td>10/12/2026</td></tr><tr><td>Carla Souza</td><td>11 97333-4444</td><td>R$ 139,90</td><td>05/01/2027</td></tr></table>', 'fiado.pdf'));
+        $this->get($preview)->assertOk()->assertSee('Bruna Martins')->assertSee('R$ 183,20');
+        $this->post($preview)->assertSessionHasNoErrors();
+        $this->inStore(fn () => $this->assertSame([2, 18320], [Receivable::count(), (int) Receivable::sum('amount_cents')]));
+
+        $this->post($this->url('/app/importar/produtos'), ['file' => $this->pdf('<p>Carta sem tabela nenhuma, só texto corrido.</p>')])
+            ->assertSessionHasErrors(['file' => 'Não achamos a linha de títulos da tabela neste PDF (ex.: Produto, Cor, Tamanho, Quantidade, Preço). Confira se é um relatório em forma de tabela, ou envie a planilha.']);
+        $this->post($this->url('/app/importar/produtos'), ['file' => $this->pdf('<div style="width:200px;height:200px;background:#000"></div>', 'foto.pdf')])
+            ->assertSessionHasErrors(['file' => 'Este PDF não tem texto (parece uma foto ou um documento escaneado). Envie a planilha (.xlsx ou .csv) ou o PDF exportado direto do sistema.']);
+        $this->get($this->url('/app/importar'))->assertSee('PDF com tabela');
+        $this->get($this->url('/app/estoque?aba=entrada'))->assertSee('Entrada em lote por planilha ou PDF');
     }
 }

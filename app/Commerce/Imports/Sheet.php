@@ -8,8 +8,8 @@ use Illuminate\Validation\ValidationException;
 use ZipArchive;
 
 /**
- * Lê planilhas que a lojista já tem: .xlsx (Excel, Google Planilhas › Baixar) e .csv (com ; , ou tab, em
- * UTF-8 ou no padrão do Excel em português). Sem biblioteca: o .xlsx é um zip de XML. Devolve as linhas com
+ * Lê planilhas que a lojista já tem: .xlsx (Excel, Google Planilhas › Baixar), .csv (com ; , ou tab, em
+ * UTF-8 ou no padrão do Excel em português) e PDF com tabela (PdfTable). Sem biblioteca: o .xlsx é um zip de XML. Devolve as linhas com
  * os títulos das colunas normalizados (minúsculas, sem acento) e o número da linha na planilha.
  */
 class Sheet
@@ -19,16 +19,18 @@ class Sheet
     private const MAX_XML_BYTES = 60 * 1024 * 1024;
 
     /**
+     * @param  string[]  $known  títulos de coluna aceitos (normalizados), para achar a tabela num PDF
      * @return array<int, array<string, string>> nº da linha na planilha => [título normalizado => valor]
      */
-    public static function read(string $path, string $originalName): array
+    public static function read(string $path, string $originalName, array $known = []): array
     {
         $ext = Str::lower(pathinfo($originalName, PATHINFO_EXTENSION));
         $grid = match ($ext) {
             'xlsx' => self::xlsx($path),
+            'pdf' => PdfTable::grid($path, $known),
             'csv', 'txt' => self::csv((string) file_get_contents($path)),
             'xls' => throw ValidationException::withMessages(['file' => 'Este é o formato antigo do Excel (.xls). No Excel, use Arquivo › Salvar como › "Pasta de Trabalho do Excel (.xlsx)" e envie de novo.']),
-            default => throw ValidationException::withMessages(['file' => 'Envie a planilha em .xlsx (Excel) ou .csv.']),
+            default => throw ValidationException::withMessages(['file' => 'Envie a planilha em .xlsx (Excel) ou .csv, ou um PDF com a tabela.']),
         };
 
         return self::withHeader($grid);
@@ -37,7 +39,8 @@ class Sheet
     /** Título de coluna → forma comparável: "Preço de venda (R$)" → "preco de venda r". */
     public static function key(string $title): string
     {
-        return trim(preg_replace('/[^a-z0-9]+/', ' ', Str::lower(Str::ascii($title))));
+        // "(R$)" no fim do título não muda a coluna: "Preço (R$)" = "preco".
+        return preg_replace('/ r$/', '', trim(preg_replace('/[^a-z0-9]+/', ' ', Str::lower(Str::ascii($title)))));
     }
 
     /** Primeira coluna (pelos apelidos aceitos) que existe na linha e tem valor. */
