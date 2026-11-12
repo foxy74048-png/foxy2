@@ -19,10 +19,11 @@ class ResolvePublicStore
 {
     public function __construct(private ContextStore $contexts) {}
 
-    public function handle(Request $request, Closure $next): Response
+    /** $mode "portal": link da maleta, que vale mesmo com a loja (vitrine) fora do ar. */
+    public function handle(Request $request, Closure $next, ?string $mode = null): Response
     {
         $store = Store::withoutGlobalScopes()->with('organization.integration')->where('slug', (string) $request->route('slug'))->first();
-        abort_unless($store?->isPublished(), 404);
+        abort_unless($store && ($mode === 'portal' || $store->isPublished()), 404);
 
         $this->contexts->set(ExecutionContext::forSystem($store->organization, 'storefront'));
         $subscription = Plans::subscription($store->organization);

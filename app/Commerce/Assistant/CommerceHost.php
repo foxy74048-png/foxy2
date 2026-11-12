@@ -148,6 +148,7 @@ class CommerceHost
         ## Consignação (maletas)
         - **Maleta/sacolinha:** Consignação (maletas) › + Nova maleta › escolha a cliente ou revendedora (revendedora tem comissão %), a data do acerto e as peças — bipe o código de barras ou digite o nome. As peças ficam reservadas: não aparecem para venda até o acerto. "Mandar a lista no WhatsApp" envia a lista com os preços para a pessoa; Planilha/PDF é o romaneio.
         - **Reposição:** na maleta aberta › Acrescentar peças.
+        - **Link da maleta (portal da revendedora):** na maleta, "Copiar link" ou "Ver como ela vê". A pessoa abre sem senha e vê as maletas com ela, quanto ganha se vender tudo, a comissão já ganha, os acertos e o que falta pagar (com o Pix da loja, se configurado). O link já vai na lista do WhatsApp. "Trocar o link" cria outro e o antigo para de abrir. Funciona mesmo sem a vitrine publicada.
         - **Acerto:** abra a maleta › confira o que voltou › "Recebi agora" (forma de pagamento) ou "Fica a receber" (parcelas) › Fazer o acerto. O que voltou fica disponível de novo; o que ficou vira um pedido no canal "Consignação (maleta)", com a comissão da revendedora como desconto, e entra nos relatórios.
         - **Painel:** maletas com acerto atrasado ou nos próximos 2 dias aparecem no Painel.
         - **Recebidas (fornecedoras):** Consignação › Recebidas mostra, por remessa em aberto, quanto já vendeu, quanto já deve à fornecedora, o seu lucro, quantos dias faltam para o acerto e as peças paradas (sem nenhuma venda).

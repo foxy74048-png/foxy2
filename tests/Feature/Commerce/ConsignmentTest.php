@@ -165,4 +165,42 @@ class ConsignmentTest extends TestCase
         $this->get($this->url("/app/consignacao/{$foreign->id}"))->assertNotFound();
         $this->post($this->url("/app/consignacao/{$foreign->id}/acerto"), ['payment' => 'pago'])->assertNotFound();
     }
+
+    public function test_link_da_maleta_mostra_so_o_da_pessoa_sem_login_e_pode_ser_trocado(): void
+    {
+        $this->post($this->url('/app/consignacao'), ['customer_name' => 'Joana Revendedora', 'customer_phone' => '15999990000', 'kind' => 'revendedora', 'commission_percent' => 30,
+            'due_on' => today()->addDays(7)->toDateString(), 'items' => [$this->v['CR-P']->id => 2]])->assertSessionHasNoErrors();
+        $this->post($this->url('/app/consignacao'), ['customer_name' => 'Outra Pessoa', 'kind' => 'cliente', 'items' => [$this->v['CR-M']->id => 1]])->assertSessionHasNoErrors();
+        [$maleta, $other] = $this->inStore(fn () => [Consignment::with('customer')->where('number', 1)->sole(), Consignment::with('customer')->where('number', 2)->sole()]);
+
+        $page = $this->get($this->url("/app/consignacao/{$maleta->id}"))->assertOk()->assertSee('Link da maleta de Joana');
+        $token = $maleta->customer->fresh()->portal_token;
+        $this->assertSame(32, strlen($token));
+        $this->assertStringContainsString(rawurlencode('/lingerie-da-fran/r/'.$token), $page->getContent()); // vai na lista do WhatsApp
+
+        // Sem login, loja sem vitrine publicada: abre só com o código certo.
+        auth()->logout();
+        $this->assertFalse($this->store->fresh()->isPublished());
+        $this->get($this->url('/lingerie-da-fran/r/'.$token))->assertOk()
+            ->assertSee('Olá, Joana!')->assertSee('Maleta #1')->assertSee('R$ 59,80') // 2 × 29,90
+            ->assertSee('Se vender tudo, você ganha')->assertSee('R$ 17,94') // 30% de 59,80
+            ->assertDontSee('Outra Pessoa')->assertDontSee('Calcinha Renda — M')
+            ->assertSee('noindex', false)->assertDontSee('Carrinho<span>', false);
+        $this->get($this->url('/lingerie-da-fran/r/'.str_repeat('x', 32)))->assertNotFound();
+        $this->get($this->url('/outra-loja/r/'.$token))->assertNotFound();
+
+        // Depois do acerto (fica a receber): comissão ganha e o que falta pagar.
+        $this->actingAs($this->owner);
+        $item = $this->inStore(fn () => $maleta->items()->sole());
+        $this->post($this->url("/app/consignacao/{$maleta->id}/acerto"), ['returns' => [$item->id => 0], 'payment' => 'receber', 'installments' => 1, 'first_due' => today()->addDays(10)->toDateString()])->assertSessionHasNoErrors();
+        auth()->logout();
+        $this->get($this->url('/lingerie-da-fran/r/'.$token))->assertOk()->assertSee('Acertos anteriores')->assertSee('R$ 17,94')->assertSee('Falta pagar à loja')->assertSee('R$ 41,86');
+
+        // Trocar o link: o antigo para de abrir.
+        $this->actingAs($this->owner)->post($this->url("/app/consignacao/{$maleta->id}/novo-link"))->assertSessionHasNoErrors();
+        auth()->logout();
+        $this->get($this->url('/lingerie-da-fran/r/'.$token))->assertNotFound();
+        $this->get($this->url('/lingerie-da-fran/r/'.$maleta->customer->fresh()->portal_token))->assertOk();
+        $this->assertNull($other->customer->fresh()->portal_token); // só quem teve a maleta aberta na tela ganhou link
+    }
 }

@@ -16,6 +16,7 @@ use App\Commerce\Http\ListingController;
 use App\Commerce\Http\OrderController;
 use App\Commerce\Http\ProductController;
 use App\Commerce\Http\ReportController;
+use App\Commerce\Http\ResellerPortalController;
 use App\Commerce\Http\StockController;
 use App\Commerce\Http\StoreController;
 use App\Commerce\Http\StorefrontController;
@@ -126,6 +127,7 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/consignacao', [ConsignmentController::class, 'store'])->middleware('throttle:30,1')->name('consignments.store');
             Route::get('/consignacao/{consignment}', [ConsignmentController::class, 'show'])->name('consignments.show');
             Route::post('/consignacao/{consignment}/pecas', [ConsignmentController::class, 'add'])->middleware('throttle:30,1')->name('consignments.add');
+            Route::post('/consignacao/{consignment}/novo-link', [ConsignmentController::class, 'newLink'])->middleware('throttle:10,1')->name('consignments.link');
             Route::post('/consignacao/{consignment}/acerto', [ConsignmentController::class, 'settle'])->middleware('throttle:30,1')->name('consignments.settle');
         });
         Route::get('/consignacao-recebida', [ConsignmentController::class, 'received'])->middleware('commerce.can:commerce.stock.adjust')->name('consignments.received');
@@ -243,6 +245,8 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
 });
 
 // Loja própria pública (fatia 6): ecommerce.foxy.net.br/{slug}. Por último, para não engolir os outros endereços.
+Route::get('/{slug}/r/{token}', [ResellerPortalController::class, 'show'])->where(['slug' => '[a-z0-9-]+', 'token' => '[A-Za-z0-9]{20,40}'])
+    ->middleware(['commerce.public:portal', 'throttle:60,1'])->name('storefront.portal');
 Route::prefix('{slug}')->where(['slug' => '[a-z0-9-]+'])->middleware('commerce.public')->name('storefront.')->group(function () {
     Route::get('/', [StorefrontController::class, 'home'])->name('home');
     Route::get('/p/{product}', [StorefrontController::class, 'product'])->name('product');

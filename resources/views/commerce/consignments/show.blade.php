@@ -17,6 +17,19 @@
             <div class="helper">saiu em {{ $consignment->sent_on->format('d/m/Y') }}@if ($consignment->isLate()) · <span style="color:var(--danger-text);">atrasado</span>@endif @if ($consignment->order) · <a href="{{ route('commerce.orders.show', $consignment->order) }}">pedido #{{ $consignment->order->number }}</a>@endif</div></div>
     </div>
     @if ($consignment->notes)<div class="alert info" style="margin-top:16px;">{{ $consignment->notes }}</div>@endif
+    @if ($portal)
+        <div class="card" style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+            <div>
+                <strong>Link da maleta de {{ strtok((string) $consignment->customer->name, ' ') }}</strong>
+                <div class="helper">Ela vê as maletas com ela, {{ $consignment->kind === 'revendedora' ? 'quanto ganha de comissão, ' : '' }}os acertos e o que falta pagar (com o seu Pix, se configurado). Só leitura. Já vai junto na lista do WhatsApp.</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <a class="button secondary" href="{{ $portal }}" target="_blank" rel="noopener">Ver como ela vê</a>
+                <a class="button secondary" href="{{ $portal }}" data-copy="{{ $portal }}" onclick="if (navigator.clipboard) { event.preventDefault(); navigator.clipboard.writeText(this.dataset.copy); this.textContent = 'Link copiado'; }">Copiar link</a>
+                <form method="POST" action="{{ route('commerce.consignments.link', $consignment) }}" onsubmit="return confirm('Criar um link novo? O link antigo para de funcionar.');">@csrf<button type="submit" class="secondary">Trocar o link</button></form>
+            </div>
+        </div>
+    @endif
 
     @if ($consignment->status === 'aberta')
         <form class="card" method="POST" action="{{ route('commerce.consignments.settle', $consignment) }}" style="margin-top:16px;" onsubmit="return confirm('Fazer o acerto? O que voltou fica disponível de novo e o que ficou vira venda.');">

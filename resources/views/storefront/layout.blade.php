@@ -1,4 +1,4 @@
-@props(['title' => null, 'image' => null, 'description' => null])
+@props(['title' => null, 'image' => null, 'description' => null, 'bare' => false])
 {{-- Loja própria: visual da loja do lojista (cor e logo dele), separado do visual do Core. --}}
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -10,6 +10,7 @@
     @php($ogDescription = \Illuminate\Support\Str::limit($description ?: ($store->about ?: ($store->isCatalog() ? 'Veja o catálogo e peça pelo WhatsApp.' : 'Compre online.')), 200))
     @php($ogImage = $image ?: $store->logo?->url())
     @php($ogImage = $ogImage && ! str_starts_with($ogImage, 'http') ? url($ogImage) : $ogImage)
+    @if ($bare)<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">@endif
     <meta name="description" content="{{ $ogDescription }}">
     <meta property="og:type" content="{{ $title ? 'product' : 'website' }}">
     <meta property="og:site_name" content="{{ $store->name }}">
@@ -61,13 +62,15 @@
 <body>
 <header class="top">
     <div class="wrap">
-        <a class="brand" href="{{ route('commerce.storefront.home', $store->slug) }}">@if ($store->logo)<img src="{{ $store->logo->url() }}" alt="">@endif<span>{{ $store->name }}</span></a>
+        <a class="brand" href="{{ $store->isPublished() ? route('commerce.storefront.home', $store->slug) : '#' }}">@if ($store->logo)<img src="{{ $store->logo->url() }}" alt="">@endif<span>{{ $store->name }}</span></a>
+        @unless ($bare)
         <form class="search" method="GET" action="{{ route('commerce.storefront.home', $store->slug) }}"><input name="q" value="{{ request('q') }}" placeholder="Buscar produtos" aria-label="Buscar produtos"></form>
         @if ($store->isCatalog())
             @if ($chat = $store->whatsappLink('Olá! Vi o catálogo da '.$store->name.' e queria tirar uma dúvida.'))<a class="cart-link" href="{{ $chat }}" target="_blank" rel="noopener">Falar no WhatsApp</a>@endif
         @else
             <a class="cart-link" href="{{ route('commerce.storefront.cart', $store->slug) }}">Carrinho<span>{{ $cartCount ?? 0 }}</span></a>
         @endif
+        @endunless
     </div>
 </header>
 <main>

@@ -13,6 +13,7 @@ use App\Commerce\Insights\Export;
 use App\Commerce\Inventory\StockService;
 use App\Commerce\Orders\Customer;
 use App\Commerce\Orders\Order;
+use App\Commerce\Stores\Store;
 use App\Commerce\Supply\SupplyBatch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -119,6 +120,7 @@ class ConsignmentController
             'consignment' => $consignment,
             'pickable' => $consignment->status === 'aberta' ? $this->pickable() : collect(),
             'whatsapp' => $this->whatsappList($consignment),
+            'portal' => $consignment->customer ? $this->portalUrl($consignment) : null,
         ]);
     }
 
@@ -212,6 +214,20 @@ class ConsignmentController
         return collect($input)->map(fn ($q, $id) => ['variant' => $variants[$id], 'quantity' => $q])->values()->all();
     }
 
+    /** Troca o link da maleta da pessoa (o antigo para de funcionar). */
+    public function newLink(Request $request, Consignment $consignment): RedirectResponse
+    {
+        $consignment->customer->portalToken(renew: true);
+
+        return back()->with('status', 'Link novo criado. O link antigo não abre mais.');
+    }
+
+    private function portalUrl(Consignment $consignment): string
+    {
+        // A loja da organização atual (1:1); o código é da pessoa, criado na primeira vez.
+        return route('commerce.storefront.portal', [Store::value('slug'), $consignment->customer->portalToken()]);
+    }
+
     /** Link para mandar a lista da maleta no WhatsApp da pessoa. */
     private function whatsappList(Consignment $consignment): ?string
     {
@@ -222,7 +238,8 @@ class ConsignmentController
         $text = 'Oi, '.strtok((string) $consignment->customer->name, ' ').'! Segue a lista da sua maleta #'.$consignment->number.":\n"
             .$consignment->items->map(fn ($i) => "• {$i->quantity}× {$i->name} — ".Money::format($i->price_cents))->implode("\n")
             ."\nTotal: ".Money::format($consignment->valueCents())
-            .($consignment->due_on ? "\nAcerto até ".$consignment->due_on->format('d/m/Y').'.' : '');
+            .($consignment->due_on ? "\nAcerto até ".$consignment->due_on->format('d/m/Y').'.' : '')
+            ."\nAcompanhe sua maleta: ".$this->portalUrl($consignment);
 
         return 'https://wa.me/'.(strlen($digits) <= 11 ? '55'.$digits : $digits).'?text='.rawurlencode($text);
     }
