@@ -42,6 +42,7 @@
 @endif
 <div class="core-nav-title">{{ auth()->user()->name }}</div>
 <div class="helper" style="padding:0 12px 8px;">{{ \App\Commerce\Access::label($currentMembership->role) }}</div>
+<x-core::nav-link href="{{ route('commerce.profile') }}" :active="request()->routeIs('commerce.profile*')" icon="settings">Meu perfil</x-core::nav-link>
 <form method="POST" action="{{ route('commerce.logout') }}" style="margin-top:12px;">
     @csrf
     <button type="submit" class="button secondary" style="width:100%;">Sair</button>

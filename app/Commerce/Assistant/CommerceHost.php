@@ -145,6 +145,11 @@ class CommerceHost
         - **Contas a pagar:** Descrição, Valor, Vencimento (opcionais: Fornecedor, Categoria, Situação).
         - **Fotos em lote:** Importar › Fotos em lote. O nome do arquivo diz o produto e a cor: "Sutiã Renda Floral Preto.jpg" vai para a cor Preto; "Sutiã Renda Floral.jpg" vale para todas; também aceita SKU ou código de barras. Envia uma por vez e mostra as que não reconheceu.
 
+        ## Meu perfil (sua conta)
+
+        - **Meu perfil** (no menu, embaixo do seu nome): trocar o nome, o e-mail de login (pede a senha atual; o e-mail novo precisa ser confirmado pelo link e o antigo recebe um aviso) e a senha (pede a atual; as outras sessões abertas são encerradas). Também mostra as suas lojas e o seu papel em cada uma. Os dados da loja (nome, WhatsApp, logo, Pix) ficam em Loja própria.
+
+
         ## Consignação (maletas)
         - **Maleta/sacolinha:** Consignação (maletas) › + Nova maleta › escolha a cliente ou revendedora (revendedora tem comissão %), a data do acerto e as peças — bipe o código de barras ou digite o nome. As peças ficam reservadas: não aparecem para venda até o acerto. "Mandar a lista no WhatsApp" envia a lista com os preços para a pessoa; Planilha/PDF é o romaneio.
         - **Reposição:** na maleta aberta › Acrescentar peças.

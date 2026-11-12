@@ -15,6 +15,7 @@ use App\Commerce\Http\InvitationController;
 use App\Commerce\Http\ListingController;
 use App\Commerce\Http\OrderController;
 use App\Commerce\Http\ProductController;
+use App\Commerce\Http\ProfileController;
 use App\Commerce\Http\ReportController;
 use App\Commerce\Http\ResellerPortalController;
 use App\Commerce\Http\StockController;
@@ -95,6 +96,10 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
 
         // Suporte: chamados vão para a central do Foxy Admin
         Route::get('/suporte', [SupportController::class, 'index'])->name('support');
+        // Meu perfil (qualquer pessoa da equipe): nome, e-mail e senha.
+        Route::get('/perfil', [ProfileController::class, 'show'])->name('profile');
+        Route::post('/perfil', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
+        Route::post('/perfil/senha', [ProfileController::class, 'password'])->middleware('throttle:6,1')->name('profile.password');
         Route::post('/suporte', [SupportController::class, 'store'])->middleware('throttle:10,1')->name('support.store');
 
         // Janela da raposa (fatia 10)
