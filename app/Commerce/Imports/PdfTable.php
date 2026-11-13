@@ -67,10 +67,12 @@ class PdfTable
                 $last[$col] = $chunk;
             }
             $filled = count(array_filter($cells, fn ($c) => $c !== ''));
-            if ($filled >= 2 || self::looksLikeRow($cells)) {
+            if ($filled >= 2) {
                 $rows[] = ['cells' => $cells, 'page' => $line['page'], 'y' => $line['y'], 'above' => [], 'below' => []];
             } elseif ($filled === 1) {
-                $loose[] = ['cells' => $cells, 'page' => $line['page'], 'y' => $line['y']];
+                // Um número sozinho pode ser o fim de uma descrição que quebrou ("SUTIÃ RENDA NUDE |" + "42"):
+                // decide depois, conforme a linha vizinha.
+                $loose[] = ['cells' => $cells, 'page' => $line['page'], 'y' => $line['y'], 'numeric' => self::looksLikeRow($cells)];
             }
         }
         if (count($rows) > Sheet::MAX_ROWS) {
@@ -79,6 +81,7 @@ class PdfTable
 
         // Texto que quebrou de linha: vai para a linha da tabela mais perto na mesma página (acima ou abaixo).
         $gap = self::lineGap($rows);
+        $numbers = [];
         foreach ($loose as $piece) {
             $target = null;
             foreach ($rows as $r => $row) {
@@ -87,9 +90,18 @@ class PdfTable
                     $target = $r;
                 }
             }
-            if ($target !== null) {
+            // O número só continua a célula vizinha se ela for texto (descrição); ao lado de outro número
+            // (ex.: "Total: 120" embaixo da quantidade) é uma linha à parte, como antes.
+            $col = array_key_first(array_filter($piece['cells'], fn ($c) => $c !== ''));
+            if ($piece['numeric'] && ($target === null || ! preg_match('/\p{L}/u', $rows[$target]['cells'][$col]))) {
+                $numbers[] = ['cells' => $piece['cells'], 'page' => $piece['page'], 'y' => $piece['y'], 'above' => [], 'below' => []];
+            } elseif ($target !== null) {
                 $rows[$target][$piece['y'] > $rows[$target]['y'] ? 'above' : 'below'][] = $piece;
             }
+        }
+        if ($numbers !== []) {
+            $rows = array_merge($rows, $numbers);
+            usort($rows, fn ($a, $b) => [$a['page'], $b['y']] <=> [$b['page'], $a['y']]); // de cima para baixo, página a página
         }
 
         $grid = [$titles];

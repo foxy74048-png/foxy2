@@ -171,15 +171,17 @@ class SupplyTest extends TestCase
             ['00056', 'CALCINHA CINTURA ALTA MIC PRETO | M', '9000026437997', '26,90', '1.0'],
             ['0100166', 'CJ RENDA CA FIO DUPLO PRETO | G', '9000026447897', '87,90', '1.0'],
             ['0100193', 'CJ RENDA CA FIO DPL CAPUCCINO | M', '9000026447903', '89,90', '1.0'],
+            ['00071', 'SUTIA TRIANGULO RENDA NUDE | 42', '9000026552422', '59,90', '1.0'], // o "42" quebra sozinho na linha de baixo
         ]);
         $this->post($this->url('/app/remessas'), ['file' => $file, 'basis' => 'venda', 'percent' => 30])->assertSessionHasNoErrors();
 
         $batch = $this->inStore(fn () => SupplyBatch::sole());
         $this->assertSame(['Miza Lingerie Moda Intima', '1945', '2026-12-04'], [$batch->supplier, $batch->document_number, $batch->closing_on->toDateString()]);
-        $this->assertSame(['Calcinha cintura alta mic', 'Cj renda ca fio duplo preto', 'Cj renda ca fio dpl capuccino'], array_column($batch->groups, 'name'));
+        $this->assertSame(['Calcinha cintura alta mic', 'Cj renda ca fio duplo preto', 'Cj renda ca fio dpl capuccino', 'Sutia triangulo renda nude'], array_column($batch->groups, 'name'));
         $calcinha = $batch->groups[0]['lines'];
         $this->assertSame([['Azul Marinho', 'G', '9000026440805'], ['Preto', 'M', '9000026437997']], array_map(fn ($l) => [$l['color'], $l['size'], $l['barcode']], $calcinha));
-        $this->get($this->url("/app/remessas/{$batch->id}"))->assertOk()->assertSee('Lemos <b>4 peças</b>', false);
+        $this->assertSame('42', $batch->groups[3]['lines'][0]['size']);
+        $this->get($this->url("/app/remessas/{$batch->id}"))->assertOk()->assertSee('Lemos <b>5 peças</b>', false);
     }
 
     public function test_acerto_devolve_o_que_sobrou_e_cobra_o_vendido(): void
