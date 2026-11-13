@@ -27,19 +27,7 @@ class PdfTable
 
     public static function grid(string $path, array $known): array
     {
-        try {
-            $pdf = (new Parser)->parseFile($path);
-            $lines = [];
-            foreach (array_slice($pdf->getPages(), 0, self::MAX_PAGES) as $p => $page) {
-                foreach (self::lines($page->getDataTm()) as $line) {
-                    $lines[] = $line + ['page' => $p];
-                }
-            }
-        } catch (ValidationException $e) {
-            throw $e;
-        } catch (\Throwable) {
-            throw ValidationException::withMessages(['file' => 'Não conseguimos abrir este PDF. Se ele tem senha, salve uma cópia sem senha, ou envie a planilha (.xlsx ou .csv).']);
-        }
+        $lines = self::read($path);
         self::$letter = self::letterWidth($lines);
         if ($lines === []) {
             throw ValidationException::withMessages(['file' => 'Este PDF não tem texto (parece uma foto ou um documento escaneado). Envie a planilha (.xlsx ou .csv) ou o PDF exportado direto do sistema.']);
@@ -123,6 +111,34 @@ class PdfTable
         }
 
         return $grid;
+    }
+
+    /**
+     * O texto do PDF na ordem em que se lê na página (de cima para baixo, da esquerda para a direita), uma
+     * linha por altura. Há PDFs que guardam o texto fora dessa ordem (o comprovante da Miza grava a
+     * referência e o código de barras depois do total), e a leitura "corrida" sai embaralhada.
+     */
+    public static function text(string $path): string
+    {
+        return implode("\n", array_map(fn ($line) => implode('  ', array_column($line['chunks'], 'text')), self::read($path)));
+    }
+
+    /** @return array<int, array{y: float, page: int, chunks: array<int, array{x: float, text: string}>}> */
+    private static function read(string $path): array
+    {
+        try {
+            $pdf = (new Parser)->parseFile($path);
+            $lines = [];
+            foreach (array_slice($pdf->getPages(), 0, self::MAX_PAGES) as $p => $page) {
+                foreach (self::lines($page->getDataTm()) as $line) {
+                    $lines[] = $line + ['page' => $p];
+                }
+            }
+
+            return $lines;
+        } catch (\Throwable) {
+            throw ValidationException::withMessages(['file' => 'Não conseguimos abrir este PDF. Se ele tem senha, salve uma cópia sem senha, ou envie a planilha (.xlsx ou .csv).']);
+        }
     }
 
     /**

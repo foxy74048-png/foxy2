@@ -56,14 +56,16 @@ class SupplyController
         ], [], ['file' => 'comprovante ou nota', 'basis' => 'preço do documento', 'percent' => 'percentual']);
 
         $file = $request->file('file');
-        $text = $file
-            ? (in_array(strtolower($file->getClientOriginalExtension()), ['txt', 'xml'], true) ? (string) $file->get() : rescue(fn () => ReceiptParser::textFromPdf($file->getRealPath()), '', report: false))
-            : (string) ($data['text'] ?? '');
-        if (trim($text) === '') {
+        if ($file && ! in_array(strtolower($file->getClientOriginalExtension()), ['txt', 'xml'], true)) {
+            $parsed = ReceiptParser::fromPdf($file->getRealPath()); // PDF: lido pela posição do texto na página
+        } else {
+            $text = $file ? (string) $file->get() : (string) ($data['text'] ?? '');
+            $parsed = trim($text) === '' ? null : (NfeParser::looksLike($text) ? NfeParser::parse($text) : ReceiptParser::parse($text));
+        }
+        if ($parsed === null) {
             throw ValidationException::withMessages(['file' => 'Envie o PDF do comprovante, o XML da nota fiscal ou cole o texto do comprovante.']);
         }
 
-        $parsed = NfeParser::looksLike($text) ? NfeParser::parse($text) : ReceiptParser::parse($text);
         $basis = in_array($data['basis'] ?? null, ['venda', 'custo'], true) ? $data['basis'] : null;
         $batch = $this->supply->draft($parsed, $basis, isset($data['percent']) ? (float) $data['percent'] : null);
 

@@ -2,6 +2,8 @@
 
 namespace App\Commerce\Supply;
 
+use App\Commerce\Imports\PdfTable;
+use App\Commerce\Imports\Sheet;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Smalot\PdfParser\Parser;
@@ -20,9 +22,97 @@ class ReceiptParser
     /** Tamanhos de etiqueta: letras (PP a EGG, G1-G4, U), numeração (36-60) e sutiã (40B, 44C). */
     private const SIZES = 'PP|P|M|G|GG|XG|XGG|XXG|EG|EGG|EXG|G[1-4]|U|UN|UNICO|ÚNICO|TU|\d{2}(?:[A-F]{1,2})?';
 
+    /** Títulos das colunas do comprovante (normalizados, Sheet::key) e a coluna que cada um representa. */
+    private const COLUMNS = [
+        'ref' => ['referencia', 'ref', 'codigo', 'cod'],
+        'desc' => ['descricao', 'produto', 'descricao do produto'],
+        'bar' => ['cod barras', 'codigo de barras', 'codigo barras', 'ean', 'gtin'],
+        'brand' => ['marca'],
+        'price' => ['preco', 'preco unit', 'valor unit', 'valor unitario', 'unitario'],
+        'qty' => ['qtd', 'qtde', 'quantidade'],
+        'ent' => ['ent', 'entregue', 'entregues'],
+    ];
+
     public static function textFromPdf(string $path): string
     {
         return (new Parser)->parseFile($path)->getText();
+    }
+
+    /**
+     * Lê o comprovante em PDF pela posição do texto na página (a tabela, como no Importar), e não pelo texto
+     * "corrido": no PDF real da Miza a referência e o código de barras vêm gravados depois do total e a
+     * descrição quebra em duas linhas, o que embaralha a leitura corrida. Cada PDF é de um jeito, então tenta as
+     * três leituras (tabela, texto na ordem da página, texto corrido) e fica com a que achou mais itens; os
+     * dados do cabeçalho vêm do texto na ordem da página, completados pelo corrido. Null quando não há texto.
+     */
+    public static function fromPdf(string $path): ?array
+    {
+        $texts = array_filter([
+            rescue(fn () => PdfTable::text($path), '', report: false),
+            rescue(fn () => self::textFromPdf($path), '', report: false),
+        ], fn ($text) => trim($text) !== '');
+        if ($texts === []) {
+            return null;
+        }
+
+        $readings = array_map(fn ($text) => self::parse($text), array_values($texts));
+        $parsed = $readings[0];
+        foreach (array_slice($readings, 1) as $other) {
+            foreach ($other as $field => $value) {
+                $parsed[$field] ??= $value;
+            }
+        }
+        $candidates = [
+            rescue(fn () => self::itemsFromGrid(PdfTable::grid($path, array_merge(...array_values(self::COLUMNS)))), [], report: false),
+            ...array_column($readings, 'items'),
+        ];
+        usort($candidates, fn ($a, $b) => count($b) <=> count($a)); // estável: no empate, a tabela ganha
+        $parsed['items'] = $candidates[0];
+
+        return $parsed;
+    }
+
+    /** Linhas da tabela do PDF → itens (linha sem descrição, preço ou quantidade é cabeçalho, rodapé ou total). */
+    private static function itemsFromGrid(array $grid): array
+    {
+        $titles = array_map(fn ($t) => Sheet::key((string) $t), array_shift($grid) ?? []);
+        $col = [];
+        foreach (self::COLUMNS as $field => $aliases) {
+            foreach ($titles as $i => $title) {
+                if (in_array($title, $aliases, true)) {
+                    $col[$field] = $i;
+                    break;
+                }
+            }
+        }
+        if (! isset($col['desc'], $col['price']) || ! isset($col['qty']) && ! isset($col['ent'])) {
+            return [];
+        }
+
+        $cell = fn (array $row, string $field) => isset($col[$field]) ? Str::squish((string) ($row[$col[$field]] ?? '')) : '';
+        $items = [];
+        foreach ($grid as $row) {
+            $desc = $cell($row, 'desc');
+            $quantity = $cell($row, 'ent') !== '' ? $cell($row, 'ent') : $cell($row, 'qty');
+            if ($desc === '' || ! preg_match('/^(?:R\$\s*)?('.self::MONEY.')$/u', $cell($row, 'price'), $price) || ! preg_match('/^\d+(?:[.,]\d+)?$/', $quantity)) {
+                continue;
+            }
+            $qty = (int) round((float) str_replace(',', '.', $quantity));
+            if ($qty <= 0) {
+                continue; // tudo devolvido no próprio comprovante
+            }
+            $items[] = [
+                // Na tabela a referência tem coluna própria: vale qualquer código (a Miza usa 00056 e 0100166).
+                'ref' => preg_match('/^(?=.*\d)[\w.\/-]{2,20}$/u', $cell($row, 'ref')) ? $cell($row, 'ref') : null,
+                'description' => $desc,
+                'barcode' => preg_match('/^\d{8,14}$/', $cell($row, 'bar')) ? $cell($row, 'bar') : null,
+                'brand' => $cell($row, 'brand') ?: null,
+                'price_cents' => self::cents($price[1]),
+                'quantity' => $qty,
+            ];
+        }
+
+        return $items;
     }
 
     /**

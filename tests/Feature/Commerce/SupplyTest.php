@@ -135,6 +135,53 @@ class SupplyTest extends TestCase
         $this->assertSame('9000026437997', $this->inStore(fn () => Variant::where('product_id', $calcinha->id)->get()->first(fn ($v) => $v->options === ['Cor' => 'Preto', 'Tamanho' => 'M'])->gtin));
     }
 
+    /**
+     * PDF montado como o comprovante real da Miza: o texto fica gravado fora da ordem da página (referência e
+     * código de barras depois do total; no cabeçalho, o valor antes do rótulo) e a descrição quebra em duas
+     * linhas. Lido como texto corrido, sai embaralhado.
+     */
+    private function realLayoutPdf(array $rows): UploadedFile
+    {
+        $at = fn (int $x, int $y, string $text, int $w = 0) => "<div style='position:absolute;left:{$x}px;top:{$y}px;".($w ? "width:{$w}px;" : 'white-space:nowrap;')."'>{$text}</div>";
+        $html = $at(0, 0, 'Comprovante de consignação').$at(0, 20, 'Empresa: (B) MIZA LINGERIE MODA INTIMA LTDA (GERENCIAL PARAISO)')
+            .$at(120, 40, '1945').$at(0, 40, 'Num. venda:').$at(120, 60, '04/11/2026 08:45').$at(0, 60, 'Data:').$at(260, 60, 'Fechamento: 04/12/2026')
+            .$at(120, 80, 'R$ 127,50').$at(0, 80, 'Total:').$at(260, 80, 'CPF/CNPJ: 10.329.195/0001-71');
+        $columns = [[0, 'Referência'], [60, 'Descrição'], [230, 'Cód. Barras'], [330, 'Marca'], [380, 'Preço'], [440, 'Qtd'], [470, 'Dev.'], [500, 'Ent.'], [530, 'Total']];
+        foreach (array_reverse($columns) as [$x, $title]) {
+            $html .= $at($x, 120, $title);
+        }
+        foreach ($rows as $i => [$ref, $desc, $bar, $price, $qty]) {
+            $y = 145 + $i * 34;
+            $html .= $at(60, $y, $desc, 150).$at(330, $y, 'MIZA').$at(380, $y, "R$ {$price}").$at(440, $y, $qty).$at(470, $y, '0.0').$at(500, $y, $qty).$at(530, $y, "R$ {$price}")
+                .$at(0, $y, $ref).$at(230, $y, $bar);
+        }
+        $pdf = new Dompdf;
+        $pdf->loadHtml('<meta charset="utf-8"><body style="font-family:Helvetica;font-size:9px">'.$html.'</body>', 'UTF-8');
+        $pdf->render();
+        $path = tempnam(sys_get_temp_dir(), 'miza').'.pdf';
+        file_put_contents($path, $pdf->output());
+
+        return new UploadedFile($path, 'FULANA.pdf', 'application/pdf', null, true);
+    }
+
+    public function test_pdf_real_da_miza_com_texto_fora_de_ordem_e_descricao_quebrada(): void
+    {
+        $file = $this->realLayoutPdf([
+            ['00056', 'CALCINHA CINTURA ALTA MIC AZUL MARINHO | G', '9000026440805', '26,90', '1.0'],
+            ['00056', 'CALCINHA CINTURA ALTA MIC PRETO | M', '9000026437997', '26,90', '1.0'],
+            ['0100166', 'CJ RENDA CA FIO DUPLO PRETO | G', '9000026447897', '87,90', '1.0'],
+            ['0100193', 'CJ RENDA CA FIO DPL CAPUCCINO | M', '9000026447903', '89,90', '1.0'],
+        ]);
+        $this->post($this->url('/app/remessas'), ['file' => $file, 'basis' => 'venda', 'percent' => 30])->assertSessionHasNoErrors();
+
+        $batch = $this->inStore(fn () => SupplyBatch::sole());
+        $this->assertSame(['Miza Lingerie Moda Intima', '1945', '2026-12-04'], [$batch->supplier, $batch->document_number, $batch->closing_on->toDateString()]);
+        $this->assertSame(['Calcinha cintura alta mic', 'Cj renda ca fio duplo preto', 'Cj renda ca fio dpl capuccino'], array_column($batch->groups, 'name'));
+        $calcinha = $batch->groups[0]['lines'];
+        $this->assertSame([['Azul Marinho', 'G', '9000026440805'], ['Preto', 'M', '9000026437997']], array_map(fn ($l) => [$l['color'], $l['size'], $l['barcode']], $calcinha));
+        $this->get($this->url("/app/remessas/{$batch->id}"))->assertOk()->assertSee('Lemos <b>4 peças</b>', false);
+    }
+
     public function test_acerto_devolve_o_que_sobrou_e_cobra_o_vendido(): void
     {
         $this->post($this->url('/app/remessas'), ['file' => $this->receiptPdf(), 'basis' => 'venda', 'percent' => 30]);
