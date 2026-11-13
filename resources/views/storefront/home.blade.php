@@ -11,20 +11,7 @@
     @if ($products->isEmpty())
         <div class="card">Nenhum produto encontrado.</div>
     @else
-        <div class="grid">
-            @foreach ($products as $p)
-                @php($prices = $p->variants->pluck('price_cents'))
-                @php($inStock = $p->variants->sum(fn ($v) => max(0, $available[$v->id] ?? 0)))
-                <a class="tile" href="{{ route('commerce.storefront.product', [$store->slug, $p->id]) }}">
-                    <div class="ph">@if ($p->images->first()?->file)<img src="{{ $p->images->first()->file->url() }}" alt="{{ $p->name }}" loading="lazy">@else sem foto @endif</div>
-                    <div class="info">
-                        <div>{{ $p->name }}</div>
-                        <div class="price">{{ $prices->min() !== $prices->max() ? 'a partir de ' : '' }}{{ $money($prices->min()) }}</div>
-                        @if ($inStock === 0)<div class="muted">Esgotado</div>@endif
-                    </div>
-                </a>
-            @endforeach
-        </div>
+        @include('storefront._tiles')
         <div style="margin-top:20px;">{{ $products->links() }}</div>
     @endif
 </x-storefront::layout>

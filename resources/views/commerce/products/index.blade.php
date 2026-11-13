@@ -1,6 +1,7 @@
 <x-core::layout title="Produtos" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
     @php($canManage = \App\Commerce\Access::allows($currentMembership, 'commerce.catalog.manage'))
+    @php($canSelect = \App\Commerce\Access::allows($currentMembership, 'commerce.orders.manage'))
     <x-slot:actions>
         @include('commerce.export.buttons')
         @if ($canManage)
@@ -44,11 +45,12 @@
             <div class="empty">Nenhum produto encontrado.@if ($canManage) Comece por <a href="{{ route('commerce.products.create') }}">Novo produto</a> (com a grade de tamanho e cor, o sistema cria todas as variantes de uma vez) ou traga tudo de uma vez pela <a href="{{ route('commerce.imports') }}#produtos">planilha</a> ou pelo <a href="{{ route('commerce.supply') }}">comprovante da fornecedora</a>.@endif</div>
         @else
             <div class="table-wrap"><table>
-                <thead><tr><th></th><th>Produto</th><th>Categoria</th><th>Variantes</th><th>Preço</th><th>Situação</th>@if ($canManage)<th style="text-align:right;">Ações</th>@endif</tr></thead>
+                <thead><tr>@if ($canSelect)<th style="width:36px;" title="Marcar para a seleção"></th>@endif<th></th><th>Produto</th><th>Categoria</th><th>Variantes</th><th>Preço</th><th>Situação</th>@if ($canManage)<th style="text-align:right;">Ações</th>@endif</tr></thead>
                 <tbody>
                     @foreach ($products as $p)
                         @php($prices = $p->variants->pluck('price_cents'))
                         <tr>
+                            @if ($canSelect)<td>@if ($p->status === 'active')<input type="checkbox" name="produtos[]" value="{{ $p->id }}" form="selection-form" data-select style="width:auto;" aria-label="Marcar {{ $p->name }} para a seleção">@endif</td>@endif
                             <td style="width:56px;">@if ($p->images->first()?->file)<img src="{{ $p->images->first()->file->url() }}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">@endif</td>
                             <td>
                                 @if ($canManage)<a href="{{ route('commerce.products.edit', $p) }}"><strong>{{ $p->name }}</strong></a>@else<strong>{{ $p->name }}</strong>@endif
@@ -76,4 +78,21 @@
             <div style="margin-top:12px;">{{ $products->links() }}</div>
         @endif
     </div>
+
+    @if ($canSelect && $products->isNotEmpty())
+        {{-- Marcou peças: manda um link só com elas (a tela seguinte deixa acrescentar outras e dar um nome). --}}
+        <form id="selection-form" method="GET" action="{{ route('commerce.selections.create') }}" class="card" style="position:sticky;bottom:12px;margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <span class="helper" style="flex:1;min-width:220px;">Marque peças na lista para mandar às clientes um link só com elas, com o estoque de agora.</span>
+            <button type="submit" id="selection-send" disabled>Mandar seleção</button>
+        </form>
+        <script>
+            document.addEventListener('change', function (e) {
+                if (!e.target.matches('[data-select]')) return;
+                const n = document.querySelectorAll('[data-select]:checked').length;
+                const send = document.getElementById('selection-send');
+                send.textContent = n ? 'Mandar seleção (' + n + ')' : 'Mandar seleção';
+                send.disabled = n === 0;
+            });
+        </script>
+    @endif
 </x-core::layout>

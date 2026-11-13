@@ -18,6 +18,7 @@ use App\Commerce\Http\ProductController;
 use App\Commerce\Http\ProfileController;
 use App\Commerce\Http\ReportController;
 use App\Commerce\Http\ResellerPortalController;
+use App\Commerce\Http\SelectionController;
 use App\Commerce\Http\StockController;
 use App\Commerce\Http\StoreController;
 use App\Commerce\Http\StorefrontController;
@@ -134,6 +135,13 @@ Route::middleware(['auth', 'verified:commerce.verification.notice'])->prefix('ap
             Route::post('/consignacao/{consignment}/pecas', [ConsignmentController::class, 'add'])->middleware('throttle:30,1')->name('consignments.add');
             Route::post('/consignacao/{consignment}/novo-link', [ConsignmentController::class, 'newLink'])->middleware('throttle:10,1')->name('consignments.link');
             Route::post('/consignacao/{consignment}/acerto', [ConsignmentController::class, 'settle'])->middleware('throttle:30,1')->name('consignments.settle');
+            // Seleções do catálogo: algumas peças num link só delas, para mandar às clientes.
+            Route::get('/selecoes', [SelectionController::class, 'index'])->name('selections');
+            Route::get('/selecoes/nova', [SelectionController::class, 'create'])->name('selections.create');
+            Route::post('/selecoes', [SelectionController::class, 'store'])->middleware('throttle:30,1')->name('selections.store');
+            Route::get('/selecoes/{selection}', [SelectionController::class, 'show'])->name('selections.show');
+            Route::post('/selecoes/{selection}', [SelectionController::class, 'update'])->middleware('throttle:30,1')->name('selections.update');
+            Route::post('/selecoes/{selection}/situacao', [SelectionController::class, 'toggle'])->middleware('throttle:30,1')->name('selections.toggle');
         });
         Route::get('/consignacao-recebida', [ConsignmentController::class, 'received'])->middleware('commerce.can:commerce.stock.adjust')->name('consignments.received');
 
@@ -256,6 +264,7 @@ Route::prefix('{slug}')->where(['slug' => '[a-z0-9-]+'])->middleware('commerce.p
     Route::get('/', [StorefrontController::class, 'home'])->name('home');
     Route::get('/p/{product}', [StorefrontController::class, 'product'])->name('product');
     Route::get('/p/{product}/whatsapp', [StorefrontController::class, 'ask'])->middleware('throttle:60,1')->name('ask');
+    Route::get('/s/{token}', [StorefrontController::class, 'selection'])->where('token', '[A-Za-z0-9]{20,40}')->middleware('throttle:60,1')->name('selection');
     Route::get('/carrinho', [StorefrontController::class, 'cart'])->name('cart');
     Route::post('/carrinho', [StorefrontController::class, 'add'])->middleware('throttle:60,1')->name('cart.add');
     Route::post('/carrinho/atualizar', [StorefrontController::class, 'update'])->middleware('throttle:60,1')->name('cart.update');

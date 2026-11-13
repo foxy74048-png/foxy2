@@ -5,6 +5,7 @@ namespace App\Commerce\Http;
 use App\Commerce\Catalog\Category;
 use App\Commerce\Catalog\Money;
 use App\Commerce\Catalog\Product;
+use App\Commerce\Catalog\Selection;
 use App\Commerce\Catalog\Variant;
 use App\Commerce\Inventory\StockService;
 use App\Commerce\Orders\Order;
@@ -76,6 +77,29 @@ class StorefrontController
             'product' => $product,
             'available' => $this->stock->availability($product->variants),
             'cartCount' => $this->cart->count($this->store($request)),
+        ]);
+    }
+
+    /**
+     * Seleção do catálogo (link que a loja mandou): só as peças escolhidas, com o estoque de agora. O que esgotou
+     * some se a seleção pede "só com estoque". Seleção desativada não abre.
+     */
+    public function selection(Request $request, string $slug, string $token): View
+    {
+        $selection = Selection::where('token', $token)->where('active', true)->firstOrFail();
+        $products = $selection->products();
+        $available = $this->stock->availability($products->flatMap->variants);
+        if ($selection->only_in_stock) {
+            $products = $products->filter(fn (Product $p) => $p->variants->contains(fn ($v) => ($available[$v->id] ?? 0) > 0))->values();
+        }
+        $store = $this->store($request);
+
+        return view('storefront.selection', [
+            'selection' => $selection,
+            'products' => $products,
+            'available' => $available,
+            'chat' => $store->whatsappLink('Oi! Vi a seleção "'.$selection->title.'" e queria saber: '),
+            'cartCount' => $this->cart->count($store),
         ]);
     }
 
