@@ -13,6 +13,7 @@ use App\Commerce\Supply\NfeParser;
 use App\Commerce\Supply\ReceiptParser;
 use App\Commerce\Supply\Supplier;
 use App\Commerce\Supply\SupplyBatch;
+use App\Commerce\Supply\SupplyItem;
 use App\Commerce\Supply\SupplyService;
 use App\Models\User;
 use App\Platform\Context\ContextStore;
@@ -182,6 +183,45 @@ class SupplyTest extends TestCase
         $this->assertSame([['Azul Marinho', 'G', '9000026440805'], ['Preto', 'M', '9000026437997']], array_map(fn ($l) => [$l['color'], $l['size'], $l['barcode']], $calcinha));
         $this->assertSame('42', $batch->groups[3]['lines'][0]['size']);
         $this->get($this->url("/app/remessas/{$batch->id}"))->assertOk()->assertSee('Lemos <b>5 peças</b>', false);
+    }
+
+    public function test_peca_que_a_leitura_nao_pegou_e_acrescentada_na_conferencia_e_entra_no_acerto(): void
+    {
+        $this->post($this->url('/app/remessas'), ['file' => $this->receiptPdf(), 'basis' => 'venda', 'percent' => 30])->assertSessionHasNoErrors();
+        $batch = $this->inStore(fn () => SupplyBatch::sole());
+        $this->get($this->url("/app/remessas/{$batch->id}"))->assertOk()->assertSee('+ Adicionar cor/tamanho que faltou')->assertSee('+ Adicionar produto que faltou')->assertSee('Faltou alguma peça?');
+
+        $sutia = ['name' => 'Sutiã Triângulo Renda', 'mode' => 'consignado', 'sale' => '59,90', 'cost' => '41,93', 'lines' => [['quantity' => 2]]];
+        // Sem preço no produto acrescentado: volta com o erro e com o que foi digitado.
+        $missing = ['name' => 'Conjunto Renda Fio Duplo', 'mode' => 'consignado', 'sale' => '', 'cost' => '61,53', 'lines' => [['color' => 'Preto', 'size' => 'M', 'barcode' => '9000026447897', 'quantity' => 1]]];
+        $this->post($this->url("/app/remessas/{$batch->id}/lancar"), ['supplier' => 'Miza', 'groups' => [
+            ['name' => 'Calcinha Cintura Alta', 'mode' => 'consignado', 'sale' => '26,90', 'cost' => '18,83', 'lines' => [['quantity' => 1], ['quantity' => 1], ['quantity' => 2]], 'extra' => [['color' => 'Preto', 'size' => 'g', 'quantity' => 2]]],
+            $sutia,
+        ], 'new_groups' => [7 => $missing]])->assertSessionHasErrors('new_groups.7.sale');
+        $this->assertSame('rascunho', $batch->fresh()->status);
+        $this->get($this->url("/app/remessas/{$batch->id}"))->assertOk()->assertSee('value="Conjunto Renda Fio Duplo"', false)->assertSee('value="9000026447897"', false)
+            ->assertSee('name="groups[0][extra][0][size]" value="g"', false);
+
+        $this->post($this->url("/app/remessas/{$batch->id}/lancar"), ['supplier' => 'Miza', 'groups' => [
+            ['name' => 'Calcinha Cintura Alta', 'mode' => 'consignado', 'sale' => '26,90', 'cost' => '18,83', 'lines' => [['quantity' => 1], ['quantity' => 1], ['quantity' => 2]],
+                'extra' => [['color' => 'Preto', 'size' => 'g', 'quantity' => 2], ['color' => '', 'size' => '', 'quantity' => 0]]], // linha vazia é ignorada
+            $sutia,
+        ], 'new_groups' => [7 => ['sale' => '87,90'] + $missing]])->assertSessionHasNoErrors();
+
+        $this->inStore(function () use ($batch) {
+            $calcinha = Product::where('name', 'Calcinha Cintura Alta')->with('variants')->sole();
+            $preto = $calcinha->variants->first(fn ($v) => $v->options === ['Cor' => 'Preto', 'Tamanho' => 'G']);
+            $this->assertSame(2, StockLevel::where('variant_id', $preto->id)->value('on_hand'));
+            $conjunto = Product::where('name', 'Conjunto Renda Fio Duplo')->with('variants')->sole();
+            $this->assertSame(['consignado', 'Miza', '9000026447897', 8790], [$conjunto->supply_mode, $conjunto->supplier, $conjunto->variants->first()->gtin, $conjunto->variants->first()->price_cents]);
+            $this->assertSame(9, (int) SupplyItem::where('batch_id', $batch->id)->sum('quantity')); // 6 lidas + 2 + 1 acrescentadas
+        });
+
+        // No acerto, as acrescentadas contam como as outras: devolve tudo menos o conjunto vendido.
+        $items = $this->inStore(fn () => SupplyItem::where('batch_id', $batch->id)->with('variant.product')->get());
+        $returns = $items->mapWithKeys(fn ($i) => [$i->id => $i->variant->product->name === 'Conjunto Renda Fio Duplo' ? 0 : $i->quantity])->all();
+        $this->post($this->url("/app/remessas/{$batch->id}/acerto"), ['returns' => $returns])->assertSessionHasNoErrors();
+        $this->assertSame(6153, $this->inStore(fn () => (int) Payable::sum('amount_cents')));
     }
 
     public function test_acerto_devolve_o_que_sobrou_e_cobra_o_vendido(): void

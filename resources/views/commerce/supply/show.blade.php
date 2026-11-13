@@ -59,11 +59,26 @@
                                     <td><input name="groups[{{ $g }}][lines][{{ $l }}][quantity]" type="number" min="0" value="{{ old("groups.$g.lines.$l.quantity", $line['quantity']) }}" aria-label="Quantidade"></td>
                                 </tr>
                             @endforeach
+                            @foreach (old("groups.$g.extra", []) as $e => $extra)
+                                @include('commerce.supply.extra-line', ['prefix' => "groups[$g][extra][$e]", 'line' => $extra])
+                            @endforeach
                         </tbody>
                     </table></div>
+                    <button type="button" class="button secondary" data-add-line="groups[{{ $g }}][extra]" style="margin-top:8px;">+ Adicionar cor/tamanho que faltou</button>
                     <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:8px;"><input type="checkbox" name="groups[{{ $g }}][skip]" value="1" style="width:auto;" @checked(old("groups.$g.skip"))> Não lançar este produto</label>
                 </div>
             @endforeach
+
+            <div id="new-groups" class="stack">
+                @foreach (old('new_groups', []) as $n => $newGroup)
+                    @include('commerce.supply.new-group', ['n' => $n, 'group' => $newGroup])
+                @endforeach
+            </div>
+            <div class="card">
+                <b>Faltou alguma peça?</b>
+                <p class="helper" style="margin:4px 0 8px;">Compare com o total do comprovante. Se uma linha não foi lida, acrescente aqui — ela entra nesta remessa e no acerto, como as outras.</p>
+                <button type="button" class="button secondary" id="add-group">+ Adicionar produto que faltou</button>
+            </div>
 
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button type="submit">Lançar no estoque</button>
@@ -71,10 +86,31 @@
             </div>
         </form>
         <form id="discard" method="POST" action="{{ route('commerce.supply.destroy', $batch) }}" onsubmit="return confirm('Descartar esta leitura? Nada foi lançado ainda.');">@csrf</form>
+        <template id="tpl-line">@include('commerce.supply.extra-line', ['prefix' => '__P__', 'line' => []])</template>
+        <template id="tpl-group">@include('commerce.supply.new-group', ['n' => '__N__', 'group' => []])</template>
         <script>
             document.getElementById('all-mode').addEventListener('change', function () {
                 if (this.value) document.querySelectorAll('[data-mode]').forEach((s) => { s.value = this.value; });
             });
+            (function () {
+                let next = Date.now() % 100000;
+                const lineHtml = (prefix) => document.getElementById('tpl-line').innerHTML.replaceAll('__P__', prefix);
+                document.addEventListener('click', function (e) {
+                    const add = e.target.closest('[data-add-line]');
+                    if (add) {
+                        const body = add.closest('[data-group]').querySelector('tbody');
+                        body.insertAdjacentHTML('beforeend', lineHtml(add.dataset.addLine + '[' + (next++) + ']'));
+                        body.lastElementChild.querySelector('input').focus();
+                    }
+                    const remove = e.target.closest('[data-remove]');
+                    if (remove) remove.closest(remove.dataset.remove).remove();
+                });
+                document.getElementById('add-group').addEventListener('click', function () {
+                    const box = document.getElementById('new-groups');
+                    box.insertAdjacentHTML('beforeend', document.getElementById('tpl-group').innerHTML.replaceAll('__N__', next++));
+                    box.lastElementChild.querySelector('input').focus();
+                });
+            })();
         </script>
     @else
         @php($consigned = $batch->items->where('mode', 'consignado'))

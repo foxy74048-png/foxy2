@@ -19,6 +19,7 @@ use App\Platform\Context\ExecutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -115,7 +116,33 @@ class SupplyController
             'groups.*.lines.*.color' => ['nullable', 'string', 'max:40'],
             'groups.*.lines.*.size' => ['nullable', 'string', 'max:20'],
             'groups.*.lines.*.quantity' => ['required', 'integer', 'min:0', 'max:100000'],
-        ], [], ['supplier' => 'fornecedora', 'groups.*.name' => 'nome do produto', 'groups.*.sale' => 'preço de venda', 'groups.*.cost' => 'custo']);
+            // Peças que a leitura não pegou, acrescentadas à mão: numa cor/tamanho de um produto lido ou num produto novo.
+            'groups.*.extra' => ['nullable', 'array', 'max:200'],
+            'groups.*.extra.*.color' => ['nullable', 'string', 'max:40'],
+            'groups.*.extra.*.size' => ['nullable', 'string', 'max:20'],
+            'groups.*.extra.*.barcode' => ['nullable', 'string', 'max:14'],
+            'groups.*.extra.*.quantity' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'new_groups' => ['nullable', 'array', 'max:100'],
+            'new_groups.*.name' => ['required', 'string', 'max:150'],
+            'new_groups.*.mode' => ['required', Rule::in(array_keys(SupplyBatch::MODES))],
+            'new_groups.*.category_id' => ['nullable', 'string', 'max:30'],
+            'new_groups.*.sale' => ['required', 'string', 'max:20'],
+            'new_groups.*.cost' => ['required', 'string', 'max:20'],
+            'new_groups.*.lines' => ['required', 'array', 'max:200'],
+            'new_groups.*.lines.*.color' => ['nullable', 'string', 'max:40'],
+            'new_groups.*.lines.*.size' => ['nullable', 'string', 'max:20'],
+            'new_groups.*.lines.*.barcode' => ['nullable', 'string', 'max:14'],
+            'new_groups.*.lines.*.quantity' => ['nullable', 'integer', 'min:0', 'max:100000'],
+        ], [], ['supplier' => 'fornecedora', 'groups.*.name' => 'nome do produto', 'groups.*.sale' => 'preço de venda', 'groups.*.cost' => 'custo',
+            'new_groups.*.name' => 'nome do produto acrescentado', 'new_groups.*.sale' => 'preço de venda', 'new_groups.*.cost' => 'custo']);
+        $handLines = fn (string $name, array $rows) => collect($rows)->filter(fn ($r) => (int) ($r['quantity'] ?? 0) > 0)->map(function ($r) use ($name) {
+            $color = trim($r['color'] ?? '');
+            $size = mb_strtoupper(trim($r['size'] ?? ''));
+            $barcode = preg_replace('/\D/', '', $r['barcode'] ?? '');
+
+            return ['description' => Str::upper(trim("$name $color").($size !== '' ? " | $size" : '')), 'barcode' => strlen($barcode) >= 8 ? $barcode : null,
+                'price_cents' => 0, 'color' => $color, 'size' => $size, 'quantity' => (int) $r['quantity'], 'manual' => true];
+        })->values()->all();
 
         $draft = $batch->groups ?? [];
         $groups = [];
@@ -132,6 +159,7 @@ class SupplyController
                 $lines[] = ['color' => trim($edit['color'] ?? $line['color']), 'size' => mb_strtoupper(trim($edit['size'] ?? $line['size'])),
                     'quantity' => (int) ($edit['quantity'] ?? $line['quantity'])] + $line;
             }
+            array_push($lines, ...$handLines($input['name'], $input['extra'] ?? []));
             $sale = Money::toCents($input['sale']) ?? 0;
             if (! ($input['skip'] ?? false) && ($lines === [] || $sale <= 0)) {
                 throw ValidationException::withMessages(["groups.$g.sale" => "Confira o preço de venda de \"{$input['name']}\"."]);
@@ -139,6 +167,15 @@ class SupplyController
             $groups[] = ['name' => trim($input['name']), 'mode' => $input['mode'], 'category_id' => Category::find($input['category_id'] ?? null)?->id,
                 'sale_cents' => $sale, 'cost_cents' => Money::toCents($input['cost']) ?? 0, 'skip' => (bool) ($input['skip'] ?? false),
                 'product_id' => $draft[$g]['product_id'] ?? null, 'lines' => $lines];
+        }
+        foreach ($data['new_groups'] ?? [] as $n => $input) {
+            $lines = $handLines($input['name'], $input['lines']);
+            $sale = Money::toCents($input['sale']) ?? 0;
+            if ($lines === [] || $sale <= 0) {
+                throw ValidationException::withMessages(["new_groups.$n.sale" => "Confira o preço de venda e a quantidade de \"{$input['name']}\"."]);
+            }
+            $groups[] = ['name' => trim($input['name']), 'mode' => $input['mode'], 'category_id' => Category::find($input['category_id'] ?? null)?->id,
+                'sale_cents' => $sale, 'cost_cents' => Money::toCents($input['cost']) ?? 0, 'skip' => false, 'product_id' => null, 'lines' => $lines];
         }
 
         // Limite de produtos do plano vale também para a importação.

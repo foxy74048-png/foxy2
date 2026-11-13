@@ -100,7 +100,8 @@ class SupplyService
                     $variant = $this->variantFor($product, $line, $group);
                     $variant->update(['gtin' => $line['barcode'] ?: $variant->gtin, 'cost_cents' => $group['cost_cents'], 'status' => 'active']);
                     $this->stock->receive($variant, (int) $line['quantity'], $reason);
-                    if ($supplier) {
+                    // Linha acrescentada à mão só ensina pelo código de barras (a descrição dela não veio do documento).
+                    if ($supplier && (empty($line['manual']) || ! empty($line['barcode']))) {
                         $this->memory->remember($supplier, $line, $variant);
                     }
                     SupplyItem::create([
