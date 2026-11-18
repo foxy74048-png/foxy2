@@ -18,6 +18,7 @@ class ProductAccount extends Model
 
     public const STATUSES = [
         'active' => 'Ativa (pagante)',
+        'free' => 'Plano grátis',
         'trial' => 'Em teste',
         'founder' => 'Parceiro Fundador',
         'canceled' => 'Cancelada',
@@ -27,7 +28,7 @@ class ProductAccount extends Model
     ];
 
     /** Situações em que a conta está usando o produto (recebe promoções "todas as contas"). */
-    public const LIVE = ['active', 'trial', 'founder'];
+    public const LIVE = ['active', 'free', 'trial', 'founder'];
 
     protected $fillable = ['integration_id', 'external_ref', 'name', 'plan', 'status', 'mrr', 'signed_up_at', 'trial_ends_at', 'last_activity_at', 'seen_at', 'contact_name', 'email', 'whatsapp', 'health', 'problems', 'usage', 'fox_credits', 'admin_url'];
 

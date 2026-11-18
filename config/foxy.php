@@ -31,6 +31,17 @@ return [
         'admin' => env('FOXY_ADMIN_HOST', 'admin.foxy.net.br'),
         // Foxy Commerce ainda em construção: o endereço leva à vitrine, na parte dos produtos.
         'commerce' => env('FOXY_COMMERCE_HOST', 'ecommerce.foxy.net.br'),
+        // Foxy Finanças (docs/11 e docs/12).
+        'financas' => env('FOXY_FINANCAS_HOST', 'financas.foxy.net.br'),
+    ],
+
+    /*
+    | Login de cliente por produto: os e-mails de confirmar o e-mail e de trocar a senha levam ao endereço do
+    | produto em que a pessoa está (chave = hosts.*). Fora de um endereço de produto, vale o primeiro da lista.
+    */
+    'logins' => [
+        'commerce' => ['name' => 'Foxy Commerce', 'routes' => 'commerce'],
+        'financas' => ['name' => 'Foxy Finanças', 'routes' => 'finance'],
     ],
 
     // Comunicados do Foxy Admin (docs/08, fase 2): WhatsApp pelo número da Foxy e ritmo do envio (por minuto).

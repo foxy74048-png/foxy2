@@ -5,6 +5,8 @@ use App\Commerce\Http\Middleware\EnforceSubscription;
 use App\Commerce\Http\Middleware\RequirePermission;
 use App\Commerce\Http\Middleware\ResolvePublicStore;
 use App\Commerce\Http\Middleware\ResolveStore;
+use App\Finance\Http\Middleware\RequirePermission as FinanceRequirePermission;
+use App\Finance\Http\Middleware\ResolveWallet;
 use App\Platform\ApiClients\AuthenticateApiClient;
 use App\Platform\ApiClients\RequireOrganization;
 use App\Platform\ApiClients\RequireScope;
@@ -37,15 +39,23 @@ return Application::configure(basePath: dirname(__DIR__))
             'commerce.can' => RequirePermission::class,
             'commerce.subscription' => EnforceSubscription::class,
             'commerce.public' => ResolvePublicStore::class,
+            'finance.wallet' => ResolveWallet::class,
+            'finance.can' => FinanceRequirePermission::class,
         ]);
 
-        // Cada produto tem o seu login: no endereço do Commerce, o do Commerce; no resto, o da equipe Foxy.
-        $isCommerce = fn (Request $request) => strtolower($request->getHost()) === config('foxy.hosts.commerce');
-        $middleware->redirectGuestsTo(fn (Request $request) => $isCommerce($request) ? route('commerce.login') : route('login'));
-        $middleware->redirectUsersTo(fn (Request $request) => $isCommerce($request) ? route('commerce.dashboard') : '/console');
+        // Cada produto tem o seu login: no endereço do Commerce, o do Commerce; no do Finanças, o do Finanças;
+        // no resto, o da equipe Foxy.
+        $product = fn (Request $request) => match (strtolower($request->getHost())) {
+            config('foxy.hosts.commerce') => 'commerce',
+            config('foxy.hosts.financas') => 'finance',
+            default => null,
+        };
+        $middleware->redirectGuestsTo(fn (Request $request) => ($p = $product($request)) ? route($p.'.login') : route('login'));
+        $middleware->redirectUsersTo(fn (Request $request) => ($p = $product($request)) ? route($p.'.dashboard') : '/console');
 
         // A loja (contexto) precisa existir antes de carregar o model da rota: o escopo da loja filtra a busca.
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveStore::class);
+        $middleware->prependToPriorityList(SubstituteBindings::class, ResolveWallet::class);
 
         // O Stripe não manda token de formulário; o webhook confere a assinatura dele.
         $middleware->validateCsrfTokens(except: ['stripe/webhook', 'webhooks/commerce/*']);

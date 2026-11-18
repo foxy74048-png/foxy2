@@ -8,6 +8,7 @@ use App\Platform\Context\ContextStore;
 use App\Platform\Entitlements\Entitlements;
 use App\Platform\Entitlements\MeteredEntitlements;
 use App\Platform\Http\ApiError;
+use App\Platform\Identity\ProductLogin;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -31,6 +32,9 @@ class PlatformServiceProvider extends ServiceProvider
 
         // Paginação em português e no visual do Core (a padrão do Laravel depende de Tailwind).
         Paginator::defaultView('core.pagination');
+
+        // Confirmar e-mail e nova senha: o link leva ao produto em que a pessoa está (Commerce, Finanças...).
+        ProductLogin::register();
 
         RateLimiter::for('api-client', function (Request $request) {
             $client = $request->attributes->get('api_client');

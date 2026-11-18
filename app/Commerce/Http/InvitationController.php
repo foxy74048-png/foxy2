@@ -3,6 +3,7 @@
 namespace App\Commerce\Http;
 
 use App\Commerce\Access;
+use App\Commerce\Commerce;
 use App\Commerce\Accounts\AccountSync;
 use App\Commerce\Http\Middleware\ResolveStore;
 use App\Commerce\Stores\Store;
@@ -26,7 +27,7 @@ class InvitationController
 {
     public function show(Request $request, string $token): View
     {
-        $invitation = Invitation::findPending($token);
+        $invitation = $this->pending($token);
 
         if (! $invitation) {
             return view('commerce.invitation', ['invitation' => null]);
@@ -44,7 +45,7 @@ class InvitationController
 
     public function accept(Request $request, ContextStore $contexts, string $token): RedirectResponse
     {
-        $invitation = Invitation::findPending($token);
+        $invitation = $this->pending($token);
         abort_unless($invitation, 404);
 
         $user = $request->user();
@@ -98,6 +99,14 @@ class InvitationController
         $request->session()->put(ResolveStore::SESSION_KEY, $invitation->organization_id);
 
         return redirect()->route('commerce.dashboard')->with('status', 'Bem-vindo(a) à equipe da '.$this->storeName($invitation).'.');
+    }
+
+    /** Convite pendente de uma loja do Commerce (o link de uma carteira do Finanças não serve aqui). */
+    private function pending(string $token): ?Invitation
+    {
+        $invitation = Invitation::findPending($token);
+
+        return $invitation && $invitation->organization?->integration_id === Commerce::integration()->getKey() ? $invitation : null;
     }
 
     private function storeName(Invitation $invitation): string
