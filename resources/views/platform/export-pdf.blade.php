@@ -24,9 +24,9 @@
 </style>
 </head>
 <body>
-    <div class="foot">Foxy Commerce · {{ $store }} · gerado em {{ $generatedAt->format('d/m/Y H:i') }}</div>
+    <div class="foot">{{ $product }}{{ $store ? ' · '.$store : '' }} · gerado em {{ $generatedAt->format('d/m/Y H:i') }}</div>
     <div class="head">
-        <div class="brand">Foxy Commerce{{ $store ? ' · '.$store : '' }}</div>
+        <div class="brand">{{ $product }}{{ $store ? ' · '.$store : '' }}</div>
         <h1>{{ $title }}</h1>
         <div class="meta">Gerado em {{ $generatedAt->format('d/m/Y \à\s H:i') }}</div>
     </div>
@@ -51,7 +51,7 @@
     @endforeach
 
     @if ($truncated)
-        <p class="note">O PDF mostra até {{ number_format(\App\Commerce\Insights\Export::PDF_MAX_ROWS, 0, ',', '.') }} linhas. Para a lista completa, baixe a planilha.</p>
+        <p class="note">O PDF mostra até {{ number_format(\App\Platform\Exports\Export::PDF_MAX_ROWS, 0, ',', '.') }} linhas. Para a lista completa, baixe a planilha.</p>
     @endif
 </body>
 </html>

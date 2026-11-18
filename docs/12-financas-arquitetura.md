@@ -155,3 +155,7 @@ Depois: vitrine (card do produto em foxy.net.br), guia em PDF com telas reais e 
 - **A-F6** — Descrição sem criptografia (para busca e regras), observações criptografadas.
 - **A-F7** — Ordem das fatias da seção 11.
 - **D-F7 (produto, em aberto)** — Primeiros usuários e cadastro fechado no início.
+
+## 13. Andamento
+
+- **Fatia 0 (2026-11-18):** `Sheet` e `PdfTable` em `App\Platform\Imports`, `Export` e `Csv` em `App\Platform\Exports`, `Money` em `App\Platform\Support`; PDF em `resources/views/platform/export-pdf.blade.php` com o nome do produto (`$product`) e da conta (`accountName()`). No Commerce ficaram classes com os mesmos nomes que estendem as da Platform (`Commerce\Insights\Export` diz "Foxy Commerce" e o nome da loja), então nada mudou por lá. Teste: `tests/Feature/Platform/SharedImportExportTest`.
