@@ -1,8 +1,9 @@
 # Foxy Finanças — Definição de Produto (proposta)
 
-> **Status:** v0.1 (2026-11-18), proposta para aprovação. Nada foi implementado.
+> **Status:** v0.2 (2026-11-18). Decisões D-F1 a D-F6 tomadas (seção 10); falta D-F7. Arquitetura: `12-financas-arquitetura.md` (para aprovação). Nada foi implementado.
 > **Ordem:** terceiro produto, sobre o Core da foxy2 (mesmo app do Foxy AI, do Foxy Admin e do Foxy Commerce).
-> **Nome provisório:** "Foxy Finanças" (ver D-F1). Endereço sugerido: `financas.foxy.net.br`.
+> **Nome:** "Foxy Finanças" em `financas.foxy.net.br`.
+> **Mudança em relação à v0.1:** o público passa a ser **pessoa física e também MEI / pequeno negócio com 1 ou 2 sócios** (dividir pró-labore, retiradas e lucro). A importação de extrato copia e adapta a do Foxy Studio; nada de conexão automática com banco por enquanto.
 > **Processo:** igual ao Commerce: (1) aprovar este documento e as decisões D-F; (2) arquitetura e fatias; (3) código só depois da aprovação da etapa 2.
 
 ---
@@ -33,10 +34,15 @@ Três pilares:
 
 ## 3. Público
 
-- **Primeiro público:** pessoas físicas no Brasil, 20–55 anos, com 1 a 4 contas/cartões, que já tentaram planilha ou app e desistiram. B2C, preço baixo.
-- **Casal/família:** finanças compartilhadas (cada pessoa com o próprio login, contas da casa em comum) — ver D-F3.
-- **Depois (fase 3):** MEI e autônomos que misturam conta pessoal e do negócio, com separação "pessoal × trabalho". Ponte natural com clientes do Foxy Studio e do Foxy Commerce.
-- **Fora:** empresas com contabilidade (isso é ERP), investimentos complexos (carteira de ações, IR de renda variável).
+Dois públicos desde o MVP, no mesmo sistema:
+
+- **Pessoa física:** 20–55 anos, com 1 a 4 contas/cartões, que já tentaram planilha ou app e desistiram. B2C, preço baixo.
+- **MEI e pequeno negócio com 1 ou 2 sócios:** quer saber quanto o negócio ganhou, quanto cada sócio pode tirar, **dividir o pró-labore e o lucro** pela parte de cada um, registrar o que cada sócio pôs (aporte) e tirou (retirada) e fazer o **acerto entre sócios** ("você tirou R$ 400 a mais este mês"). Também lembra o DAS do MEI. Ponte natural com clientes do Foxy Studio e do Foxy Commerce.
+- **Casal/família:** finanças compartilhadas (cada pessoa com o próprio login, contas da casa em comum).
+
+A mesma pessoa pode ter as duas coisas: a **carteira pessoal** e a **carteira do negócio**, e troca entre elas no topo da tela. A retirada do negócio aparece como entrada na carteira pessoal dela, sem precisar lançar duas vezes.
+
+- **Fora:** empresas com contabilidade completa (isso é ERP), nota fiscal, folha de pagamento, investimentos complexos (carteira de ações, IR de renda variável).
 
 ## 4. Funcionalidades
 
@@ -48,7 +54,8 @@ Três pilares:
 | **Lançamentos** | Gasto, recebimento e transferência entre contas. Valor, data, descrição, categoria, conta, observação. Parcelado no cartão (gera as parcelas nas faturas futuras). Repetição mensal (aluguel, salário). Tudo editável e excluível. |
 | **Categorias** | Lista pronta em português (Mercado, Delivery, Transporte, Moradia, Saúde, Lazer, Assinaturas, Educação...), com subcategorias; a pessoa cria, renomeia, junta e esconde. |
 | **Categorização automática** | Regras aprendidas ("IFOOD" → Delivery); quando a pessoa corrige, vira regra. A IA só entra quando nenhuma regra serve (custo baixo). |
-| **Importação** | Extrato OFX (todos os grandes bancos exportam) e CSV (Nubank, Inter, C6...); fatura do cartão em PDF (reaproveita a leitura de PDF com tabela do Commerce). Detecta duplicados. Desfazer a importação inteira. |
+| **Importação (sem conexão com banco)** | Copiada e adaptada do Foxy Studio, que já está testada com arquivos reais: extrato **OFX** (todos os grandes bancos), **CSV/Excel** (a pessoa aponta as colunas uma vez; crédito e débito em colunas separadas), **PDF** de extrato e de fatura (inclusive o agrupado por dia do PicPay/Nubank, com nome quebrado em duas linhas). Linha que não deu para ler é avisada, não some. Não importa a mesma linha duas vezes (reenviar o mesmo arquivo é seguro). **Conciliar:** se o gasto já foi lançado à mão ou pelo WhatsApp, a linha do extrato só confirma, não duplica. Revisar linha a linha ou **lançar em lote** com a categoria sugerida; dividir uma linha em partes; ignorar; desfazer a importação inteira. Também importa a **planilha antiga** de controle (de outro app ou feita à mão). |
+| **Sócios (carteira do negócio)** | Cada sócio com a sua parte (%). Pró-labore e retiradas por sócio; aporte de sócio; "Lucro do mês" e quanto cabe a cada um; acerto entre sócios. A retirada vira entrada na carteira pessoal do sócio, se ele usar o Foxy Finanças. Lembrete do DAS (MEI). Separar no extrato o que é pessoal e o que é do negócio (botão "isso é pessoal" move a linha para a carteira pessoal). |
 | **WhatsApp** | A pessoa manda "gastei 42,90 no mercado no débito" ou a foto do cupom; a raposa lança e responde confirmando, com botão para corrigir. Resumo semanal opcional. |
 | **Faturas do cartão** | Fatura atual e futuras, o que já está comprometido com parcelas nos próximos meses, aviso de vencimento. |
 | **Orçamento** | Limite por categoria no mês (ex.: Delivery R$ 300); barra de quanto já foi; aviso ao chegar em 80% e 100%. |
@@ -67,8 +74,8 @@ Três pilares:
 
 ### 4.3. Fase 3
 
-- **Open Finance** (conexão automática com o banco) por um agregador autorizado pelo Banco Central (ex.: Pluggy, Belvo). Tem custo por conexão e exige contrato e cadastro da Foxy — passo do responsável, no fim.
-- **Pessoal × trabalho** para MEI/autônomos (com relatório para o contador e o DAS).
+- **Integrações externas** (Open Finance por agregador autorizado pelo Banco Central, ex.: Pluggy, Belvo): **só se o produto pegar** (D-F6). Tem custo por conexão e exige contrato da Foxy.
+- Relatório para o contador (MEI: faturamento anual para a declaração DASN-SIMEI).
 - App instalável (PWA) com atalho "lançar gasto".
 
 ## 5. Como a raposa ajuda (detalhe)
@@ -92,9 +99,7 @@ Créditos de IA por plano, como nos outros produtos (docs/07).
 
 ## 6. Modelo de dados (rascunho, sobre o Core)
 
-- **Organization** do Core = a "carteira" da pessoa ou da casa. Cada pessoa tem o próprio login; convidar o parceiro usa as **memberships** que já existem.
-- Tabelas novas com prefixo `finance_`: `accounts`, `cards` (ou conta tipo cartão), `transactions` (valor em centavos, sinal pelo tipo, `series_id`/parcela igual ao Commerce), `categories` (árvore simples), `category_rules`, `budgets`, `imports` (para desfazer), `invoices` (faturas).
-- Tudo com `BelongsToOrganization`, igual ao Commerce.
+Detalhado em `12-financas-arquitetura.md`. Em resumo: **Organization** do Core = uma **carteira** (tipo `pessoal` ou `negocio`); cada pessoa tem o próprio login e pode estar em várias carteiras (as memberships que já existem); tabelas novas com prefixo `finance_`, todas com `BelongsToOrganization`.
 
 ## 7. O que reaproveitar da foxy2
 
@@ -103,7 +108,8 @@ Créditos de IA por plano, como nos outros produtos (docs/07).
 | Core: organizações, memberships, convites, login | Pessoa/casal, convite do parceiro |
 | Platform\Billing (Stripe) + Foxy Admin | Assinatura do plano, promoções, painel de MRR por produto |
 | Foxy AI (assistente, HostProfile, ToolCatalog, créditos) | A raposa do Finanças, como `CommerceHost`/`CommerceFox` |
-| Commerce\Imports (`Sheet`, `PdfTable`) | Importar CSV e fatura em PDF |
+| Commerce\Imports (`Sheet`, `PdfTable`) | Ler .xlsx/.csv/PDF com tabela |
+| **Foxy Studio** — `StatementParser`, `StatementImporter`, `FinancialImporter`, revisão de linhas (cópia adaptada; a foxy2 nunca lê o banco do Studio) | Extrato OFX/CSV/PDF, repetidos, conciliar, lote, dividir, desfazer, planilha antiga |
 | Commerce\Insights (`Export`, `Csv`) | PDF e planilha de toda lista |
 | Commerce\Finance (parcelas, repetição por `series_id`) | Mesmo padrão de parcelas e repetição |
 | Platform\Messaging (WhatsApp via Evolution) | Lançar pelo WhatsApp e avisos |
@@ -117,13 +123,13 @@ Peças hoje dentro de `Commerce` que os dois produtos usarão (`Sheet`, `PdfTabl
 |---|---|---|
 | Grátis | R$ 0 | 2 contas, lançamento manual, painéis básicos, 30 perguntas à raposa/mês |
 | Pessoal | R$ 9,90 | Contas ilimitadas, importação, WhatsApp, orçamento, raposa com mais créditos |
-| Casal/Família | R$ 16,90 | Pessoal + até 4 pessoas na mesma carteira |
+| Compartilhado | R$ 16,90 | Pessoal + até 4 pessoas na mesma carteira: casal, família **ou sócios** do negócio |
 
-Anual com desconto. Valores a confirmar (D-F4).
+Anual com desconto. Aprovado (D-F4). A carteira do negócio com sócios usa o plano Compartilhado; MEI sozinho cabe no Pessoal. Cada carteira tem o seu plano; a carteira pessoal do sócio continua grátis ou Pessoal, à parte.
 
 ## 9. Riscos e cuidados
 
-- **Dado sensível**: valores e descrições criptografados no banco (cast `encrypted` do Laravel nos campos de texto livre), nunca enviados à IA além do necessário para a pergunta, nunca no snapshot do Foxy Admin (lá só contagem e plano).
+- **Dado sensível**: observações criptografadas no banco (a descrição não, porque busca e regras dependem dela — ver docs/12 §10), nunca enviados à IA além do necessário para a pergunta, nunca no snapshot do Foxy Admin (lá só contagem e plano).
 - **Senha de banco**: nunca pedir. Open Finance só por agregador autorizado (fase 3).
 - **Abandono**: o produto vive ou morre pelo esforço de lançar. WhatsApp e importação estão no MVP por isso.
 - **Custo de IA num plano barato**: regras antes da IA, lote, modelo barato, insights calculados por código.
@@ -131,10 +137,12 @@ Anual com desconto. Valores a confirmar (D-F4).
 
 ## 10. Decisões para o responsável
 
-- **D-F1 — Nome e endereço.** Sugestão: "Foxy Finanças" em `financas.foxy.net.br`. Alternativa: "Foxy Financeiro".
-- **D-F2 — Público do MVP.** Sugestão: pessoa física. MEI/autônomo fica para a fase 3.
-- **D-F3 — Casal/família no MVP?** Sugestão: só a base (convidar uma pessoa para a mesma carteira) no MVP; divisão de despesas na fase 2.
-- **D-F4 — Planos e preços** da seção 8, incluindo ter plano grátis.
-- **D-F5 — WhatsApp no MVP?** Sugestão: sim, pelo número da Foxy (uma instância só para todo o produto, não uma por pessoa).
-- **D-F6 — Open Finance.** Sugestão: fase 3, depois de validar com usuários reais.
-- **D-F7 — Primeiros usuários.** Quem testa primeiro (você e pessoas próximas?) e se entra no ar fechado, como o Commerce (`SIGNUP_OPEN`).
+Respostas de 2026-11-18:
+
+- **D-F1 — Nome e endereço:** ✔ "Foxy Finanças" em `financas.foxy.net.br`.
+- **D-F2 — Público do MVP:** ✔ pessoa física **e** MEI / pequeno negócio com 1 ou 2 sócios (pró-labore, retiradas, lucro, acerto entre sócios).
+- **D-F3 — Casal/família:** ✔ base no MVP (convidar pessoas para a mesma carteira); divisão "quem deve a quem" na fase 2.
+- **D-F4 — Planos e preços:** ✔ seção 8, com plano grátis.
+- **D-F5 — WhatsApp no MVP:** ✔ pelo número da Foxy (uma instância para todo o produto).
+- **D-F6 — Integrações externas / Open Finance:** ✔ aguardar. Importação manual de arquivo (copiada do Studio); integração só se o produto pegar.
+- **D-F7 — Primeiros usuários:** *em aberto.* Quem testa primeiro e se entra no ar com cadastro fechado, como o Commerce (`SIGNUP_OPEN`).
