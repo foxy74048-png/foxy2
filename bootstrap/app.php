@@ -28,7 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withCommands([__DIR__.'/../app/Platform/Console', __DIR__.'/../app/Ai/Console', __DIR__.'/../app/Demo/Console', __DIR__.'/../app/Commerce/Console'])
+    ->withCommands([__DIR__.'/../app/Platform/Console', __DIR__.'/../app/Ai/Console', __DIR__.'/../app/Demo/Console', __DIR__.'/../app/Commerce/Console', __DIR__.'/../app/Finance/Console'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'api.client' => AuthenticateApiClient::class,

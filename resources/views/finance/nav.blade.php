@@ -2,6 +2,11 @@
 @php($can = fn ($p) => \App\Finance\Access::allows($currentMembership, $p))
 <div class="core-nav-title">{{ $currentWallet->name }}</div>
 <x-core::nav-link href="{{ route('finance.dashboard') }}" :active="request()->routeIs('finance.dashboard')" icon="home">Início</x-core::nav-link>
+@if ($can('finance.view'))
+    <x-core::nav-link href="{{ route('finance.transactions') }}" :active="request()->routeIs('finance.transactions*')" icon="send">Lançamentos</x-core::nav-link>
+    <x-core::nav-link href="{{ route('finance.accounts') }}" :active="request()->routeIs('finance.accounts*')" icon="wallet">Contas e cartões</x-core::nav-link>
+    <x-core::nav-link href="{{ route('finance.categories') }}" :active="request()->routeIs('finance.categories*')" icon="sparkles">Categorias</x-core::nav-link>
+@endif
 @if ($can('finance.people.view'))
     <x-core::nav-link href="{{ route('finance.people') }}" :active="request()->routeIs('finance.people*')" icon="users">Pessoas na carteira</x-core::nav-link>
 @endif

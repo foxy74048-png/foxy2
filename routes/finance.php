@@ -1,10 +1,13 @@
 <?php
 
+use App\Finance\Http\AccountController;
 use App\Finance\Http\AuthController;
+use App\Finance\Http\CategoryController;
 use App\Finance\Http\DashboardController;
 use App\Finance\Http\InvitationController;
 use App\Finance\Http\PeopleController;
 use App\Finance\Http\ProfileController;
+use App\Finance\Http\TransactionController;
 use App\Finance\Http\VerificationController;
 use App\Finance\Http\WalletController;
 use Illuminate\Support\Facades\Route;
@@ -53,6 +56,30 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
 
     Route::middleware('finance.wallet')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Lançamentos (fatia 2): ver é de todos; lançar, mudar e apagar pede permissão.
+        Route::middleware('finance.can:finance.view')->group(function () {
+            Route::get('/lancamentos', [TransactionController::class, 'index'])->name('transactions');
+            Route::get('/contas', [AccountController::class, 'index'])->name('accounts');
+            Route::get('/categorias', [CategoryController::class, 'index'])->name('categories');
+        });
+        Route::middleware('finance.can:finance.transactions.manage')->group(function () {
+            Route::post('/lancamentos', [TransactionController::class, 'store'])->middleware('throttle:60,1')->name('transactions.store');
+            Route::get('/lancamentos/{transaction}', [TransactionController::class, 'edit'])->name('transactions.edit');
+            Route::post('/lancamentos/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
+            Route::post('/lancamentos/{transaction}/apagar', [TransactionController::class, 'destroy'])->name('transactions.destroy');
+            Route::post('/lancamentos/{transaction}/confirmar', [TransactionController::class, 'confirm'])->name('transactions.confirm');
+        });
+        Route::middleware('finance.can:finance.accounts.manage')->group(function () {
+            Route::post('/contas', [AccountController::class, 'store'])->middleware('throttle:30,1')->name('accounts.store');
+            Route::post('/contas/{account}', [AccountController::class, 'update'])->name('accounts.update');
+            Route::post('/contas/{account}/arquivar', [AccountController::class, 'archive'])->name('accounts.archive');
+            Route::post('/contas/{account}/excluir', [AccountController::class, 'destroy'])->name('accounts.destroy');
+            Route::post('/categorias', [CategoryController::class, 'store'])->middleware('throttle:30,1')->name('categories.store');
+            Route::post('/categorias/{category}', [CategoryController::class, 'update'])->name('categories.update');
+            Route::post('/categorias/{category}/esconder', [CategoryController::class, 'hide'])->name('categories.hide');
+            Route::post('/categorias/{category}/juntar', [CategoryController::class, 'merge'])->name('categories.merge');
+        });
 
         // Pessoas na carteira (casal, família, sócios)
         Route::middleware('finance.can:finance.people.view')->get('/pessoas', [PeopleController::class, 'index'])->name('people');

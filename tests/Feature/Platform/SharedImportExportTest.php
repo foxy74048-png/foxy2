@@ -25,6 +25,12 @@ class SharedImportExportTest extends TestCase
     public function test_dinheiro_e_planilha_no_jeito_brasileiro(): void
     {
         $this->assertSame(123456, Money::toCents('1.234,56'));
+        // Sem vírgula, ponto com 3 dígitos depois é milhar (jeito brasileiro); com 1 ou 2 dígitos, é decimal.
+        $this->assertSame(120000, Money::toCents('1.200'));
+        $this->assertSame(150000000, Money::toCents('1.500.000'));
+        $this->assertSame(7990, Money::toCents('79.90'));
+        $this->assertSame(150, Money::toCents('1.5'));
+        $this->assertSame(-300000, Money::toCents('-3.000'));
         $this->assertSame('R$ 1.234,56', Money::format(123456));
         $this->assertSame("'=SOMA(A1)", Csv::cell('=SOMA(A1)'));
         $this->assertSame('-12,50', Csv::cell('-12,50'));

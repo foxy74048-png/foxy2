@@ -219,7 +219,7 @@ class IdentityAndWalletsTest extends TestCase
         $this->assertTrue($bruno->hasVerifiedEmail());
         $this->assertSame('member', Membership::where('user_id', $bruno->id)->value('role'));
         $this->assertNotNull(Invitation::first()->accepted_at);
-        $this->assertSame(['tipo' => 'Negócio (MEI ou com sócios)', 'pessoas na carteira' => 2], ProductAccount::where('external_ref', 'carteira-'.$business->organization_id)->value('usage'));
+        $this->assertSame(2, ProductAccount::where('external_ref', 'carteira-'.$business->organization_id)->value('usage')['pessoas na carteira']);
 
         // Membro vê as pessoas, mas não convida nem mexe na carteira.
         $this->get($this->url('/app/pessoas'))->assertOk()->assertSee('Bruno');

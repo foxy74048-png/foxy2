@@ -29,7 +29,7 @@ return [
     'roles' => [
         'owner' => ['label' => 'Dono(a)', 'permissions' => ['*']],
         'member' => ['label' => 'Membro', 'permissions' => [
-            'finance.view', 'finance.people.view', 'finance.transactions.manage', 'finance.imports.manage', 'finance.reports.view',
+            'finance.view', 'finance.people.view', 'finance.transactions.manage', 'finance.accounts.manage', 'finance.imports.manage', 'finance.reports.view',
         ]],
         'viewer' => ['label' => 'Só vê', 'permissions' => [
             'finance.view', 'finance.people.view', 'finance.reports.view',

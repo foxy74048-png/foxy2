@@ -18,6 +18,9 @@ Schedule::command('commerce:reservas')->everyFifteenMinutes()->withoutOverlappin
 Schedule::command('commerce:lembretes')->hourlyAt(5)->withoutOverlapping(55);
 Schedule::command('commerce:canais')->everyTenMinutes()->withoutOverlapping(15);
 
+// Foxy Finanças (docs/12): carteiras no Foxy Admin (contagens e última atividade).
+Schedule::command('financas:contas')->hourlyAt(20);
+
 // Cópia de segurança diária e rotina de saúde (avisa a equipe por e-mail; quadro no painel do Foxy Admin).
 Schedule::command('foxy:backup')->dailyAt('03:30')->withoutOverlapping(120);
 Schedule::command('foxy:saude')->everyTenMinutes()->withoutOverlapping(10);

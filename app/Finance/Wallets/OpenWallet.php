@@ -3,6 +3,7 @@
 namespace App\Finance\Wallets;
 
 use App\Finance\Accounts\AccountSync;
+use App\Finance\Categories\DefaultCategories;
 use App\Finance\Finance;
 use App\Models\User;
 use App\Platform\Audit\Audit;
@@ -34,6 +35,7 @@ class OpenWallet
             return $this->contexts->run(ExecutionContext::forUser($organization, $owner->getKey()), function () use ($organization, $owner, $name, $kind, $isMei) {
                 $wallet = Wallet::create(['name' => $name, 'kind' => $kind, 'is_mei' => $kind === Wallet::BUSINESS && $isMei]);
                 Membership::create(['organization_id' => $organization->getKey(), 'user_id' => $owner->getKey(), 'role' => 'owner']);
+                DefaultCategories::seed($wallet);
                 Audit::record('finance.wallet.opened', subject: $wallet, metadata: ['kind' => $kind]);
                 AccountSync::sync($organization);
 

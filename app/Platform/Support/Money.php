@@ -15,8 +15,13 @@ class Money
 
         $text = preg_replace('/[^\d,.\-]/', '', (string) $value);
 
-        // Com vírgula, a vírgula é o decimal e os pontos são milhar; sem vírgula, o ponto é o decimal.
-        $normalized = str_contains($text, ',') ? str_replace(['.', ','], ['', '.'], $text) : $text;
+        // Com vírgula, a vírgula é o decimal e os pontos são milhar. Sem vírgula, ponto seguido de 3 dígitos é
+        // milhar ("1.200" = mil e duzentos, "1.500.000"); senão o ponto é o decimal ("79.90").
+        $normalized = match (true) {
+            str_contains($text, ',') => str_replace(['.', ','], ['', '.'], $text),
+            (bool) preg_match('/^-?\d{1,3}(\.\d{3})+$/', $text) => str_replace('.', '', $text),
+            default => $text,
+        };
 
         return is_numeric($normalized) ? (int) round(((float) $normalized) * 100) : null;
     }

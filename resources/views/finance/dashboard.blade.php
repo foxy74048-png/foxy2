@@ -1,40 +1,74 @@
 <x-core::layout title="Início" product="Foxy Finanças" :subtitle="$currentWallet->name">
     <x-slot:nav>@include('finance.nav')</x-slot:nav>
     <x-slot:actions>
-        @if ($canManagePeople)@include('finance._add', ['label' => 'Convidar pessoa', 'href' => route('finance.people').'#convidar'])@endif
+        @if ($canManage)@include('finance._add', ['label' => 'Lançamento', 'href' => route('finance.transactions').'#lancar'])@endif
     </x-slot:actions>
+    @php($money = fn ($c) => \App\Platform\Support\Money::format($c))
 
     @include('finance.status')
 
-    <div class="grid cards">
-        <div class="card">
-            <div class="muted">Carteira</div>
-            <h2 style="margin:4px 0;font-size:1.1rem;">{{ $currentWallet->name }}</h2>
-            <div class="helper">{{ $currentWallet->kindLabel() }}@if ($currentWallet->is_mei) · MEI @endif</div>
+    @if (! $hasAccounts && $canManage)
+        <div class="alert info" style="margin-bottom:16px;">
+            Comece cadastrando onde o seu dinheiro fica (conta do banco, carteira, cartão) e lance o primeiro gasto: <a href="{{ route('finance.transactions') }}#lancar">começar</a>.
         </div>
+    @endif
+
+    <h2 style="margin:0 0 12px;font-size:1.1rem;">{{ \Illuminate\Support\Str::ucfirst(\App\Finance\Transactions\TransactionFilters::monthName(today())) }}</h2>
+    <div class="grid cards">
+        <a class="card" href="{{ route('finance.transactions', ['tipo' => 'recebimento']) }}"><div class="muted">Entrou</div><h2 style="margin:4px 0;color:var(--success-text);">{{ $money($income) }}</h2></a>
+        <a class="card" href="{{ route('finance.transactions', ['tipo' => 'gasto']) }}"><div class="muted">Saiu</div><h2 style="margin:4px 0;">{{ $money($expense) }}</h2></a>
+        <div class="card"><div class="muted">Sobrou</div><h2 style="margin:4px 0;{{ $income - $expense < 0 ? 'color:var(--danger-text);' : '' }}">{{ $money($income - $expense) }}</h2></div>
+        <a class="card" href="{{ route('finance.accounts') }}"><div class="muted">Saldo nas contas hoje</div><h2 style="margin:4px 0;{{ $balance < 0 ? 'color:var(--danger-text);' : '' }}">{{ $money($balance) }}</h2><div class="helper">sem os cartões</div></a>
+    </div>
+
+    <div class="grid two" style="align-items:start;margin-top:16px;">
+        <div class="card">
+            <h3 style="margin-top:0;">Onde você mais gastou neste mês</h3>
+            @if (! $top)
+                <div class="empty">Nenhum gasto lançado neste mês ainda.</div>
+            @else
+                @php($max = max(array_column($top, 'total')))
+                <div class="stack">
+                    @foreach ($top as $row)
+                        <a href="{{ route('finance.transactions', array_filter(['categoria' => $row['id'], 'tipo' => 'gasto'])) }}" style="text-decoration:none;color:inherit;">
+                            <div style="display:flex;justify-content:space-between;gap:8px;"><span>{{ $row['name'] }}</span><strong>{{ $money($row['total']) }}</strong></div>
+                            <div style="height:8px;border-radius:4px;background:var(--border);margin-top:4px;"><div style="height:8px;border-radius:4px;background:var(--primary);width:{{ max(2, round($row['total'] / $max * 100)) }}%;"></div></div>
+                        </a>
+                    @endforeach
+                </div>
+                <p class="helper" style="margin-bottom:0;">{{ $expense > 0 ? round($top[0]['total'] / $expense * 100) : 0 }}% do que saiu foi em {{ $top[0]['name'] }}.</p>
+            @endif
+        </div>
+        <div class="card">
+            <h3 style="margin-top:0;">Para os próximos 7 dias</h3>
+            @if ($upcoming->isEmpty())
+                <div class="empty">Nada previsto. Contas que se repetem (aluguel, salário) aparecem aqui quando lançadas como "todo mês".</div>
+            @else
+                <div class="table-wrap"><table>
+                    <tbody>
+                        @foreach ($upcoming as $t)
+                            <tr>
+                                <td style="white-space:nowrap;">{{ $t->date->format('d/m') }}@if ($t->date->lt(today()))<div class="helper" style="color:var(--danger-text);">atrasado</div>@endif</td>
+                                <td>{{ $t->description }}<div class="helper">{{ $t->account?->name }}</div></td>
+                                <td style="text-align:right;white-space:nowrap;{{ $t->kind === 'recebimento' ? 'color:var(--success-text);' : '' }}">{{ $t->kind === 'gasto' ? '− ' : '+ ' }}{{ $money($t->amount_cents) }}</td>
+                                @if ($canManage)<td style="text-align:right;"><form method="POST" action="{{ route('finance.transactions.confirm', $t) }}">@csrf<button type="submit" class="secondary">{{ $t->kind === 'recebimento' ? 'Recebi' : 'Paguei' }}</button></form></td>@endif
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table></div>
+            @endif
+        </div>
+    </div>
+
+    <div class="grid cards" style="margin-top:16px;">
         <a class="card" href="{{ route('finance.people') }}">
             <div class="muted">Pessoas na carteira</div>
             <h2 style="margin:4px 0;">{{ $people }}</h2>
             <div class="helper">{{ $currentWallet->isBusiness() ? 'convide o sócio para dividir pró-labore e lucro' : 'convide quem divide as contas com você' }}</div>
         </a>
         <div class="card">
-            <div class="muted">Plano</div>
-            <h2 style="margin:4px 0;font-size:1.1rem;">Grátis</h2>
-            <div class="helper">em fase de testes</div>
+            <div class="muted">Em breve</div>
+            <div class="helper" style="margin-top:4px;line-height:1.7;">Importar o extrato e a fatura, categorias automáticas, fatura do cartão, orçamento{{ $currentWallet->isBusiness() ? ', sócios e pró-labore' : '' }}, a raposa e lançar pelo WhatsApp.</div>
         </div>
-    </div>
-
-    <div class="card" style="margin-top:16px;">
-        <h3 style="margin-top:0;">O que vem por aí</h3>
-        <p class="muted" style="margin-top:0;">O Foxy Finanças está sendo montado em partes. Nesta carteira, em breve:</p>
-        <ul style="margin:0;padding-left:20px;line-height:1.8;">
-            <li><strong>Contas e cartões</strong> e lançar um gasto em 3 toques, com parcelado e repetição todo mês.</li>
-            <li><strong>Importar o extrato</strong> do banco e a fatura do cartão (OFX, planilha ou PDF), sem digitar nada.</li>
-            <li><strong>Onde você gasta mais:</strong> categorias, lugares, mês a mês e o que mudou.</li>
-            @if ($currentWallet->isBusiness())
-                <li><strong>Sócios:</strong> pró-labore, retiradas, o lucro do mês e quanto cabe a cada um.</li>
-            @endif
-            <li><strong>A raposa</strong> respondendo sobre o seu dinheiro, e lançar pelo WhatsApp.</li>
-        </ul>
     </div>
 </x-core::layout>

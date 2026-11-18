@@ -2,6 +2,7 @@
 
 namespace App\Finance\Accounts;
 
+use App\Finance\Transactions\Transaction;
 use App\Finance\Wallets\Wallet;
 use App\Platform\Memberships\Membership;
 use App\Platform\Organizations\Organization;
@@ -20,6 +21,9 @@ class AccountSync
         $owner = Membership::active()->where('organization_id', $organization->getKey())->where('role', 'owner')
             ->with('user')->oldest()->first()?->user;
         $people = Membership::active()->where('organization_id', $organization->getKey())->count();
+        $accounts = Account::withoutGlobalScopes()->where('organization_id', $organization->getKey())->whereNull('archived_at')->count();
+        $transactions = Transaction::withoutGlobalScopes()->where('organization_id', $organization->getKey())->whereNull('deleted_at')->count();
+        $last = Transaction::withoutGlobalScopes()->where('organization_id', $organization->getKey())->max('created_at');
 
         return ProductAccount::updateOrCreate(
             ['integration_id' => $organization->integration_id, 'external_ref' => $organization->external_ref],
@@ -31,7 +35,8 @@ class AccountSync
                 'signed_up_at' => $organization->created_at,
                 'contact_name' => $owner?->name,
                 'email' => $owner?->email,
-                'usage' => ['tipo' => $wallet?->kindLabel(), 'pessoas na carteira' => $people],
+                'usage' => ['tipo' => $wallet?->kindLabel(), 'pessoas na carteira' => $people, 'contas' => $accounts, 'lançamentos' => $transactions],
+                'last_activity_at' => $last,
                 'problems' => [],
                 'seen_at' => now(),
             ],
