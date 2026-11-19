@@ -18,6 +18,12 @@ class Account extends Model
 
     public const CARD = 'cartao';
 
+    /**
+     * Conta interna "Amigos e família" (fatia 6c): para onde vai o dinheiro emprestado e de onde volta. O saldo é
+     * o quanto te devem (negativo: quanto você deve). Criada sozinha; não aparece nos formulários nem no saldo.
+     */
+    public const PEOPLE = 'pessoas';
+
     public const KINDS = [
         'corrente' => 'Conta corrente',
         'poupanca' => 'Poupança',
@@ -38,9 +44,28 @@ class Account extends Model
         ];
     }
 
+    /** Contas em uso que a pessoa escolhe nos formulários (sem as arquivadas e sem a interna "Amigos e família"). */
     public function scopeActive(Builder $query): void
     {
+        $query->whereNull('archived_at')->where('kind', '!=', self::PEOPLE);
+    }
+
+    /** Não arquivadas, inclusive a interna (para o TransactionService aceitar a transferência para ela). */
+    public function scopeOpen(Builder $query): void
+    {
         $query->whereNull('archived_at');
+    }
+
+    public function isPeople(): bool
+    {
+        return $this->kind === self::PEOPLE;
+    }
+
+    /** A conta interna "Amigos e família" da carteira (criada na primeira vez). */
+    public static function people(): self
+    {
+        return self::query()->where('kind', self::PEOPLE)->first()
+            ?? self::create(['kind' => self::PEOPLE, 'name' => 'Amigos e família']);
     }
 
     public function isCard(): bool
@@ -50,7 +75,7 @@ class Account extends Model
 
     public function kindLabel(): string
     {
-        return self::KINDS[$this->kind] ?? $this->kind;
+        return $this->isPeople() ? 'A receber / a pagar de pessoas' : (self::KINDS[$this->kind] ?? $this->kind);
     }
 
     /**

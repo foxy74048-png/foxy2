@@ -49,7 +49,7 @@ class TransactionController
             'rows' => $base()->with(['account', 'toAccount', 'category.parent'])->orderByDesc('date')->orderByDesc('created_at')->paginate(50)->withQueryString(),
             'totals' => array_map('intval', $totals?->only(['income', 'expense', 'planned_income', 'planned_expense']) ?? []),
             'accounts' => $accounts,
-            'activeAccounts' => $accounts->whereNull('archived_at')->values(),
+            'activeAccounts' => $accounts->whereNull('archived_at')->reject(fn ($a) => $a->isPeople())->values(),
             'categoryOptions' => Category::options(),
             'categoryNames' => $categories->mapWithKeys(fn ($c) => [$c->id => $c->fullName()])->all(),
             'canManage' => Access::allows($request->attributes->get('finance.membership'), 'finance.transactions.manage'),
@@ -86,7 +86,7 @@ class TransactionController
     {
         return view('finance.transactions.edit', [
             'transaction' => $transaction->load('account', 'toAccount', 'category'),
-            'accounts' => Account::query()->where(fn ($q) => $q->whereNull('archived_at')->orWhereIn('id', array_filter([$transaction->account_id, $transaction->to_account_id])))->orderBy('name')->get(),
+            'accounts' => Account::query()->where(fn ($q) => $q->where(fn ($q) => $q->whereNull('archived_at')->where('kind', '!=', Account::PEOPLE))->orWhereIn('id', array_filter([$transaction->account_id, $transaction->to_account_id])))->orderBy('name')->get(),
             'categoryOptions' => Category::options($transaction->category_id),
             'seriesCount' => $transaction->series_id ? Transaction::where('series_id', $transaction->series_id)->where('date', '>', $transaction->date->toDateString())->count() : 0,
         ]);

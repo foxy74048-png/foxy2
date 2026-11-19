@@ -58,6 +58,9 @@ class DashboardController
             'pace' => $indicators->pace(),
             'budgetAlerts' => $indicators->budgets()->where('status', '!=', 'ok')->values(),
             'canSeeInsights' => Access::allows($membership, 'finance.reports.view'),
+            // Quem me deve (6c): totais.
+            'debts' => ($debtBalances = \App\Finance\Debts\Contact::query()->withSum('entries', 'amount_cents')->get()->map->balanceCents())->isEmpty() ? null
+                : ['owed' => $debtBalances->filter(fn ($b) => $b > 0)->sum(), 'owe' => -$debtBalances->filter(fn ($b) => $b < 0)->sum()],
             // Metas em andamento (6b), as 3 com prazo mais perto.
             'goals' => \App\Finance\Goals\Goal::query()->whereNull('archived_at')->whereNull('achieved_at')->withSum('entries', 'amount_cents')
                 ->orderByRaw('deadline is null')->orderBy('deadline')->limit(3)->get(),

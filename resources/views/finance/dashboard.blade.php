@@ -33,6 +33,14 @@
     </div>
 
     {{-- Orçamento: o que passou ou está perto do limite --}}
+    @if ($debts && ($debts['owed'] > 0 || $debts['owe'] > 0))
+        <a class="card" href="{{ route('finance.debts') }}" style="display:flex;gap:24px;flex-wrap:wrap;margin-top:16px;text-decoration:none;color:inherit;">
+            <div><div class="muted">Te devem</div><h2 style="margin:4px 0;color:var(--success-text);">{{ $money($debts['owed']) }}</h2></div>
+            <div><div class="muted">Você deve</div><h2 style="margin:4px 0;{{ $debts['owe'] > 0 ? 'color:var(--danger-text);' : '' }}">{{ $money($debts['owe']) }}</h2></div>
+            <div class="helper" style="align-self:center;">amigos e família · ver quem</div>
+        </a>
+    @endif
+
     @if ($goals->isNotEmpty())
         <div class="card" style="margin-top:16px;">
             <div style="display:flex;justify-content:space-between;"><h3 style="margin:0;">Metas</h3><a class="helper" href="{{ route('finance.goals') }}">ver todas</a></div>
@@ -106,7 +114,7 @@
         </a>
         <div class="card">
             <div class="muted">Em breve</div>
-            <div class="helper" style="margin-top:4px;line-height:1.7;">"Quem me deve"{{ $currentWallet->isBusiness() ? ', sócios e pró-labore' : '' }}, a raposa e lançar pelo WhatsApp.</div>
+            <div class="helper" style="margin-top:4px;line-height:1.7;">{{ $currentWallet->isBusiness() ? 'Sócios e pró-labore, a' : 'A' }} raposa respondendo sobre o seu dinheiro e lançar pelo WhatsApp.</div>
         </div>
     </div>
 </x-core::layout>

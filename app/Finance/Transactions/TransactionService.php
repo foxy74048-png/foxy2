@@ -203,7 +203,7 @@ class TransactionService
             throw ValidationException::withMessages(['kind' => 'Escolha gasto, recebimento ou transferência.']);
         }
 
-        $account = Account::query()->when($requireActive, fn ($q) => $q->active())->find($data['account_id'] ?? null);
+        $account = Account::query()->when($requireActive, fn ($q) => $q->open())->find($data['account_id'] ?? null);
         if (! $account) {
             throw ValidationException::withMessages(['account_id' => 'Escolha a conta ou o cartão.']);
         }
@@ -211,7 +211,7 @@ class TransactionService
         $toAccount = null;
         $category = null;
         if ($data['kind'] === Transaction::TRANSFER) {
-            $toAccount = Account::query()->when($requireActive, fn ($q) => $q->active())->find($data['to_account_id'] ?? null);
+            $toAccount = Account::query()->when($requireActive, fn ($q) => $q->open())->find($data['to_account_id'] ?? null);
             if (! $toAccount || $toAccount->id === $account->id) {
                 throw ValidationException::withMessages(['to_account_id' => 'Escolha para qual conta foi o dinheiro (diferente da de saída).']);
             }

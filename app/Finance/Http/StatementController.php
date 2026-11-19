@@ -50,7 +50,7 @@ class StatementController
             ->paginate(50)->withQueryString();
 
         $collection = $lines->getCollection();
-        $accounts = Account::query()->orderByRaw('archived_at is not null')->orderBy('name')->get();
+        $accounts = Account::query()->where('kind', '!=', Account::PEOPLE)->orderByRaw('archived_at is not null')->orderBy('name')->get();
 
         return view('finance.statements.index', [
             'tab' => $tab,

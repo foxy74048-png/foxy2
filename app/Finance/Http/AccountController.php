@@ -23,7 +23,7 @@ class AccountController
 {
     public function index(Request $request, TransactionService $service): View|Response
     {
-        $accounts = Account::query()->orderByRaw('archived_at is not null')->orderBy('kind')->orderBy('name')->get();
+        $accounts = Account::query()->where('kind', '!=', Account::PEOPLE)->orderByRaw('archived_at is not null')->orderBy('kind')->orderBy('name')->get();
         $balances = $service->balances($accounts);
         $invoiceSpent = $this->currentInvoiceSpent($accounts);
 

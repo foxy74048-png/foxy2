@@ -7,6 +7,7 @@ use App\Finance\Http\InsightsController;
 use App\Finance\Http\CardController;
 use App\Finance\Http\CategoryController;
 use App\Finance\Http\DashboardController;
+use App\Finance\Http\DebtController;
 use App\Finance\Http\GoalController;
 use App\Finance\Http\InvitationController;
 use App\Finance\Http\PeopleController;
@@ -73,6 +74,9 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             // Orçamento (fatia 6) e metas (6b)
             Route::get('/orcamento', [BudgetController::class, 'index'])->name('budgets');
             Route::get('/metas', [GoalController::class, 'index'])->name('goals');
+            // Quem me deve (6c)
+            Route::get('/quem-me-deve', [DebtController::class, 'index'])->name('debts');
+            Route::get('/quem-me-deve/{contact}', [DebtController::class, 'show'])->name('debts.show');
             // Cartões e faturas (fatia 5)
             Route::get('/cartoes', [CardController::class, 'index'])->name('cards');
             Route::get('/cartoes/{account}', [CardController::class, 'show'])->name('cards.show');
@@ -85,6 +89,13 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/lancamentos/{transaction}/apagar', [TransactionController::class, 'destroy'])->name('transactions.destroy');
             Route::post('/lancamentos/{transaction}/confirmar', [TransactionController::class, 'confirm'])->name('transactions.confirm');
             Route::post('/cartoes/{account}/pagar', [CardController::class, 'pay'])->middleware('throttle:30,1')->name('cards.pay');
+            Route::post('/quem-me-deve', [DebtController::class, 'store'])->middleware('throttle:60,1')->name('debts.store');
+            Route::post('/quem-me-deve/dividir', [DebtController::class, 'split'])->middleware('throttle:30,1')->name('debts.split');
+            Route::post('/quem-me-deve/objeto', [DebtController::class, 'object'])->middleware('throttle:30,1')->name('debts.object');
+            Route::post('/quem-me-deve/movimentos/{entry}/devolvido', [DebtController::class, 'returnObject'])->name('debts.return');
+            Route::post('/quem-me-deve/movimentos/{entry}/apagar', [DebtController::class, 'destroyEntry'])->name('debts.entry.destroy');
+            Route::post('/quem-me-deve/{contact}', [DebtController::class, 'updateContact'])->name('debts.contact.update');
+            Route::post('/quem-me-deve/{contact}/arquivar', [DebtController::class, 'archiveContact'])->name('debts.contact.archive');
             Route::post('/metas', [GoalController::class, 'store'])->middleware('throttle:30,1')->name('goals.store');
             Route::post('/metas/{goal}', [GoalController::class, 'update'])->name('goals.update');
             Route::post('/metas/{goal}/arquivar', [GoalController::class, 'archive'])->name('goals.archive');
