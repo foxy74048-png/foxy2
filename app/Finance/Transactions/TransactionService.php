@@ -77,6 +77,10 @@ class TransactionService
                     'created_by' => $this->userId(),
                     // Veio de uma linha do extrato (só no primeiro, se fosse série).
                     'statement_line_id' => $i === 1 ? ($data['statement_line_id'] ?? null) : null,
+                    // Movimento de sócio (fatia 7) e o par na outra carteira.
+                    'partner_id' => $data['partner_id'] ?? null,
+                    'partner_kind' => $data['partner_kind'] ?? null,
+                    'linked_transaction_id' => $data['linked_transaction_id'] ?? null,
                 ]));
             }
             Audit::record('finance.transaction.created', subject: $created->first(), metadata: ['mode' => $mode, 'count' => $count, 'kind' => $data['kind']]);
@@ -132,6 +136,10 @@ class TransactionService
                     $changed++;
                 }
             }
+            // Retirada de sócio com par na carteira pessoal: valor, data e descrição acompanham.
+            if ($transaction->partner_id && $transaction->linked_transaction_id) {
+                $this->updateLinked($transaction);
+            }
             Audit::record('finance.transaction.updated', subject: $transaction, metadata: ['count' => $changed]);
 
             return $changed;
@@ -149,6 +157,7 @@ class TransactionService
             foreach ($query->get() as $row) {
                 $row->delete();
                 $this->releaseStatementLine($row);
+                $this->deleteLinked($row);
                 $count++;
             }
             Audit::record('finance.transaction.deleted', subject: $transaction, metadata: ['count' => $count]);
@@ -223,6 +232,31 @@ class TransactionService
         }
 
         return [$account, $toAccount, $category];
+    }
+
+    /**
+     * O par em outra carteira (retirada do sócio → recebimento na carteira pessoal dele). Apagar um apaga o
+     * outro; a carteira de lá só é tocada aqui, no contexto dela.
+     */
+    private function deleteLinked(Transaction $transaction): void
+    {
+        $linked = $transaction->linked_transaction_id ? Transaction::withoutGlobalScopes()->whereNull('deleted_at')->find($transaction->linked_transaction_id) : null;
+        if (! $linked) {
+            return;
+        }
+        $linked->forceFill(['linked_transaction_id' => null])->save();
+        // Só o lado do negócio (com sócio) manda: apagar a cópia na carteira pessoal só desfaz a ligação.
+        if (! $transaction->partner_id) {
+            return;
+        }
+        $linked->delete();
+        Audit::record('finance.transaction.linked_deleted', subject: $transaction, metadata: ['linked' => $linked->id]);
+    }
+
+    private function updateLinked(Transaction $transaction): void
+    {
+        $linked = Transaction::withoutGlobalScopes()->whereNull('deleted_at')->find($transaction->linked_transaction_id);
+        $linked?->forceFill(['amount_cents' => $transaction->amount_cents, 'date' => $transaction->date->toDateString(), 'description' => $transaction->description])->save();
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Finance\Http\DashboardController;
 use App\Finance\Http\DebtController;
 use App\Finance\Http\GoalController;
 use App\Finance\Http\InvitationController;
+use App\Finance\Http\PartnerController;
 use App\Finance\Http\PeopleController;
 use App\Finance\Http\ProfileController;
 use App\Finance\Http\StatementController;
@@ -74,6 +75,9 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             // Orçamento (fatia 6) e metas (6b)
             Route::get('/orcamento', [BudgetController::class, 'index'])->name('budgets');
             Route::get('/metas', [GoalController::class, 'index'])->name('goals');
+            // Sócios e MEI (fatia 7) — só na carteira do negócio; a escolha da carteira pessoal é do próprio sócio.
+            Route::get('/socios', [PartnerController::class, 'index'])->name('partners');
+            Route::post('/socios/{partner}/minha-carteira', [PartnerController::class, 'mirror'])->name('partners.mirror');
             // Quem me deve (6c)
             Route::get('/quem-me-deve', [DebtController::class, 'index'])->name('debts');
             Route::get('/quem-me-deve/{contact}', [DebtController::class, 'show'])->name('debts.show');
@@ -89,6 +93,11 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/lancamentos/{transaction}/apagar', [TransactionController::class, 'destroy'])->name('transactions.destroy');
             Route::post('/lancamentos/{transaction}/confirmar', [TransactionController::class, 'confirm'])->name('transactions.confirm');
             Route::post('/cartoes/{account}/pagar', [CardController::class, 'pay'])->middleware('throttle:30,1')->name('cards.pay');
+            Route::post('/socios/movimentos', [PartnerController::class, 'movement'])->middleware('throttle:60,1')->name('partners.movement');
+            Route::post('/socios/acertos', [PartnerController::class, 'settle'])->middleware('throttle:30,1')->name('partners.settle');
+            Route::post('/socios/acertos/{settlement}/apagar', [PartnerController::class, 'destroySettlement'])->name('partners.settle.destroy');
+            Route::post('/socios/das', [PartnerController::class, 'das'])->middleware('throttle:10,1')->name('partners.das');
+            Route::post('/extratos/linhas/{line}/retirada', [PartnerController::class, 'lineWithdrawal'])->name('statements.partner');
             Route::post('/quem-me-deve', [DebtController::class, 'store'])->middleware('throttle:60,1')->name('debts.store');
             Route::post('/quem-me-deve/dividir', [DebtController::class, 'split'])->middleware('throttle:30,1')->name('debts.split');
             Route::post('/quem-me-deve/objeto', [DebtController::class, 'object'])->middleware('throttle:30,1')->name('debts.object');
@@ -149,8 +158,11 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/pessoas/{membership}/retirar', [PeopleController::class, 'remove'])->name('people.remove');
         });
 
-        // A carteira atual: nome, tipo, MEI (só o dono)
+        // A carteira atual: nome, tipo, MEI e os sócios (só o dono)
         Route::middleware('finance.can:finance.wallet.manage')->group(function () {
+            Route::post('/socios', [PartnerController::class, 'storePartner'])->middleware('throttle:30,1')->name('partners.store');
+            Route::post('/socios/{partner}', [PartnerController::class, 'updatePartner'])->name('partners.update');
+            Route::post('/socios/{partner}/arquivar', [PartnerController::class, 'archivePartner'])->name('partners.archive');
             Route::get('/carteira', [WalletController::class, 'edit'])->name('wallet.settings');
             Route::post('/carteira', [WalletController::class, 'update'])->name('wallet.update');
         });

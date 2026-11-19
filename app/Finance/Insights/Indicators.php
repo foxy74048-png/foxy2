@@ -34,7 +34,8 @@ class Indicators
         $this->month = $month->copy()->startOfMonth();
         $this->categories = Category::query()->get()->keyBy('id');
         // Um ano para trás é o que todos os indicadores usam (média de 3 meses, assinaturas, evolução).
-        $this->rows = Transaction::query()->done()->whereIn('kind', [Transaction::EXPENSE, Transaction::INCOME])
+        // Movimentos de sócio (pró-labore, retirada, aporte) não são gasto nem renda do negócio.
+        $this->rows = Transaction::query()->done()->whereNull('partner_id')->whereIn('kind', [Transaction::EXPENSE, Transaction::INCOME])
             ->whereBetween('date', [$this->month->copy()->subMonthsNoOverflow(11)->toDateString(), $this->month->copy()->endOfMonth()->toDateString()])
             ->get(['id', 'kind', 'amount_cents', 'date', 'description', 'category_id', 'series_kind', 'account_id']);
     }

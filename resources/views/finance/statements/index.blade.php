@@ -133,6 +133,13 @@
                                             </form>
                                         @endif
                                         <form method="POST" action="{{ route('finance.statements.ignore', $line) }}">@csrf<button type="submit" class="secondary" title="Não é gasto nem recebimento seu (ex.: estorno que se anula, dinheiro de outra pessoa)">Ignorar</button></form>
+                                        @if ($partners->isNotEmpty() && ! $line->isIncome())
+                                            <form method="POST" action="{{ route('finance.statements.partner', $line) }}" style="display:flex;gap:6px;align-items:center;">
+                                                @csrf
+                                                <select name="partner_id" aria-label="Sócio" style="max-width:150px;">@foreach ($partners as $p)<option value="{{ $p->id }}">{{ $p->name }}</option>@endforeach</select>
+                                                <button type="submit" class="secondary" title="Saiu da conta do negócio, mas foi gasto pessoal do sócio: vira retirada dele">É gasto pessoal do sócio</button>
+                                            </form>
+                                        @endif
                                     <details style="flex-basis:auto;" @if ($errors->has('parts') && old('_line') === $line->id) open @endif>
                                         <summary class="button secondary" style="list-style:none;cursor:pointer;display:inline-block;">Dividir em partes</summary>
                                         <form method="POST" action="{{ route('finance.statements.split', $line) }}" class="stack" style="margin-top:8px;">

@@ -66,6 +66,8 @@ class StatementController
             'recentImports' => StatementImport::with('account')->withCount(['lines as pending_count' => fn ($q) => $q->where('status', StatementLine::PENDING)])
                 ->latest()->limit(6)->get(),
             'filterAccount' => $account,
+            // Carteira do negócio: a saída pode ser gasto pessoal de um sócio (vira retirada dele).
+            'partners' => $request->attributes->get('finance.wallet')->isBusiness() ? \App\Finance\Partners\Partner::query()->whereNull('archived_at')->orderBy('name')->get() : collect(),
         ]);
     }
 
