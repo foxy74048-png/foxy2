@@ -4,6 +4,7 @@ namespace App\Finance\Transactions;
 
 use App\Finance\Accounts\Account;
 use App\Finance\Categories\Category;
+use App\Finance\Statements\StatementLine;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
 use Illuminate\Support\Carbon;
@@ -71,6 +72,8 @@ class TransactionService
                     'installments' => $mode === 'parcelas' ? $count : null,
                     'source' => $data['source'] ?? 'manual',
                     'created_by' => $this->userId(),
+                    // Veio de uma linha do extrato (só no primeiro, se fosse série).
+                    'statement_line_id' => $i === 1 ? ($data['statement_line_id'] ?? null) : null,
                 ]));
             }
             Audit::record('finance.transaction.created', subject: $created->first(), metadata: ['mode' => $mode, 'count' => $count, 'kind' => $data['kind']]);
@@ -139,6 +142,7 @@ class TransactionService
             $count = 0;
             foreach ($query->get() as $row) {
                 $row->delete();
+                $this->releaseStatementLine($row);
                 $count++;
             }
             Audit::record('finance.transaction.deleted', subject: $transaction, metadata: ['count' => $count]);
@@ -213,6 +217,31 @@ class TransactionService
         }
 
         return [$account, $toAccount, $category];
+    }
+
+    /**
+     * Apagou um lançamento que veio do extrato (ou que estava conciliado com ele): a linha volta para revisar,
+     * como no Studio. Linha dividida perde só aquela parte; sem nenhuma parte, volta para revisar.
+     */
+    private function releaseStatementLine(Transaction $transaction): void
+    {
+        if (! $transaction->statement_line_id) {
+            return;
+        }
+        $line = StatementLine::find($transaction->statement_line_id);
+        if (! $line) {
+            return;
+        }
+
+        if ($line->status === StatementLine::SPLIT) {
+            $left = array_values(array_filter($line->split_details ?? [], fn ($id) => $id !== $transaction->id));
+            $line->update($left === [] ? ['status' => StatementLine::PENDING, 'split_details' => null, 'resolved_at' => null] : ['split_details' => $left]);
+
+            return;
+        }
+        if (in_array($line->status, [StatementLine::CREATED, StatementLine::MATCHED], true) && $line->transaction_id === $transaction->id) {
+            $line->update(['status' => StatementLine::PENDING, 'transaction_id' => null, 'resolved_at' => null]);
+        }
     }
 
     private function statusFor(Account $account, Carbon $date): string

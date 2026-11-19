@@ -28,13 +28,13 @@ class Account extends Model
 
     protected $table = 'finance_accounts';
 
-    protected $fillable = ['kind', 'name', 'institution', 'opening_balance_cents', 'closing_day', 'due_day', 'limit_cents', 'archived_at'];
+    protected $fillable = ['kind', 'name', 'institution', 'opening_balance_cents', 'closing_day', 'due_day', 'limit_cents', 'archived_at', 'statement_mapping'];
 
     protected function casts(): array
     {
         return [
             'opening_balance_cents' => 'integer', 'closing_day' => 'integer', 'due_day' => 'integer',
-            'limit_cents' => 'integer', 'archived_at' => 'datetime',
+            'limit_cents' => 'integer', 'archived_at' => 'datetime', 'statement_mapping' => 'array',
         ];
     }
 

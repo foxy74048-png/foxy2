@@ -42,7 +42,7 @@ class Transaction extends Model
 
     protected $fillable = [
         'account_id', 'to_account_id', 'kind', 'amount_cents', 'date', 'description', 'category_id', 'notes', 'status',
-        'invoice_month', 'series_id', 'series_kind', 'installment', 'installments', 'source', 'created_by',
+        'invoice_month', 'series_id', 'series_kind', 'installment', 'installments', 'source', 'created_by', 'statement_line_id',
     ];
 
     protected $attributes = ['status' => self::DONE, 'source' => 'manual'];

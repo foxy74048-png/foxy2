@@ -7,6 +7,8 @@ use App\Finance\Http\DashboardController;
 use App\Finance\Http\InvitationController;
 use App\Finance\Http\PeopleController;
 use App\Finance\Http\ProfileController;
+use App\Finance\Http\StatementController;
+use App\Finance\Http\StatementLineController;
 use App\Finance\Http\TransactionController;
 use App\Finance\Http\VerificationController;
 use App\Finance\Http\WalletController;
@@ -70,6 +72,24 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/lancamentos/{transaction}/apagar', [TransactionController::class, 'destroy'])->name('transactions.destroy');
             Route::post('/lancamentos/{transaction}/confirmar', [TransactionController::class, 'confirm'])->name('transactions.confirm');
         });
+        // Importar extrato, fatura ou planilha antiga e revisar linha a linha (fatia 3).
+        Route::middleware('finance.can:finance.imports.manage')->prefix('extratos')->name('statements')->group(function () {
+            Route::get('/', [StatementController::class, 'index']);
+            Route::post('/', [StatementController::class, 'upload'])->middleware('throttle:20,1')->name('.upload');
+            Route::get('/colunas', [StatementController::class, 'mapping'])->name('.mapping');
+            Route::post('/colunas', [StatementController::class, 'import'])->middleware('throttle:20,1')->name('.import');
+            Route::post('/colunas/cancelar', [StatementController::class, 'cancel'])->name('.cancel');
+            Route::post('/importacoes/{import}/desfazer', [StatementController::class, 'undo'])->name('.undo');
+            Route::post('/limpar', [StatementController::class, 'clear'])->name('.clear');
+            Route::post('/lote', [StatementLineController::class, 'bulk'])->middleware('throttle:30,1')->name('.bulk');
+            Route::post('/linhas/{line}/lancar', [StatementLineController::class, 'create'])->name('.create');
+            Route::post('/linhas/{line}/conciliar', [StatementLineController::class, 'match'])->name('.match');
+            Route::post('/linhas/{line}/dividir', [StatementLineController::class, 'split'])->name('.split');
+            Route::post('/linhas/{line}/ignorar', [StatementLineController::class, 'ignore'])->name('.ignore');
+            Route::post('/linhas/{line}/desfazer', [StatementLineController::class, 'undo'])->name('.undo-line');
+            Route::post('/linhas/{line}/mostrar', [StatementController::class, 'unhide'])->name('.unhide');
+        });
+
         Route::middleware('finance.can:finance.accounts.manage')->group(function () {
             Route::post('/contas', [AccountController::class, 'store'])->middleware('throttle:30,1')->name('accounts.store');
             Route::post('/contas/{account}', [AccountController::class, 'update'])->name('accounts.update');
