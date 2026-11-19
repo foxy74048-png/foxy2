@@ -25,6 +25,8 @@ class PersonEntry extends Model
         'paguei' => ['Eu paguei de volta', 1, 'sai'],
         'dividi' => ['Dividimos uma conta', 1, null],
         'objeto' => ['Emprestei um objeto', 0, null],
+        // Saldo trazido de um grupo de despesas (6d); o sinal vem no valor.
+        'grupo' => ['Despesas em grupo', 1, null],
     ];
 
     protected $table = 'finance_person_entries';

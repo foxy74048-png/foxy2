@@ -9,6 +9,7 @@ use App\Finance\Http\CategoryController;
 use App\Finance\Http\DashboardController;
 use App\Finance\Http\DebtController;
 use App\Finance\Http\GoalController;
+use App\Finance\Http\GroupController;
 use App\Finance\Http\InvitationController;
 use App\Finance\Http\PartnerController;
 use App\Finance\Http\PeopleController;
@@ -47,6 +48,9 @@ Route::middleware('guest')->group(function () {
 
 // Convite para uma carteira: público (o token é a prova); funciona logado ou não.
 Route::get('/convite/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+
+// Resumo de um grupo de despesas para os amigos verem (só leitura, sem login; o token secreto é a chave).
+Route::get('/grupo/{token}', [GroupController::class, 'public'])->middleware('throttle:60,1')->where('token', '[A-Za-z0-9]{40}')->name('groups.public');
 Route::post('/convite/{token}', [InvitationController::class, 'accept'])->middleware('throttle:10,1')->name('invitation.accept');
 
 Route::middleware('auth')->group(function () {
@@ -75,6 +79,9 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             // Orçamento (fatia 6) e metas (6b)
             Route::get('/orcamento', [BudgetController::class, 'index'])->name('budgets');
             Route::get('/metas', [GoalController::class, 'index'])->name('goals');
+            // Despesas em grupo (6d)
+            Route::get('/grupos', [GroupController::class, 'index'])->name('groups');
+            Route::get('/grupos/{group}', [GroupController::class, 'show'])->name('groups.show');
             // Sócios e MEI (fatia 7) — só na carteira do negócio; a escolha da carteira pessoal é do próprio sócio.
             Route::get('/socios', [PartnerController::class, 'index'])->name('partners');
             Route::post('/socios/{partner}/minha-carteira', [PartnerController::class, 'mirror'])->name('partners.mirror');
@@ -105,6 +112,17 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/quem-me-deve/movimentos/{entry}/apagar', [DebtController::class, 'destroyEntry'])->name('debts.entry.destroy');
             Route::post('/quem-me-deve/{contact}', [DebtController::class, 'updateContact'])->name('debts.contact.update');
             Route::post('/quem-me-deve/{contact}/arquivar', [DebtController::class, 'archiveContact'])->name('debts.contact.archive');
+            Route::post('/grupos', [GroupController::class, 'store'])->middleware('throttle:20,1')->name('groups.store');
+            Route::post('/grupos/pessoas/{member}/remover', [GroupController::class, 'removeMember'])->name('groups.members.remove');
+            Route::post('/grupos/despesas/{expense}/apagar', [GroupController::class, 'destroyExpense'])->name('groups.expenses.destroy');
+            Route::post('/grupos/pagamentos/{payment}/apagar', [GroupController::class, 'destroyPayment'])->name('groups.payments.destroy');
+            Route::post('/grupos/{group}/pessoas', [GroupController::class, 'addMember'])->middleware('throttle:60,1')->name('groups.members.add');
+            Route::post('/grupos/{group}/despesas', [GroupController::class, 'addExpense'])->middleware('throttle:120,1')->name('groups.expenses.add');
+            Route::post('/grupos/{group}/pagamentos', [GroupController::class, 'addPayment'])->middleware('throttle:60,1')->name('groups.payments.add');
+            Route::post('/grupos/{group}/encerrar', [GroupController::class, 'close'])->name('groups.close');
+            Route::post('/grupos/{group}/quem-me-deve', [GroupController::class, 'sendToDebts'])->name('groups.debts');
+            Route::post('/grupos/{group}/novo-link', [GroupController::class, 'newLink'])->name('groups.link');
+            Route::post('/grupos/{group}/apagar', [GroupController::class, 'destroy'])->name('groups.destroy');
             Route::post('/metas', [GoalController::class, 'store'])->middleware('throttle:30,1')->name('goals.store');
             Route::post('/metas/{goal}', [GoalController::class, 'update'])->name('goals.update');
             Route::post('/metas/{goal}/arquivar', [GoalController::class, 'archive'])->name('goals.archive');

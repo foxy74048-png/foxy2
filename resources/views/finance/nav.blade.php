@@ -9,6 +9,7 @@
     <x-core::nav-link href="{{ route('finance.budgets') }}" :active="request()->routeIs('finance.budgets*')" icon="wallet">Orçamento</x-core::nav-link>
     <x-core::nav-link href="{{ route('finance.goals') }}" :active="request()->routeIs('finance.goals*')" icon="sparkles">Metas de guardar</x-core::nav-link>
     <x-core::nav-link href="{{ route('finance.debts') }}" :active="request()->routeIs('finance.debts*')" icon="users">Quem me deve</x-core::nav-link>
+    <x-core::nav-link href="{{ route('finance.groups') }}" :active="request()->routeIs('finance.groups*')" icon="users">Despesas em grupo</x-core::nav-link>
     @if ($currentWallet->isBusiness())
         <x-core::nav-link href="{{ route('finance.partners') }}" :active="request()->routeIs('finance.partners*')" icon="users">Sócios{{ $currentWallet->is_mei ? ' e MEI' : '' }}</x-core::nav-link>
     @endif
