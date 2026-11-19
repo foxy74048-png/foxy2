@@ -7,6 +7,7 @@ use App\Finance\Http\InsightsController;
 use App\Finance\Http\CardController;
 use App\Finance\Http\CategoryController;
 use App\Finance\Http\DashboardController;
+use App\Finance\Http\GoalController;
 use App\Finance\Http\InvitationController;
 use App\Finance\Http\PeopleController;
 use App\Finance\Http\ProfileController;
@@ -69,8 +70,9 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
         Route::middleware('finance.can:finance.view')->group(function () {
             Route::get('/lancamentos', [TransactionController::class, 'index'])->name('transactions');
             Route::get('/contas', [AccountController::class, 'index'])->name('accounts');
-            // Orçamento (fatia 6)
+            // Orçamento (fatia 6) e metas (6b)
             Route::get('/orcamento', [BudgetController::class, 'index'])->name('budgets');
+            Route::get('/metas', [GoalController::class, 'index'])->name('goals');
             // Cartões e faturas (fatia 5)
             Route::get('/cartoes', [CardController::class, 'index'])->name('cards');
             Route::get('/cartoes/{account}', [CardController::class, 'show'])->name('cards.show');
@@ -83,6 +85,12 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/lancamentos/{transaction}/apagar', [TransactionController::class, 'destroy'])->name('transactions.destroy');
             Route::post('/lancamentos/{transaction}/confirmar', [TransactionController::class, 'confirm'])->name('transactions.confirm');
             Route::post('/cartoes/{account}/pagar', [CardController::class, 'pay'])->middleware('throttle:30,1')->name('cards.pay');
+            Route::post('/metas', [GoalController::class, 'store'])->middleware('throttle:30,1')->name('goals.store');
+            Route::post('/metas/{goal}', [GoalController::class, 'update'])->name('goals.update');
+            Route::post('/metas/{goal}/arquivar', [GoalController::class, 'archive'])->name('goals.archive');
+            Route::post('/metas/{goal}/apagar', [GoalController::class, 'destroy'])->name('goals.destroy');
+            Route::post('/metas/{goal}/entradas', [GoalController::class, 'entry'])->middleware('throttle:60,1')->name('goals.entry');
+            Route::post('/metas/entradas/{entry}/apagar', [GoalController::class, 'destroyEntry'])->name('goals.entry.destroy');
         });
         // Importar extrato, fatura ou planilha antiga e revisar linha a linha (fatia 3).
         Route::middleware('finance.can:finance.imports.manage')->prefix('extratos')->name('statements')->group(function () {

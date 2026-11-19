@@ -33,6 +33,22 @@
     </div>
 
     {{-- Orçamento: o que passou ou está perto do limite --}}
+    @if ($goals->isNotEmpty())
+        <div class="card" style="margin-top:16px;">
+            <div style="display:flex;justify-content:space-between;"><h3 style="margin:0;">Metas</h3><a class="helper" href="{{ route('finance.goals') }}">ver todas</a></div>
+            <div class="stack" style="margin-top:8px;">
+                @foreach ($goals as $g)
+                    @php($p = $g->progress())
+                    <div>
+                        <div style="display:flex;justify-content:space-between;gap:8px;"><span>{{ $g->name }}</span><span><strong>{{ $money($p['saved']) }}</strong> <span class="muted">de {{ $money($g->target_cents) }}</span></span></div>
+                        <div style="height:8px;border-radius:4px;background:var(--border);margin-top:4px;"><div style="height:8px;border-radius:4px;background:var(--primary);width:{{ max(2, round($p['pct'] * 100)) }}%;"></div></div>
+                        @if ($p['per_month'])<div class="helper">guardar {{ $money($p['per_month']) }} por mês até {{ $g->deadline->format('m/Y') }}{{ $p['on_track'] === false ? ' · atrasada' : '' }}</div>@endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     @if ($budgetAlerts->isNotEmpty())
         <div class="card" style="margin-top:16px;">
             <div class="section-title" style="display:flex;justify-content:space-between;"><h3 style="margin:0;">Orçamento pedindo atenção</h3><a class="helper" href="{{ route('finance.budgets') }}">ver todos</a></div>
@@ -90,7 +106,7 @@
         </a>
         <div class="card">
             <div class="muted">Em breve</div>
-            <div class="helper" style="margin-top:4px;line-height:1.7;">Metas de guardar dinheiro, "quem me deve"{{ $currentWallet->isBusiness() ? ', sócios e pró-labore' : '' }}, a raposa e lançar pelo WhatsApp.</div>
+            <div class="helper" style="margin-top:4px;line-height:1.7;">"Quem me deve"{{ $currentWallet->isBusiness() ? ', sócios e pró-labore' : '' }}, a raposa e lançar pelo WhatsApp.</div>
         </div>
     </div>
 </x-core::layout>

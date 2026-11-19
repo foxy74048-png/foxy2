@@ -58,6 +58,9 @@ class DashboardController
             'pace' => $indicators->pace(),
             'budgetAlerts' => $indicators->budgets()->where('status', '!=', 'ok')->values(),
             'canSeeInsights' => Access::allows($membership, 'finance.reports.view'),
+            // Metas em andamento (6b), as 3 com prazo mais perto.
+            'goals' => \App\Finance\Goals\Goal::query()->whereNull('archived_at')->whereNull('achieved_at')->withSum('entries', 'amount_cents')
+                ->orderByRaw('deadline is null')->orderBy('deadline')->limit(3)->get(),
             // Faturas que fecharam e falta pagar (aviso de vencimento).
             'invoicesToPay' => $accounts->filter->isCard()->flatMap(fn (Account $card) => app(CardInvoices::class)->overview($card)
                 ->filter(fn ($i) => in_array($i['status'], ['fechada', 'parcial', 'atrasada'], true))
