@@ -41,6 +41,17 @@
         @if ($seriesCount > 0)
             <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" name="following" value="1" @checked(old('following', true)) style="width:auto;"> Mudar também os próximos {{ $seriesCount }} desta série (a data muda só neste)</label>
         @endif
+        @unless ($t->isTransfer())
+            {{-- Categorização automática (fatia 4): ensinar o sistema --}}
+            <div class="stack" style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;">
+                <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:0;flex-wrap:wrap;">
+                    <input type="checkbox" name="remember" value="1" @checked(old('remember')) style="width:auto;">
+                    Sempre usar esta categoria quando a descrição tiver
+                    <input name="pattern" value="{{ old('pattern', \App\Finance\Categories\Categorizer::defaultPattern($t->description)) }}" maxlength="80" style="max-width:200px;padding:4px 8px;" aria-label="Palavras que identificam">
+                </label>
+                <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:0;"><input type="checkbox" name="apply_similar" value="1" @checked(old('apply_similar', true)) style="width:auto;"> e pôr essa categoria nos lançamentos parecidos que estão sem categoria</label>
+            </div>
+        @endunless
         @if ($t->invoice_month)<div class="helper">Cai na fatura de {{ \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $t->invoice_month.'-01')->format('m/Y') }}.</div>@endif
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button type="submit">Salvar</button>

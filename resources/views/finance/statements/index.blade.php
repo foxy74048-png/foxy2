@@ -109,13 +109,19 @@
                                             <form method="POST" action="{{ route('finance.statements.match', $line) }}" style="display:inline;">@csrf<input type="hidden" name="transaction_id" value="{{ $match->id }}"><button type="submit" style="margin-left:6px;">É o mesmo — conciliar</button></form>
                                         </div>
                                     @endif
-                                    <form method="POST" action="{{ route('finance.statements.create', $line) }}" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                                    <form method="POST" action="{{ route('finance.statements.create', $line) }}" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;" data-line-form>
                                         @csrf
-                                        <select name="category_id" aria-label="Categoria" style="max-width:220px;">
+                                        <select name="category_id" aria-label="Categoria" style="max-width:220px;" data-initial="{{ $line->suggested_category_id }}">
                                             <option value="">— sem categoria —</option>
                                             @foreach ($categoryOptions[$line->kind()] ?? [] as $group => $items)<optgroup label="{{ $group }}">@foreach ($items as $id => $name)<option value="{{ $id }}" @selected($line->suggested_category_id === $id)>{{ $name }}</option>@endforeach</optgroup>@endforeach
                                         </select>
                                         <button type="submit" @class(['secondary' => (bool) $match])>Lançar</button>
+                                        @if ($line->suggestion_origin)<span class="helper" style="flex-basis:100%;">categoria {{ \App\Finance\Categories\Categorizer::ORIGINS[$line->suggestion_origin] ?? '' }}</span>@endif
+                                        {{-- "Sempre que aparecer": marcado sozinho quando a pessoa troca a categoria sugerida --}}
+                                        <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin:0;flex-basis:100%;font-size:.85rem;">
+                                            <input type="checkbox" name="remember" value="1" style="width:auto;" data-remember> sempre que aparecer
+                                            <input name="pattern" value="{{ \App\Finance\Categories\Categorizer::defaultPattern($line->description) }}" maxlength="80" style="max-width:170px;padding:4px 8px;" aria-label="Palavras que identificam (para a regra)">
+                                        </label>
                                     </form>
                                     {{-- As outras saídas ficam à vista (docs: opção útil não fica escondida) --}}
                                     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;">
@@ -192,4 +198,15 @@
             @endif
         </div>
     @endif
+
+    <x-slot:scripts>
+    <script>
+    // Trocou a categoria sugerida (ou escolheu uma onde não havia)? Marca "sempre que aparecer" sozinho.
+    document.querySelectorAll('[data-line-form]').forEach(function (form) {
+        var select = form.querySelector('select[name=category_id]'), box = form.querySelector('[data-remember]');
+        if (!select || !box) return;
+        select.addEventListener('change', function () { box.checked = select.value !== '' && select.value !== select.getAttribute('data-initial'); });
+    });
+    </script>
+    </x-slot:scripts>
 </x-core::layout>

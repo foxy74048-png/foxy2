@@ -99,6 +99,10 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/categorias/{category}', [CategoryController::class, 'update'])->name('categories.update');
             Route::post('/categorias/{category}/esconder', [CategoryController::class, 'hide'])->name('categories.hide');
             Route::post('/categorias/{category}/juntar', [CategoryController::class, 'merge'])->name('categories.merge');
+            // Regras automáticas (fatia 4)
+            Route::post('/regras', [CategoryController::class, 'storeRule'])->middleware('throttle:30,1')->name('rules.store');
+            Route::post('/regras/{rule}', [CategoryController::class, 'updateRule'])->name('rules.update');
+            Route::post('/regras/{rule}/apagar', [CategoryController::class, 'destroyRule'])->name('rules.destroy');
         });
 
         // Pessoas na carteira (casal, família, sócios)

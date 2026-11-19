@@ -36,7 +36,7 @@ class StatementLine extends Model
 
     protected $fillable = [
         'import_id', 'account_id', 'date', 'time', 'description', 'amount_cents', 'dedupe_key', 'status',
-        'transaction_id', 'split_details', 'suggested_category_id', 'resolved_at', 'hidden_at',
+        'transaction_id', 'split_details', 'suggested_category_id', 'suggestion_origin', 'resolved_at', 'hidden_at',
     ];
 
     protected $attributes = ['status' => self::PENDING];

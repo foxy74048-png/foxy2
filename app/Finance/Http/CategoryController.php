@@ -3,7 +3,9 @@
 namespace App\Finance\Http;
 
 use App\Finance\Access;
+use App\Finance\Categories\Categorizer;
 use App\Finance\Categories\Category;
+use App\Finance\Categories\CategoryRule;
 use App\Finance\Insights\Export;
 use App\Finance\Transactions\Transaction;
 use App\Platform\Audit\Audit;
@@ -30,11 +32,14 @@ class CategoryController
                 ->map(fn (Category $c) => [Category::KINDS[$c->kind], $c->parent?->name ?? $c->name, $c->parent ? $c->name : null, (int) ($counts[$c->id] ?? 0), $c->hidden_at ? 'Escondida' : 'Em uso']);
 
             return (new Export('Categorias'))
-                ->section(null, ['Tipo' => 'text', 'Categoria' => 'text', 'Subcategoria' => 'text', 'Lançamentos' => 'int', 'Situação' => 'text'], $rows)
+                ->section('Categorias', ['Tipo' => 'text', 'Categoria' => 'text', 'Subcategoria' => 'text', 'Lançamentos' => 'int', 'Situação' => 'text'], $rows)
+                ->section('Regras automáticas', ['Quando a descrição tiver' => 'text', 'Tipo' => 'text', 'Categoria' => 'text', 'Usada' => 'int'],
+                    CategoryRule::with('category.parent')->orderBy('pattern')->get()->map(fn (CategoryRule $r) => [$r->pattern, Category::KINDS[$r->kind] ?? $r->kind, $r->category?->fullName(), $r->hits]))
                 ->download($format);
         }
 
         return view('finance.categories', [
+            'rules' => CategoryRule::with('category.parent')->orderBy('pattern')->get(),
             'trees' => collect(Category::KINDS)->map(fn ($label, $kind) => Category::tree($kind)),
             'counts' => $counts,
             'roots' => Category::query()->whereNull('parent_id')->orderBy('name')->get(),
@@ -104,6 +109,47 @@ class CategoryController
         Audit::record('finance.category.merged', subject: $target, metadata: ['from' => $category->name, 'moved' => $moved]);
 
         return back()->with('status', "\"{$category->name}\" juntada em \"{$target->fullName()}\" ({$moved} lançamento(s) passaram para ela).");
+    }
+
+    /** Regra feita à mão: "quando a descrição tiver X, é a categoria Y". */
+    public function storeRule(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'pattern' => ['required', 'string', 'min:2', 'max:80'],
+            'category_id' => ['required', 'string', 'max:30'],
+            'apply_similar' => ['nullable', 'boolean'],
+        ], [], ['pattern' => 'palavras', 'category_id' => 'categoria']);
+        $category = Category::findOrFail($data['category_id']);
+        if (Categorizer::normalize($data['pattern']) === '') {
+            throw ValidationException::withMessages(['pattern' => 'Use letras ou números para as palavras da regra.']);
+        }
+
+        $result = (new Categorizer)->remember($data['pattern'], $category, $request->boolean('apply_similar'));
+        Audit::record('finance.rule.saved', subject: $result['rule']);
+
+        return back()->with('status', "Regra salva: \"{$result['rule']->pattern}\" vira {$category->fullName()}."
+            .($result['transactions'] ? " {$result['transactions']} lançamento(s) sem categoria receberam essa." : '')
+            .($result['lines'] ? " {$result['lines']} linha(s) do extrato para revisar também." : ''));
+    }
+
+    public function updateRule(Request $request, CategoryRule $rule): RedirectResponse
+    {
+        $data = $request->validate(['category_id' => ['required', 'string', 'max:30']], [], ['category_id' => 'categoria']);
+        $category = Category::findOrFail($data['category_id']);
+        if ($category->kind !== $rule->kind) {
+            throw ValidationException::withMessages(['category_id' => 'Escolha uma categoria do mesmo tipo da regra.']);
+        }
+        (new Categorizer)->remember($rule->pattern, $category);
+
+        return back()->with('status', "Regra \"{$rule->pattern}\" agora vira {$category->fullName()}.");
+    }
+
+    public function destroyRule(CategoryRule $rule): RedirectResponse
+    {
+        $rule->delete();
+        Audit::record('finance.rule.deleted', subject: $rule);
+
+        return back()->with('status', "Regra \"{$rule->pattern}\" apagada. Os lançamentos já feitos continuam com a categoria deles.");
     }
 
     private function parent(?string $id, string $kind): ?Category

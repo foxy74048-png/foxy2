@@ -3,7 +3,7 @@
 namespace App\Finance\Statements;
 
 use App\Finance\Accounts\Account;
-use App\Finance\Categories\Category;
+use App\Finance\Categories\Categorizer;
 use App\Finance\Transactions\Transaction;
 use App\Platform\Context\ExecutionContext;
 use Illuminate\Support\Collection;
@@ -38,7 +38,8 @@ class StatementImporter
             $existing = StatementLine::query()->whereIn('dedupe_key', $keys)->pluck('dedupe_key')->flip();
             // Mesmo registro importado de novo (outro arquivo, período que se sobrepõe) não duplica.
             $pool = $this->existingPool($account, $rows);
-            $categories = new CategoryGuesser;
+            $categorizer = new Categorizer;
+            $ruleHits = [];
 
             $new = 0;
             foreach ($rows as $i => $row) {
@@ -53,6 +54,13 @@ class StatementImporter
                 $existing[$key] = true;
 
                 $kind = $cents > 0 ? Transaction::INCOME : Transaction::EXPENSE;
+                // Planilha antiga com coluna de categoria: a dela. Senão, regra → última vez → lista de lojas.
+                $suggestion = ! empty($row['category'])
+                    ? ['category' => $categorizer->byName($row['category'], $kind), 'origin' => 'planilha']
+                    : $categorizer->suggest($row['description'], $kind);
+                if (($suggestion['origin'] ?? null) === 'regra') {
+                    $ruleHits[] = $categorizer->ruleIdFor($row['description'], $kind);
+                }
                 StatementLine::create([
                     'import_id' => $import->id,
                     'account_id' => $account->id,
@@ -61,11 +69,13 @@ class StatementImporter
                     'description' => mb_substr($row['description'], 0, 255),
                     'amount_cents' => $cents,
                     'dedupe_key' => $key,
-                    'suggested_category_id' => $categories->guess($row['description'], $kind, $row['category'] ?? null)?->id,
+                    'suggested_category_id' => $suggestion['category']->id ?? null,
+                    'suggestion_origin' => $suggestion['origin'] ?? null,
                 ]);
                 $new++;
             }
 
+            $categorizer->countHits($ruleHits);
             $import->update(['new_lines_count' => $new]);
 
             return $import;

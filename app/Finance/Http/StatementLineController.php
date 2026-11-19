@@ -3,6 +3,7 @@
 namespace App\Finance\Http;
 
 use App\Finance\Accounts\Account;
+use App\Finance\Categories\Categorizer;
 use App\Finance\Statements\StatementLine;
 use App\Finance\Statements\StatementResolver;
 use App\Finance\Transactions\Transaction;
@@ -24,6 +25,8 @@ class StatementLineController
             'category_id' => ['nullable', 'string', 'max:30'],
             'to_account_id' => ['nullable', 'string', 'max:30'],
             'description' => ['nullable', 'string', 'max:160'],
+            'remember' => ['nullable', 'boolean'],
+            'pattern' => ['nullable', 'string', 'max:80'],
         ]);
 
         if (! empty($data['to_account_id'])) {
@@ -34,8 +37,17 @@ class StatementLineController
         }
 
         $transaction = $this->resolver->create($line, $data['category_id'] ?? null, $data['description'] ?? null);
+        $message = 'Lançado: '.$transaction->description.' · '.Money::format($transaction->amount_cents).($transaction->category_id ? '' : ' (sem categoria — dá para escolher depois em Lançamentos)').'.';
 
-        return back()->with('status', 'Lançado: '.$transaction->description.' · '.Money::format($transaction->amount_cents).($transaction->category_id ? '' : ' (sem categoria — dá para escolher depois em Lançamentos)').'.');
+        // "Sempre que aparecer": vira regra e já arruma as outras linhas parecidas que estão para revisar.
+        if ($request->boolean('remember') && $transaction->category) {
+            $pattern = trim((string) ($data['pattern'] ?? '')) ?: Categorizer::defaultPattern($line->description);
+            $result = (new Categorizer)->remember($pattern, $transaction->category);
+            $others = max(0, $result['lines']);
+            $message .= " Daqui para frente, \"{$result['rule']->pattern}\" vira {$transaction->category->name}".($others ? " (e {$others} linha(s) parecida(s) já receberam a sugestão)" : '').'.';
+        }
+
+        return back()->with('status', $message);
     }
 
     public function match(Request $request, StatementLine $line): RedirectResponse

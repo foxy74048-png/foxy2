@@ -15,6 +15,51 @@
         </form>
     @endif
 
+    {{-- Regras automáticas (fatia 4): sempre à vista --}}
+    <div class="card" id="regras" style="margin-top:16px;">
+        <h3 style="margin-top:0;">Regras automáticas</h3>
+        <p class="helper" style="margin-top:0;">"Sempre que a descrição tiver estas palavras, é esta categoria." Valem para o extrato importado e para o que você lança sem escolher categoria. Também são criadas quando você marca "sempre que aparecer" ao lançar ou editar. Sem regra, o sistema usa a categoria da última vez e uma lista pronta de lojas conhecidas (iFood, Uber, Netflix, farmácias, concessionárias de luz e água…).</p>
+        @if ($canManage)
+            <form method="POST" action="{{ route('finance.rules.store') }}" class="form-grid" style="align-items:end;">
+                @csrf
+                <div><label for="r-pattern">Quando a descrição tiver</label><input id="r-pattern" name="pattern" value="{{ old('pattern') }}" required maxlength="80" placeholder="Ex.: padaria pao quente"></div>
+                <div>
+                    <label for="r-cat">É a categoria</label>
+                    <select id="r-cat" name="category_id" required><option value="">— escolha —</option>@foreach ($all->whereNull('hidden_at') as $o)<option value="{{ $o->id }}">{{ \App\Finance\Categories\Category::KINDS[$o->kind] }}: {{ $o->fullName() }}</option>@endforeach</select>
+                </div>
+                <label style="display:flex;gap:6px;align-items:center;font-weight:400;"><input type="checkbox" name="apply_similar" value="1" checked style="width:auto;"> e pôr nos lançamentos parecidos sem categoria</label>
+                <div><button type="submit">Criar regra</button></div>
+            </form>
+        @endif
+        @if ($rules->isEmpty())
+            <div class="empty">Nenhuma regra ainda.</div>
+        @else
+            <div class="table-wrap" style="margin-top:12px;"><table>
+                <thead><tr><th>Quando a descrição tiver</th><th>Categoria</th><th style="text-align:right;">Usada</th>@if ($canManage)<th style="text-align:right;"></th>@endif</tr></thead>
+                <tbody>
+                    @foreach ($rules as $rule)
+                        <tr>
+                            <td><strong>{{ $rule->pattern }}</strong> <span class="muted">{{ \App\Finance\Categories\Category::KINDS[$rule->kind] ?? '' }}</span></td>
+                            <td>
+                                @if ($canManage)
+                                    <form method="POST" action="{{ route('finance.rules.update', $rule) }}" style="display:flex;gap:6px;">
+                                        @csrf
+                                        <select name="category_id" aria-label="Categoria da regra {{ $rule->pattern }}">@foreach ($all->where('kind', $rule->kind) as $o)<option value="{{ $o->id }}" @selected($o->id === $rule->category_id)>{{ $o->fullName() }}</option>@endforeach</select>
+                                        <button type="submit" class="secondary">Salvar</button>
+                                    </form>
+                                @else
+                                    {{ $rule->category?->fullName() }}
+                                @endif
+                            </td>
+                            <td style="text-align:right;">{{ $rule->hits }}×</td>
+                            @if ($canManage)<td style="text-align:right;"><form method="POST" action="{{ route('finance.rules.destroy', $rule) }}" onsubmit="return confirm('Apagar esta regra?');">@csrf<button type="submit" class="danger">Apagar</button></form></td>@endif
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table></div>
+        @endif
+    </div>
+
     <div class="grid two" style="align-items:start;margin-top:16px;">
         @foreach (\App\Finance\Categories\Category::KINDS as $kind => $label)
             <div class="card">

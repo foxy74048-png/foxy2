@@ -4,6 +4,7 @@ namespace App\Finance\Http;
 
 use App\Finance\Access;
 use App\Finance\Accounts\Account;
+use App\Finance\Categories\Categorizer;
 use App\Finance\Categories\Category;
 use App\Finance\Insights\Export;
 use App\Finance\Transactions\Transaction;
@@ -59,6 +60,12 @@ class TransactionController
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request, creating: true);
+        // Sem categoria escolhida: a sugestão automática (regra → última vez → loja conhecida), avisada na mensagem.
+        $auto = null;
+        if (empty($data['category_id']) && $data['kind'] !== Transaction::TRANSFER) {
+            $auto = (new Categorizer)->suggest($data['description'], $data['kind']);
+            $data['category_id'] = $auto['category']->id ?? null;
+        }
         $created = $this->service->create($data);
 
         $first = $created->first();
@@ -71,7 +78,8 @@ class TransactionController
         $request->session()->put('finance.last_account', $first->account_id);
 
         return redirect()->route('finance.transactions', ['mes' => $first->date->format('Y-m')])
-            ->with('status', "{$what}{$more} lançado.".($first->isPlanned() ? ' Ficou como previsto: confirme quando acontecer.' : ''));
+            ->with('status', "{$what}{$more} lançado.".($first->isPlanned() ? ' Ficou como previsto: confirme quando acontecer.' : '')
+                .($auto ? " Categoria \"{$auto['category']->name}\" escolhida ".Categorizer::ORIGINS[$auto['origin']].' (dá para trocar em Editar).' : ''));
     }
 
     public function edit(Transaction $transaction): View
@@ -88,9 +96,19 @@ class TransactionController
     {
         $data = $this->validated($request, creating: false, kind: $transaction->kind);
         $count = $this->service->update($transaction, $data, $request->boolean('following'));
+        $message = $count > 1 ? 'Salvo neste e em mais '.($count - 1).' lançamento(s) da série.' : 'Lançamento salvo.';
 
-        return redirect()->route('finance.transactions', ['mes' => $transaction->date->format('Y-m')])
-            ->with('status', $count > 1 ? "Salvo neste e em mais ".($count - 1).' lançamento(s) da série.' : 'Lançamento salvo.');
+        // "Sempre que aparecer": vira regra; e, se pedido, arruma os parecidos que estão sem categoria.
+        $transaction->refresh();
+        if ($request->boolean('remember') && $transaction->category) {
+            $pattern = trim((string) $request->input('pattern')) ?: Categorizer::defaultPattern($transaction->description);
+            $result = (new Categorizer)->remember(mb_substr($pattern, 0, 80), $transaction->category, $request->boolean('apply_similar'));
+            $message .= " Daqui para frente, \"{$result['rule']->pattern}\" vira {$transaction->category->name}."
+                .($result['transactions'] ? " {$result['transactions']} lançamento(s) parecido(s) sem categoria receberam essa." : '')
+                .($result['lines'] ? " {$result['lines']} linha(s) do extrato para revisar também." : '');
+        }
+
+        return redirect()->route('finance.transactions', ['mes' => $transaction->date->format('Y-m')])->with('status', $message);
     }
 
     public function destroy(Request $request, Transaction $transaction): RedirectResponse
