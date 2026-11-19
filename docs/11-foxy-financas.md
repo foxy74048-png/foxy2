@@ -60,15 +60,17 @@ A mesma pessoa pode ter as duas coisas: a **carteira pessoal** e a **carteira do
 | **Faturas do cartão** | Fatura atual e futuras, o que já está comprometido com parcelas nos próximos meses, aviso de vencimento. |
 | **Orçamento** | Limite por categoria no mês (ex.: Delivery R$ 300); barra de quanto já foi; aviso ao chegar em 80% e 100%. |
 | **Painéis** | Início com: quanto entrou, quanto saiu, quanto sobra; top categorias; top lugares; evolução de 6/12 meses; comparação com o mês anterior ("o que mudou"); calendário de contas a vencer. |
+| **Indicadores para economizar** (pedido em 2026-11-19) | Calculados por código, sem IA: **quanto da renda você guardou** no mês (taxa de poupança) e a média de 3 meses; **no ritmo atual, o mês fecha em R$ X** (gasto por dia × dias que faltam); **o que mais subiu** em relação à média dos 3 meses anteriores; **gastinhos** (compras pequenas e frequentes — café, delivery, apps — somadas no mês e no ano); **assinaturas encontradas** com o custo por ano; **comprometido com parcelas** nos próximos meses; **reserva de emergência**: quantos meses das suas despesas o que está guardado cobre; e **"se cortar pela metade"**: quanto guardaria por ano reduzindo as 3 categorias que mais cresceram. A raposa (fatia 8) só transforma isso em frases e dicas. |
+| **Metas de guardar dinheiro** (adiantado da fase 2) | Meta com valor e prazo (reserva de emergência, viagem, trocar o carro), ligada a uma conta (ex.: poupança) ou a transferências marcadas para ela; mostra o quanto falta e **quanto guardar por mês** para chegar no prazo. |
+| **Quem me deve / a quem eu devo** (pedido em 2026-11-19) | Lista de pessoas (amigos, família) com o **saldo de cada uma**: "o João te deve R$ 150", "você deve R$ 40 à Carla". Três jeitos de registrar: **emprestei / peguei emprestado** dinheiro (pode sair de uma conta: vira transferência para uma conta interna "A receber de amigos", então **não conta como gasto**); **dividir uma conta** (ex.: o bar de R$ 200 dividido com 3 amigos — você pagou, cada um te deve R$ 50, e o seu gasto fica só com a sua parte); e **objetos emprestados** (livro, furadeira), sem valor, com a data e "já devolveu". Pagamento parcial ("o João pagou R$ 50"), histórico por pessoa e botão para **mandar um lembrete pelo WhatsApp** — abre o WhatsApp da própria pessoa com o texto pronto, nada automático (a Foxy não cobra ninguém). |
 | **Raposa (Foxy AI)** | Assistente do sistema (já existe no Core) com ferramentas de leitura: perguntas sobre os dados, explicação do mês, assinaturas encontradas, sugestão de orçamento. |
 | **Exportar** | Toda lista e relatório em PDF e planilha. |
 | **Privacidade** | Dados só da pessoa (e de quem ela convidar); exportar tudo e apagar a conta a qualquer momento (LGPD). |
 
 ### 4.2. Fase 2
 
-- **Metas** (reserva de emergência, viagem, quitar dívida) com quanto guardar por mês.
-- **Detector de assinaturas e cobranças repetidas** com "quanto isso custa por ano".
-- **Dívidas e empréstimos** (quanto falta, juros, simulação de quitar antes).
+- ~~Metas~~ e ~~detector de assinaturas~~: foram para o MVP (2026-11-19).
+- **Dívidas com banco e financiamentos** (quanto falta, juros, simulação de quitar antes). As dívidas entre amigos foram para o MVP ("Quem me deve").
 - **Relatório mensal da raposa** por e-mail/WhatsApp: "3 coisas que mudaram e 1 sugestão".
 - **Família/casal** completo: divisão de despesas ("quem deve quanto a quem").
 

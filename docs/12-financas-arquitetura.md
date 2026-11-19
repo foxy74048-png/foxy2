@@ -134,11 +134,13 @@ Ao corrigir a categoria de uma linha, a pessoa escolhe "sempre que aparecer *IFO
 | 1 | Base | Endereço `financas.foxy.net.br`, login/cadastro (fechado por `FOXY_FINANCAS_SIGNUP_OPEN`), carteira pessoal criada no cadastro, criar carteira do negócio, troca de carteira, convites e papéis, ProductAccount no Admin |
 | 2 | Contas e lançamentos | Contas/cartões, categorias prontas, lançar em 3 toques, parcelado, repetição, transferência, editar/excluir, lista com filtros, PDF e planilha |
 | 3 | Importação | Cópia do Studio: OFX/CSV/XLSX/PDF, mapeamento por conta, revisar, conciliar, lote, dividir, ignorar, desfazer, planilha antiga |
-| 4 | Categorização | Regras, lista pronta, "sempre que aparecer", sugestão da raposa em lote |
+| 4 | Categorização | Regras, lista pronta de lojas, "sempre que aparecer", aprender com a correção (a sugestão da raposa em lote foi para a fatia 8: a API da Foxy AI ainda não tem tarefa avulsa) |
 | 5 | Cartão | Fatura atual e futuras, comprometido nos próximos meses, pagar fatura, aviso de vencimento |
-| 6 | Painéis e orçamento | Início (entrou, saiu, sobra), top categorias e lugares, 6/12 meses, "o que mudou", calendário, orçamento com avisos; todos exportáveis |
+| 6 | Painéis, orçamento e indicadores | Início (entrou, saiu, sobra), top categorias e lugares, 6/12 meses, "o que mudou", calendário, orçamento com avisos; **indicadores para economizar** (taxa de poupança, "no ritmo atual o mês fecha em", o que mais subiu, gastinhos, assinaturas e custo por ano, reserva de emergência em meses, "se cortar pela metade"); todos exportáveis |
+| 6b | Metas de guardar | Meta com valor e prazo ligada a uma conta ou a transferências marcadas; quanto falta e quanto guardar por mês |
+| 6c | Quem me deve | Pessoas (`finance_contacts`) e movimentos (`finance_person_entries`: emprestei, peguei emprestado, dividi a conta, pagou, objeto emprestado/devolvido); dinheiro que sai de uma conta vira transferência para a conta interna "A receber de amigos" (kind `a_receber`, fora do "saiu"); dividir a conta = gasto só da sua parte + o resto a receber; saldo por pessoa; lembrete pelo WhatsApp com `wa.me` (manual) |
 | 7 | Sócios e MEI | Partes, pró-labore/retirada/aporte/distribuição, lucro do mês, acerto, retirada → carteira pessoal, "isso é pessoal", DAS |
-| 8 | Raposa | FinanceHost/FinanceFox, ferramentas, assinaturas detectadas, explicação do mês |
+| 8 | Raposa | FinanceHost/FinanceFox, ferramentas, explicação do mês e dicas a partir dos indicadores; **tarefa avulsa na API da Foxy AI** (categorizar em lote, ler mensagem do WhatsApp), com testes no FakeProvider |
 | 9 | WhatsApp | Webhook de entrada na Platform, vínculo por código, lançar por texto e foto, resposta, resumo semanal |
 | 10 | Planos | Grátis/Pessoal/Compartilhado no Stripe, limites, créditos da raposa, só leitura quando o pagamento vence |
 | 11 | Privacidade | Exportar tudo, apagar carteira e conta |
