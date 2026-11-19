@@ -1,6 +1,6 @@
 <x-core::layout title="Pedidos" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
-    <x-slot:head>@include('commerce.charts.assets')</x-slot:head>
+    <x-slot:head>@include('platform.charts.assets')</x-slot:head>
     <x-slot:actions>
         @include('commerce.export.buttons')
         @include('commerce._add', ['label' => 'Novo pedido', 'href' => route('commerce.orders.create')])

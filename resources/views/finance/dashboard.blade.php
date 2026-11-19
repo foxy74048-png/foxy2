@@ -25,9 +25,23 @@
     <div class="grid cards">
         <a class="card" href="{{ route('finance.transactions', ['tipo' => 'recebimento']) }}"><div class="muted">Entrou</div><h2 style="margin:4px 0;color:var(--success-text);">{{ $money($income) }}</h2></a>
         <a class="card" href="{{ route('finance.transactions', ['tipo' => 'gasto']) }}"><div class="muted">Saiu</div><h2 style="margin:4px 0;">{{ $money($expense) }}</h2></a>
-        <div class="card"><div class="muted">Sobrou</div><h2 style="margin:4px 0;{{ $income - $expense < 0 ? 'color:var(--danger-text);' : '' }}">{{ $money($income - $expense) }}</h2></div>
+        <div class="card"><div class="muted">Sobrou</div><h2 style="margin:4px 0;{{ $income - $expense < 0 ? 'color:var(--danger-text);' : '' }}">{{ $money($income - $expense) }}</h2>@if ($savingsRate !== null)<div class="helper">{{ number_format($savingsRate * 100, 0, ',', '.') }}% do que entrou</div>@endif</div>
         <a class="card" href="{{ route('finance.accounts') }}"><div class="muted">Saldo nas contas hoje</div><h2 style="margin:4px 0;{{ $balance < 0 ? 'color:var(--danger-text);' : '' }}">{{ $money($balance) }}</h2><div class="helper">sem os cartões</div></a>
+        @if ($pace && $pace['spent'] > 0)
+            <a class="card" href="{{ $canSeeInsights ? route('finance.insights') : '#' }}"><div class="muted">No ritmo atual, o mês fecha em</div><h2 style="margin:4px 0;">{{ $money($pace['projected']) }}</h2><div class="helper">{{ $money($pace['per_day']) }} por dia</div></a>
+        @endif
     </div>
+
+    {{-- Orçamento: o que passou ou está perto do limite --}}
+    @if ($budgetAlerts->isNotEmpty())
+        <div class="card" style="margin-top:16px;">
+            <div class="section-title" style="display:flex;justify-content:space-between;"><h3 style="margin:0;">Orçamento pedindo atenção</h3><a class="helper" href="{{ route('finance.budgets') }}">ver todos</a></div>
+            <div class="stack" style="margin-top:8px;">@foreach ($budgetAlerts as $b)@include('finance._budget-bar', ['b' => $b])@endforeach</div>
+        </div>
+    @endif
+    @if ($canSeeInsights)
+        <p style="margin:12px 0 0;"><a href="{{ route('finance.insights') }}">Ver onde dá para economizar →</a> <span class="helper">gastinhos, assinaturas, o que mais subiu, reserva de emergência e "se cortar pela metade".</span></p>
+    @endif
 
     <div class="grid two" style="align-items:start;margin-top:16px;">
         <div class="card">
@@ -76,7 +90,7 @@
         </a>
         <div class="card">
             <div class="muted">Em breve</div>
-            <div class="helper" style="margin-top:4px;line-height:1.7;">Importar o extrato e a fatura, categorias automáticas, fatura do cartão, orçamento{{ $currentWallet->isBusiness() ? ', sócios e pró-labore' : '' }}, a raposa e lançar pelo WhatsApp.</div>
+            <div class="helper" style="margin-top:4px;line-height:1.7;">Metas de guardar dinheiro, "quem me deve"{{ $currentWallet->isBusiness() ? ', sócios e pró-labore' : '' }}, a raposa e lançar pelo WhatsApp.</div>
         </div>
     </div>
 </x-core::layout>

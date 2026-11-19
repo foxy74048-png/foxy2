@@ -52,6 +52,12 @@ class DashboardController
             'upcoming' => Transaction::query()->where('status', Transaction::PLANNED)->where('date', '<=', today()->addDays(7)->toDateString())
                 ->with('account')->orderBy('date')->limit(8)->get(),
             'top' => array_slice($top, 0, 5),
+            // Indicadores (fatia 6): o que a pessoa precisa ver logo na entrada.
+            'indicators' => $indicators = \App\Finance\Insights\Indicators::for(today()),
+            'savingsRate' => $indicators->summary()['savings_rate'],
+            'pace' => $indicators->pace(),
+            'budgetAlerts' => $indicators->budgets()->where('status', '!=', 'ok')->values(),
+            'canSeeInsights' => Access::allows($membership, 'finance.reports.view'),
             // Faturas que fecharam e falta pagar (aviso de vencimento).
             'invoicesToPay' => $accounts->filter->isCard()->flatMap(fn (Account $card) => app(CardInvoices::class)->overview($card)
                 ->filter(fn ($i) => in_array($i['status'], ['fechada', 'parcial', 'atrasada'], true))

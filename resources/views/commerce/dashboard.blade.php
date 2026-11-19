@@ -1,7 +1,7 @@
 <x-core::layout title="Painel" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
     <x-slot:actions>@if ($finance)@include('commerce.export.buttons')@endif</x-slot:actions>
-    <x-slot:head>@include('commerce.charts.assets')</x-slot:head>
+    <x-slot:head>@include('platform.charts.assets')</x-slot:head>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
     @php($can = fn ($p) => \App\Commerce\Access::allows($currentMembership, $p))
 
@@ -140,7 +140,7 @@
         <div class="grid two" style="margin-top:16px;">
             <div class="card">
                 <div class="section-title"><h3>Por canal</h3><span class="helper">faturamento · margem</span></div>
-                @include('commerce.charts.hbars', ['rows' => $finance['channels']->map(fn ($c) => [
+                @include('platform.charts.hbars', ['rows' => $finance['channels']->map(fn ($c) => [
                     'label' => $c['label'], 'value' => $c['revenue'],
                     'note' => $c['orders'].' pedidos · margem '.number_format($c['margin'], 1, ',', '.').'%',
                     'tip' => 'Faturamento: '.$money($c['revenue']).'|Taxas: '.$money($c['fees']).'|Lucro bruto: '.$money($c['profit']).'|Ticket médio: '.$money($c['ticket']),
@@ -148,7 +148,7 @@
             </div>
             <div class="card">
                 <div class="section-title"><h3>Formas de pagamento</h3><span class="helper">faturamento</span></div>
-                @include('commerce.charts.hbars', ['rows' => $finance['payments']->map(fn ($p) => [
+                @include('platform.charts.hbars', ['rows' => $finance['payments']->map(fn ($p) => [
                     'label' => $p['label'], 'value' => $p['revenue'], 'note' => $p['orders'].' pedidos',
                     'tip' => $p['orders'].' pedidos|Ticket médio: '.$money($p['ticket']),
                 ])])
@@ -169,7 +169,7 @@
             </div>
             <div class="card">
                 <div class="section-title"><h3>Por categoria</h3><span class="helper">faturamento dos itens</span></div>
-                @include('commerce.charts.hbars', ['rows' => $finance['categories']->map(fn ($c) => [
+                @include('platform.charts.hbars', ['rows' => $finance['categories']->map(fn ($c) => [
                     'label' => $c['label'], 'value' => $c['revenue'], 'note' => $c['quantity'].' itens', 'tip' => $c['quantity'].' itens vendidos',
                 ])])
             </div>

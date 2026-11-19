@@ -2,6 +2,8 @@
 
 use App\Finance\Http\AccountController;
 use App\Finance\Http\AuthController;
+use App\Finance\Http\BudgetController;
+use App\Finance\Http\InsightsController;
 use App\Finance\Http\CardController;
 use App\Finance\Http\CategoryController;
 use App\Finance\Http\DashboardController;
@@ -61,9 +63,14 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
         // Lançamentos (fatia 2): ver é de todos; lançar, mudar e apagar pede permissão.
+        // Onde vai o dinheiro: indicadores para economizar (fatia 6)
+        Route::middleware('finance.can:finance.reports.view')->get('/painel', [InsightsController::class, 'index'])->name('insights');
+
         Route::middleware('finance.can:finance.view')->group(function () {
             Route::get('/lancamentos', [TransactionController::class, 'index'])->name('transactions');
             Route::get('/contas', [AccountController::class, 'index'])->name('accounts');
+            // Orçamento (fatia 6)
+            Route::get('/orcamento', [BudgetController::class, 'index'])->name('budgets');
             // Cartões e faturas (fatia 5)
             Route::get('/cartoes', [CardController::class, 'index'])->name('cards');
             Route::get('/cartoes/{account}', [CardController::class, 'show'])->name('cards.show');
@@ -104,6 +111,9 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/categorias/{category}', [CategoryController::class, 'update'])->name('categories.update');
             Route::post('/categorias/{category}/esconder', [CategoryController::class, 'hide'])->name('categories.hide');
             Route::post('/categorias/{category}/juntar', [CategoryController::class, 'merge'])->name('categories.merge');
+            Route::post('/orcamento', [BudgetController::class, 'store'])->middleware('throttle:30,1')->name('budgets.store');
+            Route::post('/orcamento/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
+            Route::post('/orcamento/{budget}/apagar', [BudgetController::class, 'destroy'])->name('budgets.destroy');
             // Regras automáticas (fatia 4)
             Route::post('/regras', [CategoryController::class, 'storeRule'])->middleware('throttle:30,1')->name('rules.store');
             Route::post('/regras/{rule}', [CategoryController::class, 'updateRule'])->name('rules.update');

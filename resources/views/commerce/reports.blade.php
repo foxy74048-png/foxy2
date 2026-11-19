@@ -1,7 +1,7 @@
 <x-core::layout title="Relatórios" product="Foxy Commerce" :subtitle="$currentStore->name">
     <x-slot:nav>@include('commerce.nav')</x-slot:nav>
     <x-slot:actions>@include('commerce.export.buttons')</x-slot:actions>
-    <x-slot:head>@include('commerce.charts.assets')</x-slot:head>
+    <x-slot:head>@include('platform.charts.assets')</x-slot:head>
     @php($money = fn ($c) => \App\Commerce\Catalog\Money::format($c))
     @php($pct = fn ($v) => $v === null ? '—' : ($v >= 0 ? '▲ ' : '▼ ').number_format(abs($v), 1, ',', '.').'%')
 
