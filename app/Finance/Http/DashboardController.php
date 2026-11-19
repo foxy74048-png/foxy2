@@ -4,6 +4,7 @@ namespace App\Finance\Http;
 
 use App\Finance\Access;
 use App\Finance\Accounts\Account;
+use App\Finance\Accounts\CardInvoices;
 use App\Finance\Categories\Category;
 use App\Finance\Transactions\Transaction;
 use App\Finance\Transactions\TransactionService;
@@ -20,6 +21,7 @@ class DashboardController
     public function index(Request $request, TransactionService $service): View
     {
         $membership = $request->attributes->get('finance.membership');
+        $service->confirmDueCardCharges();
         $from = today()->startOfMonth()->toDateString();
         $to = today()->endOfMonth()->toDateString();
         $month = fn () => Transaction::query()->done()->whereBetween('date', [$from, $to]);
@@ -50,6 +52,10 @@ class DashboardController
             'upcoming' => Transaction::query()->where('status', Transaction::PLANNED)->where('date', '<=', today()->addDays(7)->toDateString())
                 ->with('account')->orderBy('date')->limit(8)->get(),
             'top' => array_slice($top, 0, 5),
+            // Faturas que fecharam e falta pagar (aviso de vencimento).
+            'invoicesToPay' => $accounts->filter->isCard()->flatMap(fn (Account $card) => app(CardInvoices::class)->overview($card)
+                ->filter(fn ($i) => in_array($i['status'], ['fechada', 'parcial', 'atrasada'], true))
+                ->map(fn ($i) => $i + ['card' => $card]))->sortBy(fn ($i) => $i['due'])->values(),
         ]);
     }
 }

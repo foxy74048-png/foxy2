@@ -63,9 +63,12 @@ class TransactionService
                     'description' => Str::limit(trim($data['description']), 160, ''),
                     'category_id' => $category?->id,
                     'notes' => $data['notes'] ?? null,
-                    'status' => $this->statusFor($account, $date),
+                    'status' => $this->statusFor($account, $date, $series ? $mode : null),
                     // Parcela no cartão: uma fatura depois da outra, a partir da fatura da compra.
-                    'invoice_month' => $firstInvoice ? ($mode === 'parcelas' ? Account::addMonths($firstInvoice, $i - 1) : $account->invoiceMonthFor($date)) : null,
+                    // Pagamento do cartão (transferência para ele): a fatura que ele paga.
+                    'invoice_month' => $firstInvoice
+                        ? ($mode === 'parcelas' ? Account::addMonths($firstInvoice, $i - 1) : $account->invoiceMonthFor($date))
+                        : ($toAccount?->isCard() ? ($i === 1 && ! empty($data['invoice_month']) ? $data['invoice_month'] : $toAccount->paidInvoiceFor($date)) : null),
                     'series_id' => $series,
                     'series_kind' => $series ? $mode : null,
                     'installment' => $mode === 'parcelas' ? $i : null,
@@ -106,10 +109,13 @@ class TransactionService
             $transaction->fill($shared + [
                 'date' => $date->toDateString(),
                 'notes' => $data['notes'] ?? null,
-                'invoice_month' => $this->invoiceFor($transaction, $account, $date, $accountChanged),
+                'invoice_month' => $toAccount?->isCard()
+                    // Pagamento do cartão: continua pagando a mesma fatura, a não ser que tenha mudado de cartão.
+                    ? ($toAccount->id === $transaction->to_account_id && $transaction->invoice_month ? $transaction->invoice_month : $toAccount->paidInvoiceFor($date))
+                    : $this->invoiceFor($transaction, $account, $date, $accountChanged),
             ]);
             if ($account->isCard()) {
-                $transaction->status = Transaction::DONE;
+                $transaction->status = $this->statusFor($account, $date, $transaction->series_kind);
             }
             $transaction->save();
             $changed = 1;
@@ -120,7 +126,7 @@ class TransactionService
                 foreach ($next as $other) {
                     $other->fill($shared + ['notes' => $data['notes'] ?? null, 'invoice_month' => $this->invoiceFor($other, $account, $other->date, $accountChanged)]);
                     if ($account->isCard()) {
-                        $other->status = Transaction::DONE;
+                        $other->status = $this->statusFor($account, $other->date, $other->series_kind);
                     }
                     $other->save();
                     $changed++;
@@ -244,9 +250,28 @@ class TransactionService
         }
     }
 
-    private function statusFor(Account $account, Carbon $date): string
+    /**
+     * Já aconteceu? Data até hoje: feito. No cartão, a parcela também é feita desde a compra (dívida assumida,
+     * o banco já desconta do limite); a repetição no cartão (assinatura) fica prevista até a data chegar.
+     */
+    private function statusFor(Account $account, Carbon $date, ?string $seriesKind = null): string
     {
-        return $account->isCard() || $date->lte(today()) ? Transaction::DONE : Transaction::PLANNED;
+        return $date->lte(today()) || ($account->isCard() && $seriesKind === 'parcelas') ? Transaction::DONE : Transaction::PLANNED;
+    }
+
+    /**
+     * No cartão a cobrança acontece sozinha: o previsto (assinatura, compra com data futura) vira feito quando a
+     * data chega, sem a pessoa precisar clicar. Roda todo dia (financas:cartoes) e ao abrir as faturas e o Início.
+     */
+    public function confirmDueCardCharges(): int
+    {
+        $cards = Account::query()->where('kind', Account::CARD)->pluck('id');
+        if ($cards->isEmpty()) {
+            return 0;
+        }
+
+        return Transaction::query()->where('status', Transaction::PLANNED)->whereIn('account_id', $cards)
+            ->where('date', '<=', today()->toDateString())->update(['status' => Transaction::DONE, 'updated_at' => now()]);
     }
 
     /** A parcela mantém a fatura dela; muda só se a conta mudou ou se não é parcela (aí segue a data). */

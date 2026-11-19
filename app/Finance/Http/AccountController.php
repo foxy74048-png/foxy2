@@ -120,14 +120,8 @@ class AccountController
     /** @return array<string, int> gastos menos estornos/pagamentos na fatura deste mês, por cartão */
     private function currentInvoiceSpent($accounts): array
     {
-        $cards = $accounts->filter->isCard();
-        $out = [];
-        foreach ($cards as $card) {
-            $month = $card->invoiceMonthFor(today());
-            $out[$card->id] = (int) Transaction::where('account_id', $card->id)->where('invoice_month', $month)
-                ->selectRaw("sum(case when kind = 'recebimento' then -amount_cents else amount_cents end) as total")->value('total');
-        }
+        $invoices = app(\App\Finance\Accounts\CardInvoices::class);
 
-        return $out;
+        return $accounts->filter->isCard()->mapWithKeys(fn (Account $card) => [$card->id => $invoices->invoice($card, $card->invoiceMonthFor(today()))['charges']])->all();
     }
 }

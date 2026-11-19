@@ -20,6 +20,8 @@ Schedule::command('commerce:canais')->everyTenMinutes()->withoutOverlapping(15);
 
 // Foxy Finanças (docs/12): carteiras no Foxy Admin (contagens e última atividade).
 Schedule::command('financas:contas')->hourlyAt(20);
+// No cartão, a cobrança prevista para o dia vira feita sozinha (assinatura, compra agendada).
+Schedule::command('financas:cartoes')->dailyAt('00:10');
 
 // Cópia de segurança diária e rotina de saúde (avisa a equipe por e-mail; quadro no painel do Foxy Admin).
 Schedule::command('foxy:backup')->dailyAt('03:30')->withoutOverlapping(120);

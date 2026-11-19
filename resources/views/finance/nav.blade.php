@@ -10,6 +10,7 @@
 @endif
 @if ($can('finance.view'))
     <x-core::nav-link href="{{ route('finance.accounts') }}" :active="request()->routeIs('finance.accounts*')" icon="wallet">Contas e cartões</x-core::nav-link>
+    <x-core::nav-link href="{{ route('finance.cards') }}" :active="request()->routeIs('finance.cards*')" icon="calendar">Faturas do cartão</x-core::nav-link>
     <x-core::nav-link href="{{ route('finance.categories') }}" :active="request()->routeIs('finance.categories*')" icon="sparkles">Categorias</x-core::nav-link>
 @endif
 @if ($can('finance.people.view'))

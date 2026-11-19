@@ -13,6 +13,14 @@
         </div>
     @endif
 
+    @foreach ($invoicesToPay as $inv)
+        <div @class(['alert', 'error' => $inv['status'] === 'atrasada', 'info' => $inv['status'] !== 'atrasada']) style="margin-bottom:12px;">
+            Fatura do <strong>{{ $inv['card']->name }}</strong> de {{ \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $inv['month'].'-01')->format('m/Y') }}:
+            <strong>{{ $money($inv['remaining']) }}</strong> {{ $inv['status'] === 'atrasada' ? 'venceu em '.$inv['due']->format('d/m') : ($inv['due']->isToday() ? 'vence hoje' : 'vence em '.$inv['due']->format('d/m')) }}.
+            <a href="{{ route('finance.cards.show', [$inv['card'], 'fatura' => $inv['month']]) }}">Ver e registrar o pagamento</a>
+        </div>
+    @endforeach
+
     <h2 style="margin:0 0 12px;font-size:1.1rem;">{{ \Illuminate\Support\Str::ucfirst(\App\Finance\Transactions\TransactionFilters::monthName(today())) }}</h2>
     <div class="grid cards">
         <a class="card" href="{{ route('finance.transactions', ['tipo' => 'recebimento']) }}"><div class="muted">Entrou</div><h2 style="margin:4px 0;color:var(--success-text);">{{ $money($income) }}</h2></a>

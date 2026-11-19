@@ -2,6 +2,7 @@
 
 use App\Finance\Http\AccountController;
 use App\Finance\Http\AuthController;
+use App\Finance\Http\CardController;
 use App\Finance\Http\CategoryController;
 use App\Finance\Http\DashboardController;
 use App\Finance\Http\InvitationController;
@@ -63,6 +64,9 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
         Route::middleware('finance.can:finance.view')->group(function () {
             Route::get('/lancamentos', [TransactionController::class, 'index'])->name('transactions');
             Route::get('/contas', [AccountController::class, 'index'])->name('accounts');
+            // Cartões e faturas (fatia 5)
+            Route::get('/cartoes', [CardController::class, 'index'])->name('cards');
+            Route::get('/cartoes/{account}', [CardController::class, 'show'])->name('cards.show');
             Route::get('/categorias', [CategoryController::class, 'index'])->name('categories');
         });
         Route::middleware('finance.can:finance.transactions.manage')->group(function () {
@@ -71,6 +75,7 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/lancamentos/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
             Route::post('/lancamentos/{transaction}/apagar', [TransactionController::class, 'destroy'])->name('transactions.destroy');
             Route::post('/lancamentos/{transaction}/confirmar', [TransactionController::class, 'confirm'])->name('transactions.confirm');
+            Route::post('/cartoes/{account}/pagar', [CardController::class, 'pay'])->middleware('throttle:30,1')->name('cards.pay');
         });
         // Importar extrato, fatura ou planilha antiga e revisar linha a linha (fatia 3).
         Route::middleware('finance.can:finance.imports.manage')->prefix('extratos')->name('statements')->group(function () {

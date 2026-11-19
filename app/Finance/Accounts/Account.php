@@ -74,6 +74,34 @@ class Account extends Model
         return $due->format('Y-m');
     }
 
+    /**
+     * Que fatura um pagamento feito em $date paga: a última que já fechou (a anterior à que está aberta).
+     * Ex.: fecha dia 10 e vence dia 17; pagar em 15/11 paga a de novembro (a de dezembro ainda está aberta).
+     */
+    public function paidInvoiceFor(Carbon|string $date): ?string
+    {
+        $open = $this->invoiceMonthFor($date);
+
+        return $open ? self::addMonths($open, -1) : null;
+    }
+
+    /** Dia em que a fatura do mês $invoiceMonth (mês do vencimento) fecha. */
+    public function closingDate(string $invoiceMonth): Carbon
+    {
+        $due = Carbon::createFromFormat('Y-m-d', $invoiceMonth.'-01')->startOfDay();
+        $month = $this->due_day && $this->due_day <= $this->closing_day ? $due->copy()->subMonthNoOverflow() : $due;
+
+        return $month->copy()->day(min($this->closing_day, $month->daysInMonth));
+    }
+
+    /** Dia em que a fatura do mês $invoiceMonth vence. */
+    public function dueDate(string $invoiceMonth): Carbon
+    {
+        $month = Carbon::createFromFormat('Y-m-d', $invoiceMonth.'-01')->startOfDay();
+
+        return $month->copy()->day(min($this->due_day ?? 1, $month->daysInMonth));
+    }
+
     /** Fatura N meses depois de outra ("2026-12" + 2 = "2027-02"). */
     public static function addMonths(string $invoiceMonth, int $months): string
     {

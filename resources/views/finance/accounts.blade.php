@@ -40,7 +40,7 @@
                             <td style="text-align:right;white-space:nowrap;">
                                 @if ($a->isCard())
                                     {{ $money($invoiceSpent[$a->id] ?? 0) }}
-                                    <div class="helper">fatura de {{ \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $a->invoiceMonthFor(today()).'-01')->format('m/Y') }}@if ($a->limit_cents) · limite {{ $money($a->limit_cents) }}@endif</div>
+                                    <div class="helper">fatura de {{ \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $a->invoiceMonthFor(today()).'-01')->format('m/Y') }}@if ($a->limit_cents) · limite {{ $money($a->limit_cents) }}@endif · <a href="{{ route('finance.cards.show', $a) }}">ver faturas</a></div>
                                 @else
                                     <span @if ($balances[$a->id] < 0) style="color:var(--danger-text);" @endif>{{ $money($balances[$a->id]) }}</span>
                                 @endif
