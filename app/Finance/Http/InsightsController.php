@@ -43,6 +43,8 @@ class InsightsController
         }
 
         return view('finance.insights', $data + [
+            'tips' => \App\Finance\Assistant\AiNote::query()->where('kind', 'tips')->where('month', $month->format('Y-m'))->first(),
+            'foxReady' => \App\Finance\Assistant\FinanceFox::isReady(),
             'neighbours' => [$month->copy()->subMonthNoOverflow()->format('Y-m'), $month->copy()->addMonthNoOverflow()->format('Y-m')],
         ]);
     }

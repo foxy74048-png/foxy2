@@ -20,5 +20,7 @@ final readonly class ModelRequest
         public array $tools,
         public array $messages,
         public bool $allowTools = true,
+        // Tarefa avulsa (docs/12 §14): esquema JSON que a resposta tem que seguir (saída estruturada).
+        public ?array $outputSchema = null,
     ) {}
 }

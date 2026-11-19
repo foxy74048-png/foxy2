@@ -185,6 +185,14 @@ class FoxyAiClient
         ];
     }
 
+    /**
+     * Tarefa avulsa (só as do catálogo da Foxy AI): { status, body: { output, usage } | { error } }.
+     */
+    public function runTask(string $task, array $input): array
+    {
+        return $this->call('POST', '/tasks', ['task' => $task, 'input' => $input]);
+    }
+
     private function call(string $method, string $uri, array $body = [], bool $asClient = true): array
     {
         return $this->transport->call($method, $uri, $body, $asClient ? $this->organization : null);

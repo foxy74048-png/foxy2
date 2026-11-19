@@ -62,6 +62,8 @@ class StatementController
             'categoryOptions' => Category::options(),
             'pendingCount' => StatementLine::where('status', StatementLine::PENDING)->whereNull('hidden_at')->count(),
             'withCategoryCount' => StatementLine::where('status', StatementLine::PENDING)->whereNull('hidden_at')->whereNotNull('suggested_category_id')->count(),
+            'withoutCategoryCount' => StatementLine::where('status', StatementLine::PENDING)->whereNull('hidden_at')->whereNull('suggested_category_id')->count(),
+            'foxReady' => \App\Finance\Assistant\FinanceFox::isReady(),
             'hiddenCount' => StatementLine::whereNotNull('hidden_at')->count(),
             'recentImports' => StatementImport::with('account')->withCount(['lines as pending_count' => fn ($q) => $q->where('status', StatementLine::PENDING)])
                 ->latest()->limit(6)->get(),

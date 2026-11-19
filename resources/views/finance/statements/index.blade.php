@@ -70,6 +70,9 @@
                 @if ($withCategoryCount > 0)
                     <form method="POST" action="{{ route('finance.statements.bulk') }}">@csrf<input type="hidden" name="scope" value="with_category"><button type="submit">Lançar as {{ $withCategoryCount }} que já têm categoria</button></form>
                 @endif
+                @if ($foxReady && $withoutCategoryCount > 0)
+                    <form method="POST" action="{{ route('finance.fox.categorize') }}" title="Só a descrição vai para a raposa (sem valor, data ou conta). Gasta ~1 crédito a cada 50 linhas.">@csrf<button type="submit" class="secondary">Sugerir com a raposa ({{ min(50, $withoutCategoryCount) }} sem categoria)</button></form>
+                @endif
                 <form method="POST" action="{{ route('finance.statements.bulk') }}" id="bulk" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;">
                     @csrf<input type="hidden" name="scope" value="selected">
                     <div>

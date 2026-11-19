@@ -56,6 +56,29 @@
     @csrf
     <button type="submit" class="button secondary" style="width:100%;">Sair</button>
 </form>
+{{-- Janela da raposa (Foxy AI) em todas as telas, quando a raposa do Finanças estiver publicada (fatia 8). --}}
+@if (\App\Finance\Assistant\FinanceFox::isReady())
+    @php($foxWidget = rescue(fn () => app(\App\Finance\Assistant\FinanceFox::class)->widget($currentMembership->organization, auth()->user()), null, false))
+    @if ($foxWidget && $foxWidget['assistant'])
+        @php($foxSuggestions = $currentWallet->isBusiness() ? ['Qual foi o lucro deste mês e quanto cabe a cada sócio?', 'Onde o negócio mais gastou este mês?', 'Quanto já faturei no ano como MEI?', 'Quem está me devendo?'] : ['Quanto gastei com delivery este ano?', 'Onde dá para economizar?', 'Quanto falta para a minha meta?', 'Quem está me devendo?'])
+        <link rel="stylesheet" href="/core/foxy-assistant.css">
+        <script src="/core/foxy-assistant.js" defer></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            FoxyAssistant.mount({
+                endpoint: @json(route('finance.fox.message')),
+                resetEndpoint: @json(route('finance.fox.reset')),
+                csrfToken: document.querySelector('meta[name=csrf-token]').content,
+                assistant: @json($foxWidget['assistant']),
+                launcher: 'icon',
+                getPage: () => document.title,
+                suggestions: @json($foxSuggestions),
+                setup: { endpoint: @json(route('finance.fox.setup')), required: @json($foxWidget['setup']['required']), foxes: @json($foxWidget['setup']['foxes']), visuals: @json($foxWidget['setup']['visuals']) },
+            });
+        });
+        </script>
+    @endif
+@endif
 {{-- Botões "+ ..." (finance._add) e links com #id: abrem o formulário da página, rolam até ele e focam o 1º campo. --}}
 <script>
 (function () {

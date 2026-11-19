@@ -95,6 +95,8 @@ return [
             // Sem franquia: só o que a conta ganha (promoção, presente) ou compra no mês. O produto usa quando
             // a conta não tem perguntas no plano, mas recebeu um presente/promoção do Foxy Admin.
             'ia-0' => ['name' => 'IA só extras'] + $plan(0, $full, $allTiers, 7, 10),
+            // Plano grátis do Foxy Finanças (docs/12 §14, R-4): 30 créditos no mês, só a faixa rápida.
+            'ia-30' => $plan(30, $full, ['rapida'], 7, 10),
             'ia-250' => $plan(250, $full, $allTiers, 7, 10),
             'ia-1000' => $plan(1000, $full, $allTiers, 15, 20),
             'ia-1500' => $plan(1500, $full, $allTiers, 15, 20),

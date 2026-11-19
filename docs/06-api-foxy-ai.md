@@ -188,6 +188,21 @@ return response()->json($foxy->ask($conversa['body']['conversation_id'], $reques
 
 O console de testes (`/console`) usa exatamente essas duas peças.
 
+## 3.3 Tarefa avulsa (sem conversa)
+
+Para trabalho de fundo com resposta em JSON (categorizar linhas, escrever um resumo), sem abrir conversa:
+
+```http
+POST /api/v1/tasks          (escopo ai.tasks)
+{ "task": "finance.categorize", "input": { ... } }
+→ { "task": "finance.categorize", "output": { ... }, "usage": { "credits": 1, ... } }
+```
+
+- Só tarefas cadastradas em `App\Ai\Tasks\TaskCatalog` (instruções, regras do `input` e o esquema JSON da saída ficam do lado da Foxy AI; o sistema não manda prompt). Hoje: `finance.categorize`, `finance.tips`, `finance.parse_message`.
+- Sempre o modo rápido, sem ferramentas, com a saída presa ao esquema (structured outputs). Gasta créditos do mesmo plano das conversas (medidor `ai.tasks`); até 30 por minuto por cliente.
+- Nada do `input` nem do `output` vai para a auditoria (só a tarefa e o uso).
+- Erros: `unknown_task` (404), `invalid_input` (422), `credit_limit`/`usage_limit`, `task_failed` (502, resposta fora do esquema ou IA fora do ar). No cliente PHP: `$foxy->runTask($task, $input)`.
+
 ## 4. Privacidade e uso
 
 ```http

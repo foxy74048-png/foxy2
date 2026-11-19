@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
  */
 class Categorizer
 {
-    public const ORIGINS = ['regra' => 'pela sua regra', 'historico' => 'como da última vez', 'lista' => 'loja conhecida', 'planilha' => 'da planilha'];
+    public const ORIGINS = ['regra' => 'pela sua regra', 'historico' => 'como da última vez', 'lista' => 'loja conhecida', 'planilha' => 'da planilha', 'raposa' => 'sugerida pela raposa'];
 
     /** Palavras que não identificam a loja (ficam fora do padrão sugerido para a regra). */
     private const NOISE = ['pix', 'enviado', 'enviada', 'recebido', 'recebida', 'compra', 'compras', 'pagamento', 'pagto', 'pag', 'pgto', 'cartao', 'debito', 'credito', 'transferencia', 'transf', 'ted', 'doc', 'para', 'de', 'da', 'do', 'em', 'no', 'na', 'com', 'via', 'ltda', 'sa', 'me', 'eireli', 'br', 'brasil', 'parcela', 'parc', 'nacional', 'internacional', 'mastercard', 'visa', 'elo'];

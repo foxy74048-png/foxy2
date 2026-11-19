@@ -4,6 +4,7 @@ use App\Ai\Http\AiBillingController;
 use App\Ai\Http\AssistantController;
 use App\Ai\Http\ConversationController;
 use App\Ai\Http\HostProfileController;
+use App\Ai\Http\TaskController;
 use App\Ai\Http\UsageController;
 use App\Platform\Context\ExecutionContext;
 use App\Platform\Http\OrganizationController;
@@ -70,4 +71,7 @@ Route::prefix('v1')->middleware(['api.client', 'throttle:api-client'])->group(fu
         Route::put('/assistant-preferences', [AssistantController::class, 'putPreference']);
         Route::delete('/assistant-preferences', [AssistantController::class, 'deletePreference']);
     });
+
+    // Tarefa avulsa (docs/12 §14): só as do catálogo da Foxy AI, com resposta em JSON. Permissão própria.
+    Route::middleware(['api.organization', 'api.scope:ai.tasks'])->post('/tasks', TaskController::class);
 });

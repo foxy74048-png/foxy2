@@ -85,6 +85,19 @@ class AnthropicProviderTest extends TestCase
         $this->assertStringNotContainsString('NÃO tem acesso aos dados', $partLud);
     }
 
+    public function test_tarefa_avulsa_manda_o_esquema_como_saida_estruturada(): void
+    {
+        $http = $this->transporter(200, $this->okBody());
+        $schema = ['type' => 'object', 'properties' => ['ok' => ['type' => 'boolean']], 'required' => ['ok'], 'additionalProperties' => false];
+
+        (new AnthropicProvider('test-key', 'default', 30, $http))
+            ->send(new ModelRequest('claude-haiku-5-5', 'low', 800, 'TAREFA', [], [['role' => 'user', 'content' => '{}']], false, $schema));
+
+        $body = json_decode((string) $http->request->getBody(), true);
+        $this->assertSame(['effort' => 'low', 'format' => ['type' => 'json_schema', 'schema' => $schema]], $body['output_config']);
+        $this->assertArrayNotHasKey('tools', $body);
+    }
+
     public function test_sends_cached_rules_effort_and_refusal_fallback(): void
     {
         $http = $this->transporter(200, $this->okBody());

@@ -34,6 +34,23 @@
         @endif
     </div>
 
+    {{-- A raposa sobre o mês (fatia 8): escrita a partir dos números acima, guardada; refazer gasta crédito --}}
+    @if ($foxReady)
+        <div class="card" style="margin-top:16px;">
+            <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;">
+                <h3 style="margin:0;">A raposa sobre o seu mês</h3>
+                <form method="POST" action="{{ route('finance.fox.tips') }}">@csrf<input type="hidden" name="mes" value="{{ $month->format('Y-m') }}"><button type="submit" class="secondary">{{ $tips ? 'Escrever de novo' : 'Pedir as dicas da raposa' }}</button></form>
+            </div>
+            @if ($tips)
+                <ul style="margin:10px 0 0;padding-left:20px;line-height:1.7;">@foreach ($tips->content['sentences'] ?? [] as $sentence)<li>{{ $sentence }}</li>@endforeach</ul>
+                @if (! empty($tips->content['suggestion']))<p style="margin:10px 0 0;"><strong>Sugestão:</strong> {{ $tips->content['suggestion'] }}</p>@endif
+                <p class="helper" style="margin:8px 0 0;">Escrito em {{ $tips->updated_at->timezone('America/Sao_Paulo')->format('d/m H:i') }} a partir dos números desta tela (a raposa não faz contas).</p>
+            @else
+                <p class="helper" style="margin:8px 0 0;">A raposa lê os números desta tela e escreve 3 frases e uma sugestão para o próximo mês. Vai só o resumo (nenhum lançamento, conta ou nome). Gasta 1 crédito.</p>
+            @endif
+        </div>
+    @endif
+
     {{-- Dá para economizar: o que a pessoa pode fazer, sempre à vista --}}
     <div class="card" style="margin-top:16px;border-color:var(--border-strong);">
         <h3 style="margin-top:0;">Onde dá para economizar</h3>

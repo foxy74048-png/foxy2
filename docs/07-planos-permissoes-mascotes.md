@@ -68,6 +68,8 @@ AiPlan (global, definido pela Foxy, versionado)
 
 Só se guarda o necessário: a conversa (para a IA lembrar do que foi dito) até o prazo do plano, e mais nada. Pedidos de funcionalidade que não existe voltam ao sistema (`feature_request`), que decide onde anotar.
 
+Plano de entrada `ia-30` (2026-11-19, para o Grátis do Foxy Finanças): 30 créditos, só o modo rápido, conversa por 7 dias e 10 mensagens. As tarefas avulsas (`POST /api/v1/tasks`) gastam do mesmo saldo.
+
 O catálogo continua aceitando planos com menos capacidades ou modos (ajuste só em `config/foxy.php`), caso algum sistema precise.
 
 **Créditos extras em todos os planos**, em múltiplos de **250** (revisto em 2026-11-02; ex.: 250, 1.000, 3.000), somados à franquia do mês. Quem vende e cobra os pacotes é o sistema.

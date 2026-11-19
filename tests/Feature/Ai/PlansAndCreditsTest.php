@@ -56,7 +56,9 @@ class PlansAndCreditsTest extends TestCase
     {
         $plans = $this->withToken($this->key)->getJson('/api/v1/ai/plans')->assertOk()->json('data');
 
-        $this->assertSame([0, 250, 1000, 1500, 2000, 5000, 10000, 25000, 50000], array_column($plans, 'credits_per_month'), '0 = só extras (presentes, promoções, pacotes)');
+        // 30 = o grátis do Foxy Finanças (docs/12 §14), só na faixa rápida.
+        $this->assertSame([0, 30, 250, 1000, 1500, 2000, 5000, 10000, 25000, 50000], array_column($plans, 'credits_per_month'), '0 = só extras (presentes, promoções, pacotes)');
+        $this->assertSame(['rapida'], $plans[1]['tiers']);
         $this->assertSame(['suporte', 'erros', 'dados', 'escrita'], $plans[0]['capabilities']);
         $this->assertSame(['rapida', 'equilibrada', 'avancada'], $plans[0]['tiers']);
     }

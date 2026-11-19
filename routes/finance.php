@@ -8,6 +8,7 @@ use App\Finance\Http\CardController;
 use App\Finance\Http\CategoryController;
 use App\Finance\Http\DashboardController;
 use App\Finance\Http\DebtController;
+use App\Finance\Http\FoxController;
 use App\Finance\Http\GoalController;
 use App\Finance\Http\GroupController;
 use App\Finance\Http\InvitationController;
@@ -70,6 +71,15 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
         // Lançamentos (fatia 2): ver é de todos; lançar, mudar e apagar pede permissão.
+        // A raposa (fatia 8): janela de conversa (qualquer pessoa da carteira), dicas do mês e sugestão no extrato.
+        Route::middleware('throttle:20,1')->group(function () {
+            Route::post('/raposa/mensagem', [FoxController::class, 'message'])->name('fox.message');
+            Route::post('/raposa/nova', [FoxController::class, 'reset'])->name('fox.reset');
+            Route::post('/raposa/escolher', [FoxController::class, 'setup'])->name('fox.setup');
+            Route::post('/raposa/dicas', [FoxController::class, 'tips'])->middleware('finance.can:finance.reports.view')->name('fox.tips');
+            Route::post('/raposa/categorias', [FoxController::class, 'categorize'])->middleware('finance.can:finance.imports.manage')->name('fox.categorize');
+        });
+
         // Onde vai o dinheiro: indicadores para economizar (fatia 6)
         Route::middleware('finance.can:finance.reports.view')->get('/painel', [InsightsController::class, 'index'])->name('insights');
 

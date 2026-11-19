@@ -42,7 +42,11 @@ class AnthropicProvider implements ModelProvider
             // → parte da conversa (raposa, permissões) → histórico (cache automático no fim).
             'system' => self::systemBlocks($request->system),
             'cacheControl' => ['type' => 'ephemeral'],
-            'outputConfig' => ['effort' => $request->effort],
+            // Com esquema (tarefa avulsa), a resposta vem como JSON válido nesse formato (saída estruturada).
+            'outputConfig' => array_filter([
+                'effort' => $request->effort,
+                'format' => $request->outputSchema ? ['type' => 'json_schema', 'schema' => $request->outputSchema] : null,
+            ]),
             'messages' => array_map(self::restoreEmptyToolInputs(...), $request->messages),
         ];
 
