@@ -173,3 +173,49 @@ Depois: vitrine (card do produto em foxy.net.br), guia em PDF com telas reais e 
 - **Fatia 6c (2026-11-19):** "Quem me deve" (`/app/quem-me-deve`). `finance_contacts` (nome, WhatsApp opcional; mesmo nome sem acento/maiúscula = mesma pessoa) e `finance_person_entries` (valor com sinal: + a pessoa te deve, − você deve; tipos emprestei, peguei, devolveu, paguei, dividi, objeto; prazo combinado; objeto com "devolvido em"). `Finance\Debts\DebtLedger` é a única porta: com conta escolhida, o dinheiro vira **transferência** com a conta interna **"Amigos e família"** (`Account::PEOPLE`, criada sozinha; `scopeActive` a tira de formulários, Contas e saldos; `scopeOpen` deixa o `TransactionService` aceitar) — emprestar não é gasto, receber não é renda. Não deixa devolver/pagar mais do que o saldo. **Dividir a conta:** gasto só da sua parte (com categoria) + transferência do resto para "Amigos e família" + uma entrada por pessoa (`group_id`); no cartão o total entra na fatura; apagar apaga a divisão inteira. **Lembrete:** link `wa.me` com o texto pronto (abre o WhatsApp da própria pessoa; nada automático). Pessoa quite pode sair da lista. Início mostra "te devem / você deve". Exporta. Teste: `tests/Feature/Finance/DebtsTest` (8).
 - **Fatia 7 (2026-11-19):** sócios e MEI (`/app/socios`, só na carteira do negócio). `finance_partners` (nome, parte em centésimos de %, login opcional, conta da carteira pessoal onde as retiradas entram — escolhida **só pelo próprio sócio**), `finance_partner_settlements` (acerto por fora do caixa) e, nos lançamentos, `partner_id`, `partner_kind` (pró-labore, retirada, distribuição = gasto; aporte = recebimento) e `linked_transaction_id`. `Finance\Partners\PartnerService`: **lucro** = entrou − saiu **sem** movimentos de sócio; **cabe** = lucro (se positivo) × parte; **tirou** = pró-labore + retirada + distribuição − aportes ± acertos; diferença e **sugestão de acerto** (quem tirou a mais paga a quem tirou a menos). **Retirada na carteira pessoal:** recebimento na conta escolhida, categoria "Pró-labore e retiradas", ligado nos dois sentidos; editar no negócio atualiza lá; apagar no negócio apaga lá; apagar lá só desfaz a ligação. **MEI:** faturamento do ano (sem aportes) contra o limite de R$ 81.000 e lembrete do DAS (12 meses previstos no dia do DAS, categoria DAS). **Extrato:** "É gasto pessoal do sócio" vira retirada dele (não conta como gasto do negócio). Indicadores (fatia 6) ignoram movimentos de sócio. Permissões: cadastrar sócio = dono (`finance.wallet.manage`); movimentos = `finance.transactions.manage`. Teste: `tests/Feature/Finance/PartnersTest` (7).
 - **Fatia 6d (2026-11-19):** despesas em grupo (`/app/grupos`). `finance_groups` (nome, token secreto do link, encerrado, levado para "Quem me deve"), `finance_group_members` ("Você" + os outros, ligados a um contato de "Quem me deve" quando dá), `finance_group_expenses` (quem pagou, igual ou valores) com `finance_group_shares`, e `finance_group_payments`. Fica **fora** dos lançamentos da carteira. `Finance\Groups\GroupLedger`: divisão igual sem perder centavo (sobra vai para os primeiros), valores que têm que fechar; saldo = pagou − parte + passou − recebeu; **quem paga quem** com o menor número de pagamentos (maior devedor → maior credor); "Já pagou" registra o pagamento; **"Encerrar e levar para Quem me deve"** cria `PersonEntry` tipo `grupo` só dos acertos com você. Link público `/grupo/{token}` (sem login, só leitura, `noindex`, throttle; a página é montada no contexto da carteira; "Você" aparece como "Quem criou o grupo"); trocar o link invalida o antigo; resumo para o WhatsApp (`wa.me/?text=`) com o nome de quem criou. Teste: `tests/Feature/Finance/GroupsTest` (6).
+
+## 14. Fatia 8 — a raposa no Finanças (desenho para aprovação, 2026-11-19)
+
+Hoje a API da Foxy AI só tem **conversa** (o assistente: pergunta → resposta, com ferramentas do sistema). O Finanças precisa de duas coisas:
+
+1. **Conversa** (já existe, só falta o Finanças virar anfitrião): perguntar sobre os próprios dados.
+2. **Tarefa avulsa** (nova na Foxy AI): um pedido só, sem conversa, com **resposta organizada** (JSON), para o sistema usar direto — categorizar em lote, ler a mensagem do WhatsApp (fatia 9) e escrever as dicas do mês.
+
+### 14.1 Tarefa avulsa na Foxy AI (vale para todos os produtos)
+
+- **Endereço:** `POST /api/v1/tasks` (cliente da API + organização, permissão nova `ai.tasks`), com `{ "task": "finance.categorize", "input": { ... } }` → `{ "output": { ... }, "usage": { ... } }`.
+- **Só tarefas cadastradas na Foxy AI** (`App\Ai\Tasks\TaskCatalog`): cada uma com o texto de instrução (guardado e em cache, igual ao do assistente), o **formato da resposta** (esquema JSON, que o modelo é obrigado a seguir), o modelo (o mais barato, Haiku) e o limite de tamanho. O produto **não manda instrução livre** — evita abuso, vazamento e custo fora de controle.
+- **Mesmas regras de crédito do assistente:** sem crédito, a tarefa não roda (e o sistema segue sem IA, só com as regras); o gasto entra no uso da organização e aparece no Foxy Admin (medidor novo `task`).
+- **Testes** com o `FakeProvider`, como o resto da Foxy AI; nenhum teste chama a IA de verdade.
+
+### 14.2 Tarefas do Finanças
+
+| Tarefa | Entra | Sai | Onde aparece | Custo estimado |
+|---|---|---|---|---|
+| `finance.categorize` | até 50 descrições (só o texto; **sem valor, data, conta ou nome da carteira**) e a lista de categorias da carteira | para cada uma: a categoria ou "não sei" | botão **"Sugerir com a raposa"** no extrato, para as linhas sem sugestão. Vira sugestão (origem "raposa"); a pessoa confirma ao lançar, e aí pode virar regra | ~1 crédito por lote de 50 (≈ US$ 0,004) |
+| `finance.tips` | os indicadores do mês **já calculados** (fatia 6: % guardado, o que subiu, gastinhos, assinaturas, reserva, "cortar pela metade") | 3 frases curtas e 1 sugestão | card **"A raposa sobre o seu mês"** em "Onde vai o dinheiro" e no Início | 1 crédito por mês por carteira (guardado; só refaz se a pessoa pedir) |
+| `finance.parse_message` (fatia 9) | o texto da mensagem do WhatsApp e os nomes das contas | tipo, valor, descrição, conta, data | lançar pelo WhatsApp | ~0,2 crédito por mensagem |
+
+A IA **nunca faz conta**: os números vêm do sistema, ela só escreve. O texto que ela devolve é conferido (valor que não está nos dados = descartado).
+
+### 14.3 Conversa: o Finanças como anfitrião da raposa
+
+`FinanceHost` + `FinanceFox`, do mesmo jeito que `CommerceHost`/`CommerceFox`: manual do sistema e **ferramentas só de leitura**, executadas com a carteira e as permissões de quem está logado:
+
+`resumo_periodo` · `gastos_por` (categoria, lugar, conta) · `comparar_periodos` · `assinaturas` · `faturas_cartao` · `orcamento` · `metas` · `quem_me_deve` · `grupos` · `socios_mes` (só na carteira do negócio).
+
+A janela da raposa aparece em todas as telas (como no Commerce), com sugestões do tipo "Quanto gastei com delivery este ano?", "Onde dá para economizar?", "Quem está me devendo?".
+
+### 14.4 O que muda e o que não muda
+
+- **Muda na Foxy AI** (módulo usado também pelo Studio e pelo Commerce): só **acréscimos** — rota nova, catálogo de tarefas, medidor novo. A conversa existente não muda; os testes atuais da Foxy AI continuam valendo.
+- **Privacidade:** para a IA vai só o necessário de cada tarefa (descrições para categorizar; números agregados para as dicas). Nada de CPF, conta bancária ou nome da carteira. O registro guarda o uso (tokens, custo), não o conteúdo da tarefa.
+- **Sem crédito ou sem a IA no ar:** tudo continua funcionando com as regras e a lista de lojas (fatia 4); o botão da raposa só some.
+- **Passo do responsável (no fim):** nenhum novo — a chave e o limite de gasto da Anthropic já existem. Lembrar de **subir o limite mensal** (hoje US$ 5) antes de liberar para muita gente.
+
+### 14.5 Decisões para aprovação
+
+- **R-1** — Criar a tarefa avulsa na Foxy AI como acima (só tarefas cadastradas, resposta em JSON, mesmas regras de crédito).
+- **R-2** — As três tarefas do Finanças (categorizar, dicas do mês, ler mensagem do WhatsApp), com o que entra e sai na tabela 14.2.
+- **R-3** — A raposa de conversa com as ferramentas da seção 14.3.
+- **R-4** — Créditos da raposa por plano (fatia 10): Grátis 30 perguntas/mês (as tarefas contam crédito também), Pessoal e Compartilhado com mais. Valores fechados na fatia 10, pelo custo medido.
