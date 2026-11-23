@@ -113,8 +113,8 @@
             <div class="helper">{{ $currentWallet->isBusiness() ? 'convide o sócio para dividir pró-labore e lucro' : 'convide quem divide as contas com você' }}</div>
         </a>
         <div class="card">
-            <div class="muted">Em breve</div>
-            <div class="helper" style="margin-top:4px;line-height:1.7;">{{ $currentWallet->isBusiness() ? 'Sócios e pró-labore, a' : 'A' }} raposa respondendo sobre o seu dinheiro e lançar pelo WhatsApp.</div>
+            <div class="muted">🦊 Pergunte à raposa</div>
+            <div class="helper" style="margin-top:4px;line-height:1.7;">“Quanto gastei com delivery este mês?” — abra a janela da raposa no canto da tela. Em breve: lançar pelo WhatsApp.</div>
         </div>
     </div>
 </x-core::layout>

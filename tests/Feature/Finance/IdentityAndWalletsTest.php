@@ -158,6 +158,16 @@ class IdentityAndWalletsTest extends TestCase
         $this->assertSame(0, User::count());
     }
 
+    public function test_inicio_aponta_para_a_raposa_e_so_o_whatsapp_fica_para_depois(): void
+    {
+        [$ana] = $this->owner();
+
+        $this->actingAs($ana)->get($this->url('/app'))->assertOk()
+            ->assertSee('Pergunte à raposa')
+            ->assertSee('Em breve: lançar pelo WhatsApp')
+            ->assertDontSee('raposa respondendo sobre o seu dinheiro');
+    }
+
     public function test_sem_escolha_entra_na_carteira_pessoal_mesmo_tendo_varias(): void
     {
         [$ana, $personal] = $this->owner();
