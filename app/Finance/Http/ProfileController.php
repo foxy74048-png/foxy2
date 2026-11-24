@@ -72,6 +72,16 @@ class ProfileController
         return back()->with('status', 'Os lançamentos pelo WhatsApp vão para essa carteira.');
     }
 
+    /** Lembrete semanal dos desafios do mês pelo WhatsApp (só para quem ligar). */
+    public function whatsappReminders(Request $request): RedirectResponse
+    {
+        $link = $this->links->of($request->user());
+        abort_unless($link?->isVerified(), 404);
+        $link->forceFill(['challenge_reminders' => $request->boolean('on')])->save();
+
+        return back()->with('status', $link->challenge_reminders ? 'Pronto! Todo domingo mandamos como estão os seus desafios do mês.' : 'Lembrete dos desafios desligado.');
+    }
+
     public function whatsappUnlink(Request $request): RedirectResponse
     {
         $this->links->unlink($request->user());

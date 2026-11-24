@@ -22,6 +22,10 @@ Schedule::command('commerce:canais')->everyTenMinutes()->withoutOverlapping(15);
 Schedule::command('financas:contas')->hourlyAt(20);
 // No cartão, a cobrança prevista para o dia vira feita sozinha (assinatura, compra agendada).
 Schedule::command('financas:cartoes')->dailyAt('00:10');
+// Conquistas: fecha o mês que acabou (pontos e desafios) e confere as conquistas de cada carteira.
+Schedule::command('financas:conquistas')->dailyAt('06:30')->withoutOverlapping(60);
+// Domingo: como estão os desafios do mês, pelo WhatsApp, para quem ligou o lembrete.
+Schedule::command('financas:desafios-whatsapp')->weeklyOn(0, '18:00')->withoutOverlapping(60);
 // WhatsApp de entrada: o id das mensagens recebidas (contra repetição) some depois de 7 dias.
 Schedule::call(fn () => \Illuminate\Support\Facades\DB::table('platform_inbound_messages')->where('received_at', '<', now()->subDays(7))->delete())->dailyAt('03:15')->name('whatsapp-inbound-prune');
 

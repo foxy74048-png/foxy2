@@ -10,6 +10,7 @@ use App\Finance\Http\DashboardController;
 use App\Finance\Http\DebtController;
 use App\Finance\Http\FoxController;
 use App\Finance\Http\GoalController;
+use App\Finance\Http\RewardController;
 use App\Finance\Http\GroupController;
 use App\Finance\Http\InvitationController;
 use App\Finance\Http\PartnerController;
@@ -89,6 +90,8 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             // Orçamento (fatia 6) e metas (6b)
             Route::get('/orcamento', [BudgetController::class, 'index'])->name('budgets');
             Route::get('/metas', [GoalController::class, 'index'])->name('goals');
+            // Conquistas: pontos, nível da raposa e desafios do mês
+            Route::get('/conquistas', [RewardController::class, 'index'])->name('rewards');
             // Despesas em grupo (6d)
             Route::get('/grupos', [GroupController::class, 'index'])->name('groups');
             Route::get('/grupos/{group}', [GroupController::class, 'show'])->name('groups.show');
@@ -134,6 +137,8 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/grupos/{group}/novo-link', [GroupController::class, 'newLink'])->name('groups.link');
             Route::post('/grupos/{group}/apagar', [GroupController::class, 'destroy'])->name('groups.destroy');
             Route::post('/metas', [GoalController::class, 'store'])->middleware('throttle:30,1')->name('goals.store');
+            Route::post('/conquistas/desafios', [RewardController::class, 'accept'])->middleware('throttle:20,1')->name('rewards.accept');
+            Route::post('/conquistas/desafios/{challenge}/desistir', [RewardController::class, 'giveUp'])->name('rewards.giveup');
             Route::post('/metas/{goal}', [GoalController::class, 'update'])->name('goals.update');
             Route::post('/metas/{goal}/arquivar', [GoalController::class, 'archive'])->name('goals.archive');
             Route::post('/metas/{goal}/apagar', [GoalController::class, 'destroy'])->name('goals.destroy');
@@ -202,6 +207,7 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
         Route::post('/perfil/whatsapp', [ProfileController::class, 'whatsappStart'])->middleware('throttle:5,10')->name('profile.whatsapp');
         Route::post('/perfil/whatsapp/codigo', [ProfileController::class, 'whatsappVerify'])->middleware('throttle:10,1')->name('profile.whatsapp.verify');
         Route::post('/perfil/whatsapp/carteira', [ProfileController::class, 'whatsappWallet'])->middleware('throttle:20,1')->name('profile.whatsapp.wallet');
+        Route::post('/perfil/whatsapp/lembrete', [ProfileController::class, 'whatsappReminders'])->middleware('throttle:10,1')->name('profile.whatsapp.reminders');
         Route::post('/perfil/whatsapp/desligar', [ProfileController::class, 'whatsappUnlink'])->middleware('throttle:10,1')->name('profile.whatsapp.unlink');
     });
 });

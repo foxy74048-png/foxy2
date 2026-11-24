@@ -64,6 +64,10 @@ class DashboardController
             // Metas em andamento (6b), as 3 com prazo mais perto.
             'goals' => \App\Finance\Goals\Goal::query()->whereNull('archived_at')->whereNull('achieved_at')->withSum('entries', 'amount_cents')
                 ->orderByRaw('deadline is null')->orderBy('deadline')->limit(3)->get(),
+            // Conquistas: nível e o primeiro desafio ativo do mês.
+            'rewardLevel' => ($rewards = app(\App\Finance\Rewards\Rewards::class))->level(),
+            'rewardChallenge' => ($challenge = \App\Finance\Rewards\Challenge::query()->where('month', today()->format('Y-m'))->where('status', 'ativo')->oldest()->first())
+                ? ['challenge' => $challenge, 'progress' => $rewards->progress($challenge)] : null,
             // Faturas que fecharam e falta pagar (aviso de vencimento).
             'invoicesToPay' => $accounts->filter->isCard()->flatMap(fn (Account $card) => app(CardInvoices::class)->overview($card)
                 ->filter(fn ($i) => in_array($i['status'], ['fechada', 'parcial', 'atrasada'], true))

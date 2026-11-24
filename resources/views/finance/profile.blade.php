@@ -54,6 +54,12 @@
                 </form>
                 <p class="helper" style="margin:0;">Escreva <b>no negócio</b> ou <b>no pessoal</b> na mensagem para lançar na outra carteira.</p>
             @endif
+            <form method="POST" action="{{ route('finance.profile.whatsapp.reminders') }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                @csrf
+                <input type="hidden" name="on" value="{{ $phoneLink->challenge_reminders ? '0' : '1' }}">
+                <span>🎯 Lembrete dos desafios do mês no domingo: <strong>{{ $phoneLink->challenge_reminders ? 'ligado' : 'desligado' }}</strong></span>
+                <button type="submit" class="secondary">{{ $phoneLink->challenge_reminders ? 'Desligar lembrete' : 'Ligar lembrete' }}</button>
+            </form>
             <form method="POST" action="{{ route('finance.profile.whatsapp.unlink') }}" onsubmit="return confirm('Desligar este WhatsApp da sua conta?');">@csrf<button type="submit" class="secondary">Desligar o WhatsApp</button></form>
         @else
             <form method="POST" action="{{ route('finance.profile.whatsapp') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">

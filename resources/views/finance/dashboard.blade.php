@@ -112,6 +112,16 @@
             <h2 style="margin:4px 0;">{{ $people }}</h2>
             <div class="helper">{{ $currentWallet->isBusiness() ? 'convide o sócio para dividir pró-labore e lucro' : 'convide quem divide as contas com você' }}</div>
         </a>
+        {{-- Conquistas: nível da carteira e o desafio do mês mais perto de acabar --}}
+        <a class="card" href="{{ route('finance.rewards') }}">
+            <div class="muted">🏅 Conquistas</div>
+            <h2 style="margin:4px 0;">{{ $rewardLevel['name'] }} · {{ number_format($rewardLevel['points'], 0, ',', '.') }} pts</h2>
+            @if ($rewardChallenge)
+                <div class="helper">🎯 {{ $rewardChallenge['challenge']->label }}: {{ $rewardChallenge['progress']['text'] }}</div>
+            @else
+                <div class="helper">Aceite um desafio do mês e ganhe pontos cuidando do dinheiro.</div>
+            @endif
+        </a>
         <div class="card">
             <div class="muted">🦊 Pergunte à raposa</div>
             <div class="helper" style="margin-top:4px;line-height:1.7;">“Quanto gastei com delivery este mês?” — abra a janela da raposa no canto da tela. Em breve: lançar pelo WhatsApp.</div>

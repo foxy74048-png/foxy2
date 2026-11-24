@@ -62,7 +62,7 @@ class FinanceHost
     {
         return [
             'name' => 'Foxy Finanças',
-            'description' => 'Controle de dinheiro pessoal e de MEI/pequeno negócio: contas e cartões, lançamentos, extrato importado, categorias automáticas, faturas, onde vai o dinheiro, orçamento, metas de guardar, quem me deve, despesas em grupo e sócios.',
+            'description' => 'Controle de dinheiro pessoal e de MEI/pequeno negócio: contas e cartões, lançamentos, extrato importado, categorias automáticas, faturas, onde vai o dinheiro, orçamento, metas de guardar, conquistas e desafios do mês, quem me deve, despesas em grupo e sócios.',
             'tone' => 'Gentil e direto, tratando a pessoa por "você", sem julgar os gastos. Usa os números exatamente como vêm das consultas e sugere passos pequenos e possíveis.',
         ];
     }
@@ -89,6 +89,7 @@ class FinanceHost
         - **Onde vai o dinheiro:** quanto entrou, saiu, quanto da renda guardou, "no ritmo atual o mês fecha em", o que mais subiu, gastinhos (compras até R$ 30), assinaturas, reserva de emergência (meses cobertos pela poupança) e "se cortar pela metade".
         - **Orçamento:** limite por categoria no mês, com aviso a partir de 80%.
         - **Metas de guardar:** valor e prazo; mostra quanto guardar por mês. "Guardei"/"Tirei" na própria meta.
+        - **Conquistas:** pontos da carteira (de todos juntos) por mês no azul (no negócio, com lucro) 100, meta no ritmo 50, orçamento respeitado 30, fatura paga até o vencimento 30, extrato do mês revisado 20 e desafio vencido 80; os do mês entram quando ele fecha. Níveis: Filhote, Raposinha (200), Raposa esperta (600), Raposa sábia (1500), Raposa lendária (3000). Até 3 desafios por mês, sugeridos com os números da carteira (gastar menos numa categoria, guardar na meta, poucos gastinhos); aceitar e desistir na tela Conquistas. Lembrete dos desafios no domingo pelo WhatsApp, para quem ligar em Meu perfil. Abrir o app não vale ponto.
         - **Faturas do cartão:** fatura aberta, as a pagar, as futuras com parcelas e o limite disponível.
 
         ## Pessoas
