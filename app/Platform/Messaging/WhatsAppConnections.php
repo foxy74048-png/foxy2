@@ -123,6 +123,23 @@ class WhatsAppConnections
         return $response->successful() ? null : 'WhatsApp recusou ('.$response->status().').';
     }
 
+    /** Aponta as mensagens recebidas pela instância para a entrada da Foxy (só o evento de mensagem nova). */
+    public function setWebhook(string $instance, string $url): ?string
+    {
+        if (! $this->isConfigured()) {
+            return 'WhatsApp não configurado.';
+        }
+        try {
+            $response = $this->request('POST', "/webhook/set/{$instance}", ['webhook' => [
+                'enabled' => true, 'url' => $url, 'events' => ['MESSAGES_UPSERT'], 'byEvents' => false, 'base64' => false,
+            ]]);
+        } catch (\Throwable) {
+            return 'Sem resposta do WhatsApp.';
+        }
+
+        return $response->successful() && ($response->json('error') ?? false) !== true ? null : 'WhatsApp recusou ('.$response->status().').';
+    }
+
     private function pollQr(string $instance): ?string
     {
         for ($attempt = 1; $attempt <= 5; $attempt++) {

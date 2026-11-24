@@ -18,6 +18,9 @@ Route::domain(config('foxy.hosts.commerce'))->name('commerce.')->group(base_path
 // Foxy Finanças (docs/12): tudo em financas.foxy.net.br, pelo mesmo motivo.
 Route::domain(config('foxy.hosts.financas'))->name('finance.')->group(base_path('routes/finance.php'));
 
+// WhatsApp de entrada (Evolution API), em qualquer endereço: o segredo está no próprio caminho.
+Route::post('/webhooks/whatsapp/{token}', \App\Platform\Messaging\InboundWebhookController::class)->middleware('throttle:600,1')->name('whatsapp.inbound');
+
 // "/" depende do endereço: foxy.net.br = vitrine da marca; admin.foxy.net.br = Foxy Admin; ai.foxy.net.br = console.
 Route::get('/', function (Request $request) {
     $host = strtolower($request->getHost());

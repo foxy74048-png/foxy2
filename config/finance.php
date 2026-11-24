@@ -13,6 +13,12 @@ return [
     // Plano de créditos da raposa (Foxy AI) de cada carteira (docs/12 §14, R-4). Os planos pagos mudam na fatia 10.
     'ai_plan' => env('FINANCE_AI_PLAN', 'ia-30'),
 
+    // Lançar pelo WhatsApp (fatia 9): o número da Foxy do Finanças (instância na Evolution) e o limite por pessoa.
+    'whatsapp' => [
+        'instance' => env('FINANCE_WHATSAPP_INSTANCE', 'foxy_financas'),
+        'messages_per_hour' => 30,
+    ],
+
     // Tipos de carteira: a pessoal (ou da casa) e a do negócio (MEI, com ou sem sócios).
     'wallet_kinds' => [
         'pessoal' => 'Pessoal / casa',

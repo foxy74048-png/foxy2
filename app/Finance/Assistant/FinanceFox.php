@@ -13,6 +13,7 @@ use App\Platform\Memberships\Membership;
 use App\Platform\Organizations\Organization;
 use Foxy\AiClient\FoxyAiClient;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -230,14 +231,44 @@ class FinanceFox
         }
     }
 
-    /** Cada carteira tem um plano de créditos na Foxy AI (config finance.ai_plan). Uma vez por sessão. */
+    /**
+     * Cada carteira tem um plano de créditos na Foxy AI (config finance.ai_plan). Lembrado no cache por um dia (vale
+     * também no WhatsApp, que não tem sessão); trocar o plano na config muda a chave.
+     */
     private function ensurePlan(Organization $organization): void
     {
-        $flag = self::SESSION.'.plan.'.$organization->getKey();
-        if (! session($flag)) {
-            $this->client($organization)->setPlan($organization->getKey(), config('finance.ai_plan'));
-            session([$flag => true]);
+        $plan = (string) config('finance.ai_plan');
+        $flag = 'finance-ai-plan:'.$organization->getKey().':'.$plan;
+        if (! Cache::get($flag)) {
+            $this->client($organization)->setPlan($organization->getKey(), $plan);
+            Cache::put($flag, true, now()->addDay());
         }
+    }
+
+    /**
+     * Mensagem do WhatsApp (tarefa finance.parse_message): só o texto da pessoa, a data de hoje e o nome das contas
+     * vão; volta tipo, valor, descrição, conta e data — quem lança é o sistema.
+     *
+     * @param  string[]  $accounts
+     * @return array{understood: bool, kind: ?string, amount: ?float, description: ?string, account: ?string, date: ?string}
+     */
+    public function parseMessage(Organization $organization, string $text, array $accounts): array
+    {
+        $this->ensurePlan($organization);
+        $response = $this->client($organization)->runTask('finance.parse_message', [
+            'text' => mb_substr(self::privacy($text), 0, 500), 'today' => today()->format('Y-m-d'), 'accounts' => array_values(array_slice($accounts, 0, 30)),
+        ]);
+        $this->guard($response);
+        $o = $response['body']['output'] ?? [];
+
+        return [
+            'understood' => (bool) ($o['understood'] ?? false),
+            'kind' => in_array($o['kind'] ?? null, ['gasto', 'recebimento'], true) ? $o['kind'] : null,
+            'amount' => is_numeric($o['amount'] ?? null) ? (float) $o['amount'] : null,
+            'description' => is_string($o['description'] ?? null) ? mb_substr(trim($o['description']), 0, 120) : null,
+            'account' => is_string($o['account'] ?? null) ? $o['account'] : null,
+            'date' => is_string($o['date'] ?? null) ? $o['date'] : null,
+        ];
     }
 
     public static function friendly(array $error): string

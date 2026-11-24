@@ -37,6 +37,41 @@
         </form>
     </div>
 
+    {{-- Lançar pelo WhatsApp (fatia 9): o número é da pessoa e vale para todas as carteiras dela --}}
+    <div class="card stack" style="margin-top:16px;" id="whatsapp">
+        <h3 style="margin:0;">Lançar pelo WhatsApp</h3>
+        <p class="helper" style="margin:0;">Mande para o número do Foxy Finanças algo como <b>gastei 42,90 no mercado</b> e o gasto entra na hora. Só o texto vai para a raposa ler; o lançamento é feito pelo sistema, e você pode responder <b>desfazer</b>.</p>
+        @if (! $whatsappAvailable)
+            <p class="helper" style="margin:0;">O número do Foxy Finanças ainda está sendo ligado. Assim que estiver pronto, você liga o seu por aqui.</p>
+        @elseif ($phoneLink?->isVerified())
+            <p style="margin:0;">✅ Ligado ao número <b>{{ $phoneLink->displayPhone() }}</b>.</p>
+            @if ($wallets->count() > 1)
+                <form method="POST" action="{{ route('finance.profile.whatsapp.wallet') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+                    @csrf
+                    <div><label for="wa_wallet">Os lançamentos vão para</label>
+                        <select id="wa_wallet" name="organization_id">@foreach ($wallets as $w)<option value="{{ $w['organization_id'] }}" @selected($phoneLink->default_organization_id === $w['organization_id'])>{{ $w['wallet']?->name }}</option>@endforeach</select></div>
+                    <button type="submit" class="secondary">Salvar</button>
+                </form>
+                <p class="helper" style="margin:0;">Escreva <b>no negócio</b> ou <b>no pessoal</b> na mensagem para lançar na outra carteira.</p>
+            @endif
+            <form method="POST" action="{{ route('finance.profile.whatsapp.unlink') }}" onsubmit="return confirm('Desligar este WhatsApp da sua conta?');">@csrf<button type="submit" class="secondary">Desligar o WhatsApp</button></form>
+        @else
+            <form method="POST" action="{{ route('finance.profile.whatsapp') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+                @csrf
+                <div><label for="wa_phone">Seu WhatsApp (com DDD)</label><input id="wa_phone" name="phone" value="{{ old('phone', $phoneLink ? $phoneLink->displayPhone() : '') }}" placeholder="(11) 98765-4321" inputmode="tel" maxlength="30" required></div>
+                <button type="submit" @if ($phoneLink?->isPending()) class="secondary" @endif>{{ $phoneLink?->isPending() ? 'Mandar outro código' : 'Mandar código' }}</button>
+            </form>
+            @if ($phoneLink?->isPending())
+                <form method="POST" action="{{ route('finance.profile.whatsapp.verify') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+                    @csrf
+                    <div><label for="wa_code">Código que chegou no WhatsApp</label><input id="wa_code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" required autofocus></div>
+                    <button type="submit">Confirmar</button>
+                </form>
+                <p class="helper" style="margin:0;">O código vale por 10 minutos.</p>
+            @endif
+        @endif
+    </div>
+
     <div class="card" style="margin-top:16px;">
         <h3 style="margin-top:0;">Suas carteiras</h3>
         <div class="table-wrap"><table>

@@ -50,6 +50,12 @@ return [
             'api_url' => env('FOXY_WHATSAPP_API_URL'),
             'api_key' => env('FOXY_WHATSAPP_API_KEY'),
             'instance' => env('FOXY_WHATSAPP_INSTANCE'),
+            // Entrada (fatia 9 do Finanças): segredo no endereço do webhook; vazio = entrada desligada.
+            'webhook_token' => env('FOXY_WHATSAPP_WEBHOOK_TOKEN'),
+        ],
+        // Quem atende as mensagens que chegam em cada instância (instância => classe InboundHandler).
+        'inbound' => [
+            env('FINANCE_WHATSAPP_INSTANCE', 'foxy_financas') => \App\Finance\WhatsApp\FinanceWhatsApp::class,
         ],
         'emails_per_minute' => (int) env('FOXY_ANNOUNCEMENT_EMAILS_PER_MINUTE', 20),
         'whatsapps_per_minute' => (int) env('FOXY_ANNOUNCEMENT_WHATSAPPS_PER_MINUTE', 5),

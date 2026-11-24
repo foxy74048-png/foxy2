@@ -22,6 +22,8 @@ Schedule::command('commerce:canais')->everyTenMinutes()->withoutOverlapping(15);
 Schedule::command('financas:contas')->hourlyAt(20);
 // No cartão, a cobrança prevista para o dia vira feita sozinha (assinatura, compra agendada).
 Schedule::command('financas:cartoes')->dailyAt('00:10');
+// WhatsApp de entrada: o id das mensagens recebidas (contra repetição) some depois de 7 dias.
+Schedule::call(fn () => \Illuminate\Support\Facades\DB::table('platform_inbound_messages')->where('received_at', '<', now()->subDays(7))->delete())->dailyAt('03:15')->name('whatsapp-inbound-prune');
 
 // Cópia de segurança diária e rotina de saúde (avisa a equipe por e-mail; quadro no painel do Foxy Admin).
 Schedule::command('foxy:backup')->dailyAt('03:30')->withoutOverlapping(120);
