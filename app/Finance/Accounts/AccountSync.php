@@ -30,7 +30,8 @@ class AccountSync
             [
                 'name' => $wallet?->name ?? $organization->name,
                 'plan' => 'Grátis',
-                'status' => $organization->status === 'suspended' ? 'suspended' : 'free',
+                // Carteira apagada pela pessoa (fatia 11): fica no Admin como cancelada, sem contato.
+                'status' => match ($organization->status) { 'suspended' => 'suspended', \App\Finance\Privacy\WalletEraser::DELETED => 'canceled', default => 'free' },
                 'mrr' => 0,
                 'signed_up_at' => $organization->created_at,
                 'contact_name' => $owner?->name,

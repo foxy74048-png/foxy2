@@ -10,6 +10,7 @@ use App\Finance\Partners\PartnerService;
 use App\Finance\Partners\Settlement;
 use App\Finance\Statements\StatementLine;
 use App\Finance\Transactions\Transaction;
+use App\Finance\Transactions\TransactionFilters;
 use App\Platform\Audit\Audit;
 use App\Platform\Memberships\Membership;
 use App\Platform\Support\Money;
@@ -36,6 +37,23 @@ class PartnerController
         [$from, $to, $period] = $this->period($request);
         $summary = $this->service->summary($from, $to);
 
+        // Declaração anual do MEI: o ano passado (o que se declara até 31 de maio), ou o escolhido.
+        $declaration = null;
+        if ($wallet->is_mei) {
+            $year = (int) $request->query('declaracao', today()->year - 1);
+            $declaration = $this->service->meiDeclaration(max(2000, min(today()->year, $year)));
+        }
+        if ($declaration && $request->has('declaracao') && ($format = Export::requested($request))) {
+            return (new Export('Declaração anual do MEI '.$declaration['year']))
+                ->filters(['Ano' => (string) $declaration['year'], 'Prazo' => $declaration['due']->format('d/m/Y')])
+                ->section('Total recebido no ano', ['Receita bruta total' => 'money'], [[$declaration['total']]])
+                ->section('Mês a mês', ['Mês' => 'text', 'Recebido' => 'money'],
+                    collect($declaration['months'])->map(fn ($c, $m) => [TransactionFilters::monthName(Carbon::create($declaration['year'], $m, 1)), $c])->values())
+                ->section('Por categoria (para separar venda e serviço)', ['Categoria' => 'text', 'Recebido' => 'money'],
+                    collect($declaration['categories'])->map(fn ($c, $name) => [$name, $c])->values())
+                ->download($format);
+        }
+
         if ($format = Export::requested($request)) {
             return (new Export('Sócios'))->filters(['Período' => $period['label']])
                 ->section('Resumo', ['Entrou' => 'money', 'Saiu (sem sócios)' => 'money', 'Lucro' => 'money'], [[$summary['income'], $summary['expense'], $summary['profit']]])
@@ -57,6 +75,7 @@ class PartnerController
             'moves' => Transaction::query()->whereNotNull('partner_id')->whereBetween('date', [$from->toDateString(), $to->toDateString()])->with('account')->orderByDesc('date')->limit(30)->get(),
             'settlements' => Settlement::query()->with('from', 'to')->whereBetween('date', [$from->toDateString(), $to->toDateString()])->orderByDesc('date')->get(),
             'mei' => $wallet->is_mei ? $this->service->meiYear((int) $from->year) : null,
+            'declaration' => $declaration,
             'hasDas' => Transaction::query()->where('description', 'DAS do MEI')->where('date', '>=', today()->toDateString())->exists(),
             'myPartner' => $myPartner,
             'mirrorOptions' => $myPartner ? $this->service->mirrorOptions($me->getKey()) : collect(),

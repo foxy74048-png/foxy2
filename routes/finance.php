@@ -4,6 +4,7 @@ use App\Finance\Http\AccountController;
 use App\Finance\Http\AuthController;
 use App\Finance\Http\BudgetController;
 use App\Finance\Http\InsightsController;
+use App\Finance\Http\CalendarController;
 use App\Finance\Http\CardController;
 use App\Finance\Http\CategoryController;
 use App\Finance\Http\DashboardController;
@@ -86,6 +87,8 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
 
         Route::middleware('finance.can:finance.view')->group(function () {
             Route::get('/lancamentos', [TransactionController::class, 'index'])->name('transactions');
+            // Calendário do mês: o que sai e entra em cada dia, com o vencimento das faturas.
+            Route::get('/calendario', [CalendarController::class, 'index'])->name('calendar');
             Route::get('/contas', [AccountController::class, 'index'])->name('accounts');
             // Orçamento (fatia 6) e metas (6b)
             Route::get('/orcamento', [BudgetController::class, 'index'])->name('budgets');
@@ -198,16 +201,21 @@ Route::middleware(['auth', 'verified:finance.verification.notice'])->prefix('app
             Route::post('/socios/{partner}/arquivar', [PartnerController::class, 'archivePartner'])->name('partners.archive');
             Route::get('/carteira', [WalletController::class, 'edit'])->name('wallet.settings');
             Route::post('/carteira', [WalletController::class, 'update'])->name('wallet.update');
+            // Privacidade (fatia 11): exportar tudo e apagar a carteira (com a senha).
+            Route::get('/carteira/exportar', [WalletController::class, 'export'])->middleware('throttle:10,1')->name('wallet.export');
+            Route::post('/carteira/apagar', [WalletController::class, 'destroy'])->middleware('throttle:5,1')->name('wallet.destroy');
         });
 
         // Meu perfil (qualquer pessoa): nome, e-mail e senha.
         Route::get('/perfil', [ProfileController::class, 'show'])->name('profile');
         Route::post('/perfil', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
         Route::post('/perfil/senha', [ProfileController::class, 'password'])->middleware('throttle:6,1')->name('profile.password');
+        Route::post('/perfil/apagar', [ProfileController::class, 'destroy'])->middleware('throttle:5,1')->name('profile.destroy');
         Route::post('/perfil/whatsapp', [ProfileController::class, 'whatsappStart'])->middleware('throttle:5,10')->name('profile.whatsapp');
         Route::post('/perfil/whatsapp/codigo', [ProfileController::class, 'whatsappVerify'])->middleware('throttle:10,1')->name('profile.whatsapp.verify');
         Route::post('/perfil/whatsapp/carteira', [ProfileController::class, 'whatsappWallet'])->middleware('throttle:20,1')->name('profile.whatsapp.wallet');
         Route::post('/perfil/whatsapp/lembrete', [ProfileController::class, 'whatsappReminders'])->middleware('throttle:10,1')->name('profile.whatsapp.reminders');
+        Route::post('/perfil/whatsapp/resumo-semanal', [ProfileController::class, 'whatsappWeekly'])->middleware('throttle:10,1')->name('profile.whatsapp.weekly');
         Route::post('/perfil/whatsapp/desligar', [ProfileController::class, 'whatsappUnlink'])->middleware('throttle:10,1')->name('profile.whatsapp.unlink');
     });
 });

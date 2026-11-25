@@ -60,6 +60,12 @@
                 <span>🎯 Lembrete dos desafios do mês no domingo: <strong>{{ $phoneLink->challenge_reminders ? 'ligado' : 'desligado' }}</strong></span>
                 <button type="submit" class="secondary">{{ $phoneLink->challenge_reminders ? 'Desligar lembrete' : 'Ligar lembrete' }}</button>
             </form>
+            <form method="POST" action="{{ route('finance.profile.whatsapp.weekly') }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                @csrf
+                <input type="hidden" name="on" value="{{ $phoneLink->weekly_summary ? '0' : '1' }}">
+                <span>📊 Resumo da semana no domingo de manhã (entrou, saiu, o que vence): <strong>{{ $phoneLink->weekly_summary ? 'ligado' : 'desligado' }}</strong></span>
+                <button type="submit" class="secondary">{{ $phoneLink->weekly_summary ? 'Desligar resumo' : 'Ligar resumo' }}</button>
+            </form>
             <form method="POST" action="{{ route('finance.profile.whatsapp.unlink') }}" onsubmit="return confirm('Desligar este WhatsApp da sua conta?');">@csrf<button type="submit" class="secondary">Desligar o WhatsApp</button></form>
         @else
             <form method="POST" action="{{ route('finance.profile.whatsapp') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
@@ -84,6 +90,29 @@
             <thead><tr><th>Carteira</th><th>Tipo</th><th>Seu papel</th></tr></thead>
             <tbody>@foreach ($wallets as $w)<tr><td>{{ $w['wallet']?->name }}</td><td>{{ $w['wallet']?->kindLabel() }}</td><td>{{ $w['role'] }}</td></tr>@endforeach</tbody>
         </table></div>
-        <p class="helper" style="margin-bottom:0;">O nome e o tipo de cada carteira ficam em <b>Ajustes da carteira</b>, para quem é dono(a).</p>
+        <p class="helper" style="margin-bottom:0;">O nome e o tipo de cada carteira ficam em <b>Ajustes da carteira</b>, para quem é dono(a). Lá também dá para <b>exportar tudo</b> da carteira.</p>
     </div>
+
+    {{-- Privacidade (fatia 11): apagar a conta no Finanças --}}
+    <form class="card stack" method="POST" action="{{ route('finance.profile.destroy') }}" style="margin-top:16px;border-color:#b91c1c;" id="apagar-conta"
+          onsubmit="return confirm('Apagar sua conta no Foxy Finanças? Não tem volta.');">
+        @csrf
+        <h3 style="margin:0;">Apagar minha conta</h3>
+        <p class="helper" style="margin:0;">Antes, se quiser guardar uma cópia, use <b>Exportar tudo</b> em Ajustes da carteira.</p>
+        @if ($erasePlan['delete'] !== [])
+            <p style="margin:0;">Serão <strong>apagadas de vez</strong>, com todos os lançamentos, porque você é a única dona: <strong>{{ implode(', ', $erasePlan['delete']) }}</strong>.</p>
+        @endif
+        @if ($erasePlan['leave'] !== [])
+            <p style="margin:0;">Você <strong>sai</strong> destas, que continuam com as outras pessoas: {{ implode(', ', $erasePlan['leave']) }}.</p>
+        @endif
+        <p class="helper" style="margin:0;">O WhatsApp ligado é desfeito. Se você não usa outro produto Foxy, o seu cadastro também é apagado.</p>
+        <div>
+            <label for="erase_password">Sua senha</label>
+            <input id="erase_password" name="erase_password" type="password" autocomplete="current-password" required style="max-width:280px;">
+            @error('erase_password')<div class="error">{{ $message }}</div>@enderror
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" name="confirm" value="1" required style="width:auto;"> Entendi que não tem volta</label>
+        @error('confirm')<div class="error">{{ $message }}</div>@enderror
+        <div><button type="submit" class="danger">Apagar minha conta</button></div>
+    </form>
 </x-core::layout>

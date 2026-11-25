@@ -150,6 +150,36 @@ class PartnerService
         return ['total' => $total, 'limit' => self::MEI_LIMIT_CENTS, 'pct' => $total / self::MEI_LIMIT_CENTS, 'left' => max(0, self::MEI_LIMIT_CENTS - $total)];
     }
 
+    /**
+     * Declaração anual do MEI (DASN-SIMEI, até 31 de maio do ano seguinte): o total recebido no ano (a mesma conta
+     * do limite), mês a mês e por categoria de recebimento — a declaração pede separado o que foi venda/indústria e
+     * o que foi serviço, e quem sabe dividir é a pessoa (ou o contador); as categorias ajudam.
+     *
+     * @return array{year: int, total: int, months: array<int, int>, categories: array<string, int>, due: \Illuminate\Support\Carbon}
+     */
+    public function meiDeclaration(int $year): array
+    {
+        $rows = Transaction::query()->done()->whereNull('partner_id')->where('kind', Transaction::INCOME)
+            ->whereBetween('date', ["{$year}-01-01", "{$year}-12-31"])->with('category.parent')->get(['id', 'date', 'amount_cents', 'category_id']);
+
+        $months = array_fill(1, 12, 0);
+        $categories = [];
+        foreach ($rows as $t) {
+            $months[(int) substr((string) $t->getRawOriginal('date'), 5, 2)] += $t->amount_cents;
+            $name = $t->category?->fullName() ?? 'Sem categoria';
+            $categories[$name] = ($categories[$name] ?? 0) + $t->amount_cents;
+        }
+        arsort($categories);
+
+        return [
+            'year' => $year,
+            'total' => array_sum($months),
+            'months' => $months,
+            'categories' => $categories,
+            'due' => \Illuminate\Support\Carbon::create($year + 1, 5, 31),
+        ];
+    }
+
     /** Lembrete do DAS: lançamento previsto todo mês, no dia do DAS, por 12 meses (categoria DAS, se existir). */
     public function dasReminder(Wallet $wallet, string $accountId, int $cents): int
     {

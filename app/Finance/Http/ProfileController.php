@@ -5,6 +5,7 @@ namespace App\Finance\Http;
 use App\Commerce\Team\AccountChangedNotification;
 use App\Finance\Access;
 use App\Finance\Http\Middleware\ResolveWallet;
+use App\Finance\Privacy\AccountEraser;
 use App\Finance\WhatsApp\FinanceWhatsApp;
 use App\Finance\WhatsApp\PhoneLinks;
 use App\Platform\Audit\Audit;
@@ -36,6 +37,7 @@ class ProfileController
             'wallets' => $options->map(fn ($o) => ['wallet' => $o['wallet'], 'role' => Access::label($o['membership']->role), 'organization_id' => $o['membership']->organization_id]),
             'phoneLink' => $this->links->of($request->user()),
             'whatsappAvailable' => $this->links->isAvailable(),
+            'erasePlan' => app(AccountEraser::class)->preview($request->user()),
         ]);
     }
 
@@ -80,6 +82,16 @@ class ProfileController
         $link->forceFill(['challenge_reminders' => $request->boolean('on')])->save();
 
         return back()->with('status', $link->challenge_reminders ? 'Pronto! Todo domingo mandamos como estão os seus desafios do mês.' : 'Lembrete dos desafios desligado.');
+    }
+
+    /** Resumo semanal pelo WhatsApp (domingo de manhã, só para quem ligar). */
+    public function whatsappWeekly(Request $request): RedirectResponse
+    {
+        $link = $this->links->of($request->user());
+        abort_unless($link?->isVerified(), 404);
+        $link->forceFill(['weekly_summary' => $request->boolean('on')])->save();
+
+        return back()->with('status', $link->weekly_summary ? 'Pronto! Todo domingo de manhã mandamos o resumo da semana.' : 'Resumo semanal desligado.');
     }
 
     public function whatsappUnlink(Request $request): RedirectResponse
@@ -138,6 +150,34 @@ class ProfileController
         $user->notify(new AccountChangedNotification('password'));
 
         return back()->with('status', 'Senha trocada. As outras sessões abertas (outros aparelhos) foram encerradas.');
+    }
+
+    /** Apagar a conta no Finanças (fatia 11): as carteiras de que é a única dona somem; das outras, só sai. */
+    public function destroy(Request $request, AccountEraser $eraser): RedirectResponse
+    {
+        $user = $request->user();
+        $request->validate([
+            'erase_password' => ['required', 'string'],
+            'confirm' => ['accepted'],
+        ], ['confirm.accepted' => 'Marque que entendeu que não tem volta.'], ['erase_password' => 'senha']);
+        $this->checkPassword($user, $request->input('erase_password'), 'erase_password');
+
+        Audit::record('finance.account.deleted', subject: $user);
+        $result = $eraser->erase($user);
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        $message = 'Sua conta no Foxy Finanças foi apagada.';
+        if ($result['deleted'] !== []) {
+            $message .= ' Carteiras apagadas: '.implode(', ', $result['deleted']).'.';
+        }
+        if (! $result['anonymized']) {
+            $message .= ' O seu login continua valendo nos outros produtos Foxy.';
+        }
+
+        return redirect()->route('finance.login')->with('status', $message);
     }
 
     private function checkPassword($user, ?string $password, string $field): void

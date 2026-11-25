@@ -26,6 +26,8 @@ Schedule::command('financas:cartoes')->dailyAt('00:10');
 Schedule::command('financas:conquistas')->dailyAt('06:30')->withoutOverlapping(60);
 // Domingo: como estão os desafios do mês, pelo WhatsApp, para quem ligou o lembrete.
 Schedule::command('financas:desafios-whatsapp')->weeklyOn(0, '18:00')->withoutOverlapping(60);
+// Domingo de manhã: o resumo da semana pelo WhatsApp, para quem ligou em Meu perfil (sem IA).
+Schedule::command('financas:resumo-semanal')->weeklyOn(0, '09:00')->withoutOverlapping(60);
 // WhatsApp de entrada: o id das mensagens recebidas (contra repetição) some depois de 7 dias.
 Schedule::call(fn () => \Illuminate\Support\Facades\DB::table('platform_inbound_messages')->where('received_at', '<', now()->subDays(7))->delete())->dailyAt('03:15')->name('whatsapp-inbound-prune');
 

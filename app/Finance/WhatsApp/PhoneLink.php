@@ -18,13 +18,13 @@ class PhoneLink extends Model
 
     protected $table = 'finance_whatsapp_links';
 
-    protected $fillable = ['user_id', 'phone', 'code_hash', 'code_expires_at', 'code_attempts', 'verified_at', 'default_organization_id', 'last_organization_id', 'last_transaction_id', 'last_at', 'challenge_reminders'];
+    protected $fillable = ['user_id', 'phone', 'code_hash', 'code_expires_at', 'code_attempts', 'verified_at', 'default_organization_id', 'last_organization_id', 'last_transaction_id', 'last_at', 'challenge_reminders', 'weekly_summary'];
 
     protected $hidden = ['code_hash'];
 
     protected function casts(): array
     {
-        return ['code_expires_at' => 'datetime', 'verified_at' => 'datetime', 'last_at' => 'datetime', 'code_attempts' => 'integer', 'challenge_reminders' => 'boolean'];
+        return ['code_expires_at' => 'datetime', 'verified_at' => 'datetime', 'last_at' => 'datetime', 'code_attempts' => 'integer', 'challenge_reminders' => 'boolean', 'weekly_summary' => 'boolean'];
     }
 
     public function user(): BelongsTo

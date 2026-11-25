@@ -17,6 +17,7 @@
 @endif
 @if ($can('finance.view'))
     <x-core::nav-link href="{{ route('finance.transactions') }}" :active="request()->routeIs('finance.transactions*')" icon="send">Lançamentos</x-core::nav-link>
+    <x-core::nav-link href="{{ route('finance.calendar') }}" :active="request()->routeIs('finance.calendar')" icon="calendar">Calendário</x-core::nav-link>
 @endif
 @if ($can('finance.imports.manage'))
     <x-core::nav-link href="{{ route('finance.statements') }}" :active="request()->routeIs('finance.statements*')" icon="copy">Importar extrato</x-core::nav-link>

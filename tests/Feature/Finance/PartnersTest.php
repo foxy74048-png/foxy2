@@ -209,6 +209,30 @@ class PartnersTest extends TestCase
             ->assertSee('MEI em 2026')->assertSee('12% do limite')->assertDontSee('Criar o lembrete do DAS');
     }
 
+    public function test_declaracao_anual_do_mei_com_o_total_do_ano_mes_a_mes_sem_aportes(): void
+    {
+        $this->scenario();
+        $this->in(function () {
+            $svc = app(TransactionService::class);
+            $svc->create(['kind' => 'recebimento', 'amount_cents' => 250000, 'date' => '2025-03-10', 'description' => 'Bordados', 'account_id' => $this->pj->id]);
+            $svc->create(['kind' => 'recebimento', 'amount_cents' => 50000, 'date' => '2025-12-01', 'description' => 'Conserto', 'account_id' => $this->pj->id]);
+        });
+        $this->act('/app/socios/movimentos', ['partner_id' => $this->partner('Ana')->id, 'kind' => 'aporte', 'amount' => '900', 'date' => '2025-06-01', 'account_id' => $this->pj->id])->assertSessionHasNoErrors();
+        $this->assertSame(1, $this->in(fn () => Transaction::where('partner_kind', 'aporte')->count()));
+
+        $d = $this->in(fn () => app(PartnerService::class)->meiDeclaration(2025));
+        $this->assertSame(300000, $d['total']);
+        $this->assertSame([250000, 50000], [$d['months'][3], $d['months'][12]]);
+        $this->assertSame('2026-05-31', $d['due']->toDateString());
+
+        $page = fn ($q = '') => $this->actingAs($this->ana)->withSession(['finance.organization_id' => $this->business->organization_id])->get($this->url('/app/socios'.$q));
+        $page()->assertOk()->assertSee('Declaração anual do MEI · 2025')->assertSee('3.000,00')->assertSee('31/05/2026');
+        $page('?declaracao=2026')->assertSee('Declaração anual do MEI · 2026')->assertSee('10.000,00');
+        $csv = $page('?declaracao=2025&exportar=planilha')->assertOk()->streamedContent();
+        $this->assertStringContainsString('Receita bruta total', $csv);
+        $this->assertStringContainsString('3000,00', $csv);
+    }
+
     public function test_partes_e_permissoes(): void
     {
         $this->act('/app/socios', ['name' => 'Ana', 'share' => '60']);

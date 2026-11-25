@@ -133,6 +133,52 @@
         </div>
     @endif
 
+    @if ($declaration)
+        {{-- Declaração anual do MEI (DASN-SIMEI) --}}
+        <div class="card" style="margin-top:16px;" id="declaracao">
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
+                <h3 style="margin:0;">Declaração anual do MEI · {{ $declaration['year'] }}</h3>
+                <form method="GET" action="{{ route('finance.partners') }}#declaracao" style="display:flex;gap:6px;align-items:center;">
+                    <label for="declaracao" style="margin:0;">Ano</label>
+                    <select id="declaracao" name="declaracao" onchange="this.form.submit()" style="width:auto;">
+                        @for ($y = today()->year; $y >= today()->year - 4; $y--)<option value="{{ $y }}" @selected($y === $declaration['year'])>{{ $y }}</option>@endfor
+                    </select>
+                </form>
+            </div>
+            <p class="helper" style="margin:6px 0 10px;">A declaração (DASN-SIMEI) de {{ $declaration['year'] }} vai até <strong>{{ $declaration['due']->format('d/m/Y') }}</strong> no Portal do Empreendedor. O valor abaixo é tudo o que entrou no negócio no ano, sem os aportes dos sócios.</p>
+            <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;">
+                <span>Receita bruta do ano:</span>
+                <strong style="font-size:22px;">{{ $money($declaration['total']) }}</strong>
+                <span class="helper" style="margin:0;">para digitar: <code>{{ number_format($declaration['total'] / 100, 2, ',', '.') }}</code></span>
+            </div>
+            <div class="grid cards" style="margin-top:12px;">
+                <div>
+                    <h4 style="margin:0 0 6px;">Mês a mês</h4>
+                    <div class="table-wrap"><table><tbody>
+                        @foreach ($declaration['months'] as $m => $cents)
+                            <tr><td>{{ \App\Finance\Transactions\TransactionFilters::monthName(\Illuminate\Support\Carbon::create($declaration['year'], $m, 1)) }}</td><td style="text-align:right;">{{ $money($cents) }}</td></tr>
+                        @endforeach
+                    </tbody></table></div>
+                </div>
+                <div>
+                    <h4 style="margin:0 0 6px;">Por categoria</h4>
+                    <p class="helper" style="margin:0 0 6px;">A declaração pede separado o que foi <b>venda (comércio e indústria)</b> e o que foi <b>serviço</b>. As categorias ajudam a dividir; na dúvida, pergunte ao contador.</p>
+                    <div class="table-wrap"><table><tbody>
+                        @forelse ($declaration['categories'] as $name => $cents)
+                            <tr><td>{{ $name }}</td><td style="text-align:right;">{{ $money($cents) }}</td></tr>
+                        @empty
+                            <tr><td class="helper">Nenhum recebimento lançado em {{ $declaration['year'] }}.</td></tr>
+                        @endforelse
+                    </tbody></table></div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <a class="button secondary" href="{{ route('finance.partners', ['declaracao' => $declaration['year'], 'exportar' => 'planilha']) }}">Planilha</a>
+                <a class="button secondary" href="{{ route('finance.partners', ['declaracao' => $declaration['year'], 'exportar' => 'pdf']) }}">PDF</a>
+            </div>
+        </div>
+    @endif
+
     @if ($moves->isNotEmpty() || $settlements->isNotEmpty())
         <div class="card" style="margin-top:16px;">
             <h3 style="margin-top:0;">Movimentos dos sócios no período</h3>

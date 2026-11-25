@@ -23,7 +23,7 @@ class EvaluateRewards extends Command
     public function handle(ContextStore $contexts): int
     {
         $count = 0;
-        Organization::where('integration_id', Finance::integration()->getKey())->each(function (Organization $organization) use ($contexts, &$count) {
+        Organization::where('integration_id', Finance::integration()->getKey())->where('status', '!=', \App\Finance\Privacy\WalletEraser::DELETED)->each(function (Organization $organization) use ($contexts, &$count) {
             try {
                 $contexts->run(ExecutionContext::forSystem($organization), fn () => app(Rewards::class)->catchUp());
                 $count++;

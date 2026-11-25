@@ -22,7 +22,7 @@ class ConfirmCardCharges extends Command
     public function handle(ContextStore $contexts, TransactionService $service): int
     {
         $total = 0;
-        Organization::where('integration_id', Finance::integration()->getKey())->each(function (Organization $organization) use ($contexts, $service, &$total) {
+        Organization::where('integration_id', Finance::integration()->getKey())->where('status', '!=', \App\Finance\Privacy\WalletEraser::DELETED)->each(function (Organization $organization) use ($contexts, $service, &$total) {
             $total += $contexts->run(ExecutionContext::forSystem($organization), fn () => $service->confirmDueCardCharges());
         });
         $this->info("{$total} cobrança(s) do cartão confirmada(s).");

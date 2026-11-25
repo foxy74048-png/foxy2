@@ -5,13 +5,18 @@ namespace App\Finance\Http;
 use App\Finance\Access;
 use App\Finance\Accounts\AccountSync;
 use App\Finance\Http\Middleware\ResolveWallet;
+use App\Finance\Insights\Export;
+use App\Finance\Privacy\WalletArchive;
+use App\Finance\Privacy\WalletEraser;
 use App\Finance\Wallets\OpenWallet;
 use App\Finance\Wallets\Wallet;
 use App\Platform\Audit\Audit;
 use App\Platform\Context\ExecutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -103,6 +108,37 @@ class WalletController
         AccountSync::sync(ExecutionContext::current()->organization);
 
         return back()->with('status', 'Carteira salva.');
+    }
+
+    /** Exportar tudo da carteira (fatia 11): planilha ou PDF com todas as seções. */
+    public function export(Request $request, WalletArchive $archive): Response
+    {
+        $format = Export::requested($request) ?? 'planilha';
+        Audit::record('finance.wallet.exported', subject: $request->attributes->get('finance.wallet'));
+
+        return $archive->build(ExecutionContext::current()->organization)->download($format);
+    }
+
+    /** Apagar a carteira de vez (fatia 11): só o dono, com a senha. Vale para todas as pessoas da carteira. */
+    public function destroy(Request $request, WalletEraser $eraser): RedirectResponse
+    {
+        /** @var Wallet $wallet */
+        $wallet = $request->attributes->get('finance.wallet');
+        $request->validate([
+            'password' => ['required', 'string'],
+            'confirm' => ['accepted'],
+        ], ['confirm.accepted' => 'Marque que entendeu que não tem volta.'], ['password' => 'senha']);
+        if (! Hash::check((string) $request->input('password'), $request->user()->password)) {
+            throw ValidationException::withMessages(['password' => 'A senha não confere.']);
+        }
+
+        $name = $wallet->name;
+        $organization = ExecutionContext::current()->organization;
+        Audit::record('finance.wallet.deleted', subject: $wallet);
+        $eraser->erase($organization);
+        $request->session()->forget(ResolveWallet::SESSION_KEY);
+
+        return redirect()->route('finance.wallets.choose')->with('status', "A carteira \"{$name}\" e tudo o que ela tinha foram apagados.");
     }
 
     /** Antes do lançamento (cadastro fechado), só quem já tem uma carteira sua ou é da equipe Foxy abre outra. */

@@ -91,12 +91,18 @@ class FinanceHost
         - **Metas de guardar:** valor e prazo; mostra quanto guardar por mês. "Guardei"/"Tirei" na própria meta.
         - **Conquistas:** pontos da carteira (de todos juntos) por mês no azul (no negócio, com lucro) 100, meta no ritmo 50, orçamento respeitado 30, fatura paga até o vencimento 30, extrato do mês revisado 20 e desafio vencido 80; os do mês entram quando ele fecha. Níveis: Filhote, Raposinha (200), Raposa esperta (600), Raposa sábia (1500), Raposa lendária (3000). Até 3 desafios por mês, sugeridos com os números da carteira (gastar menos numa categoria, guardar na meta, poucos gastinhos); aceitar e desistir na tela Conquistas. Lembrete dos desafios no domingo pelo WhatsApp, para quem ligar em Meu perfil. Abrir o app não vale ponto.
         - **Faturas do cartão:** fatura aberta, as a pagar, as futuras com parcelas e o limite disponível.
+        - **Calendário:** o mês dia a dia — contas e recebimentos (feitos e previstos) e o dia em que cada fatura vence, com o que falta pagar e receber.
 
         ## Pessoas
         - **Quem me deve:** emprestei / peguei emprestado / me devolveu / paguei; dividir uma conta (o seu gasto fica só com a sua parte); objetos emprestados; lembrete pelo WhatsApp (abre o WhatsApp da pessoa com o texto pronto).
         - **Despesas em grupo:** viagem, república: cada despesa com quem pagou e entre quem divide; mostra quem paga quem e tem link para o grupo ver.
         - **Pessoas na carteira:** convidar o parceiro, a família ou o sócio (Dono, Membro, Só vê).
-        - **Sócios** (carteira do negócio): parte de cada um, pró-labore/retirada/aporte, lucro do mês, quanto cabe a cada um e o acerto; MEI: faturamento no ano contra o limite de R$ 81 mil e lembrete do DAS.
+        - **Sócios** (carteira do negócio): parte de cada um, pró-labore/retirada/aporte, lucro do mês, quanto cabe a cada um e o acerto; MEI: faturamento no ano contra o limite de R$ 81 mil, lembrete do DAS e a **declaração anual** (DASN-SIMEI, até 31 de maio): o total recebido no ano, mês a mês e por categoria, com planilha e PDF.
+
+        ## WhatsApp e privacidade
+        - **Meu perfil:** ligar o WhatsApp, escolher a carteira padrão, o lembrete dos desafios e o **resumo da semana** (domingo de manhã: entrou, saiu, onde mais gastou e o que vence nos próximos 7 dias).
+        - **Ajustes da carteira** (dono): **Exportar tudo** (planilha ou PDF com tudo o que a carteira guarda) e **Apagar esta carteira** (pede a senha; apaga para todas as pessoas, não tem volta).
+        - **Meu perfil › Apagar minha conta** (pede a senha): apaga as carteiras de que a pessoa é a única dona e a tira das outras.
         MD;
     }
 
