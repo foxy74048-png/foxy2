@@ -135,10 +135,15 @@ class Backup
             return null;
         }
 
+        // Pasta própria (o Studio usa backups/database no mesmo bucket). O disco s3 não lança erro
+        // ('throw' => false): o retorno falso é o único sinal de que a cópia não chegou.
         foreach ($files as $file) {
             $stream = fopen($file, 'r');
-            Storage::disk($disk)->writeStream('backups/'.basename($file), $stream);
+            $sent = Storage::disk($disk)->writeStream('backups/foxy2/'.basename($file), $stream);
             is_resource($stream) && fclose($stream);
+            if (! $sent) {
+                throw new RuntimeException('não deu para enviar '.basename($file).'.');
+            }
         }
 
         return $disk;

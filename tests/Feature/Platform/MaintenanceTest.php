@@ -9,6 +9,7 @@ use App\Platform\Maintenance\HealthAlertNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -55,6 +56,30 @@ class MaintenanceTest extends TestCase
         $this->assertStringEndsWith('.tar.gz', $names[1] ?? '');
         $this->assertFileDoesNotExist($old);
         $this->assertFileExists($recent);
+    }
+
+    public function test_copia_de_fora_vai_para_a_pasta_do_foxy2_e_falha_quando_nao_chega(): void
+    {
+        config(['foxy.backup.disk' => 's3']);
+        Storage::fake('s3');
+
+        $this->artisan('foxy:backup')->assertSuccessful();
+
+        $last = app(Backup::class)->last();
+        $this->assertSame('s3', $last['offsite']);
+        foreach (array_column($last['files'], 'name') as $name) {
+            Storage::disk('s3')->assertExists('backups/foxy2/'.$name);
+        }
+
+        // O disco s3 não lança erro: o envio que volta "false" tem que aparecer como falha.
+        $broken = \Mockery::mock(\Illuminate\Contracts\Filesystem\Filesystem::class);
+        $broken->shouldReceive('writeStream')->andReturn(false);
+        Storage::set('s3', $broken);
+
+        app(Backup::class)->run();
+
+        $this->assertStringStartsWith('falhou', (string) app(Backup::class)->last()['offsite']);
+        $this->assertTrue(app(Backup::class)->last()['ok']);
     }
 
     public function test_saude_avisa_a_equipe_quando_piora_e_quando_volta(): void
