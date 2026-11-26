@@ -34,6 +34,8 @@ Schedule::call(fn () => \Illuminate\Support\Facades\DB::table('platform_inbound_
 // Cópia de segurança diária e rotina de saúde (avisa a equipe por e-mail; quadro no painel do Foxy Admin).
 Schedule::command('foxy:backup')->dailyAt('03:30')->withoutOverlapping(120);
 Schedule::command('foxy:saude')->everyTenMinutes()->withoutOverlapping(10);
+// Métricas do Foxy Admin: fechamento do dia de cada produto (a última gravação do dia fica).
+Schedule::command('foxy:metricas')->hourlyAt(55);
 Schedule::command('queue:prune-failed --hours=720')->weekly();
 
 // Fila (decisão F5): um worker por minuto que sai quando a fila esvazia. Publicação de anúncios e envio de

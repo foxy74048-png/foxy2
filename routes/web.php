@@ -50,6 +50,7 @@ Route::middleware(['auth', 'staff'])->prefix('console')->group(function () {
 Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/contas', [AdminController::class, 'accounts'])->name('accounts');
+    Route::get('/metricas', [\App\Admin\Http\MetricsController::class, 'index'])->name('metrics');
     Route::get('/contas/{account}', [AccountAdminController::class, 'show'])->name('accounts.show');
     Route::post('/contas/{account}/acao', [AccountAdminController::class, 'command'])->middleware('throttle:30,1')->name('accounts.command');
     Route::post('/contas/{account}/presente', [AccountAdminController::class, 'gift'])->middleware('throttle:30,1')->name('accounts.gift');

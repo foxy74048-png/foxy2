@@ -2,6 +2,7 @@
 <div class="core-nav-title">Foxy Admin</div>
 <x-core::nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')" icon="home">Painel</x-core::nav-link>
 <x-core::nav-link href="{{ route('admin.accounts') }}" :active="request()->routeIs('admin.accounts*')" icon="users">Contas</x-core::nav-link>
+<x-core::nav-link href="{{ route('admin.metrics') }}" :active="request()->routeIs('admin.metrics*')" icon="chart">Métricas</x-core::nav-link>
 <x-core::nav-link href="{{ route('admin.support') }}" :active="request()->routeIs('admin.support*')" icon="send">Suporte</x-core::nav-link>
 <x-core::nav-link href="{{ route('admin.promotions') }}" :active="request()->routeIs('admin.promotions*')" icon="sparkles">Promoções de IA</x-core::nav-link>
 <x-core::nav-link href="{{ route('admin.announcements') }}" :active="request()->routeIs('admin.announcements*')" icon="send">Comunicados</x-core::nav-link>

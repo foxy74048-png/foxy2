@@ -11,6 +11,7 @@
         'sparkles' => '<path stroke-linejoin="round" d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path stroke-linecap="round" d="M19 15v4M17 17h4"/>',
         'logout' => '<path stroke-linecap="round" stroke-linejoin="round" d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l4-4-4-4M14 12H4"/>',
         'send' => '<path stroke-linejoin="round" d="M4 12 20 4l-6 16-3-7z"/>',
+        'chart' => '<path stroke-linecap="round" stroke-linejoin="round" d="M4 4v16h16"/><path stroke-linecap="round" d="M8 16v-4M12 16V8M16 16v-6"/>',
         'copy' => '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     ];
 @endphp

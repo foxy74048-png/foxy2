@@ -24,6 +24,8 @@ class AccountSync
         $accounts = Account::withoutGlobalScopes()->where('organization_id', $organization->getKey())->whereNull('archived_at')->count();
         $transactions = Transaction::withoutGlobalScopes()->where('organization_id', $organization->getKey())->whereNull('deleted_at')->count();
         $last = Transaction::withoutGlobalScopes()->where('organization_id', $organization->getKey())->max('created_at');
+        // 1º lançamento = quando a carteira ativou (métricas do Foxy Admin).
+        $first = Transaction::withoutGlobalScopes()->where('organization_id', $organization->getKey())->min('created_at');
 
         return ProductAccount::updateOrCreate(
             ['integration_id' => $organization->integration_id, 'external_ref' => $organization->external_ref],
@@ -38,6 +40,7 @@ class AccountSync
                 'email' => $owner?->email,
                 'usage' => ['tipo' => $wallet?->kindLabel(), 'pessoas na carteira' => $people, 'contas' => $accounts, 'lançamentos' => $transactions],
                 'last_activity_at' => $last,
+                'activated_at' => $first,
                 'problems' => [],
                 'seen_at' => now(),
             ],

@@ -30,7 +30,7 @@ class ProductAccount extends Model
     /** Situações em que a conta está usando o produto (recebe promoções "todas as contas"). */
     public const LIVE = ['active', 'free', 'trial', 'founder'];
 
-    protected $fillable = ['integration_id', 'external_ref', 'name', 'plan', 'status', 'mrr', 'signed_up_at', 'trial_ends_at', 'last_activity_at', 'seen_at', 'contact_name', 'email', 'whatsapp', 'health', 'problems', 'usage', 'fox_credits', 'admin_url'];
+    protected $fillable = ['integration_id', 'external_ref', 'name', 'plan', 'status', 'mrr', 'signed_up_at', 'trial_ends_at', 'last_activity_at', 'activated_at', 'seen_at', 'contact_name', 'email', 'whatsapp', 'health', 'problems', 'usage', 'fox_credits', 'admin_url'];
 
     protected function casts(): array
     {
@@ -39,6 +39,7 @@ class ProductAccount extends Model
             'signed_up_at' => 'datetime',
             'trial_ends_at' => 'datetime',
             'last_activity_at' => 'datetime',
+            'activated_at' => 'datetime',
             'seen_at' => 'datetime',
             'email_opt_out_at' => 'datetime',
             'whatsapp_opt_out_at' => 'datetime',
@@ -46,6 +47,34 @@ class ProductAccount extends Model
             'usage' => 'array',
             'fox_credits' => 'integer',
         ];
+    }
+
+    /**
+     * Histórico para as métricas do Foxy Admin (docs/08, seção 3.5): conta nova ou mudança de situação/MRR vira
+     * um registro. Vale para o retrato do Studio e para as contas do Commerce e do Finanças (gravam direto).
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (ProductAccount $account) {
+            if (! $account->wasRecentlyCreated && ! $account->wasChanged(['status', 'mrr'])) {
+                return;
+            }
+
+            ProductAccountEvent::create([
+                'integration_id' => $account->integration_id,
+                'product_account_id' => $account->id,
+                'from_status' => $account->wasRecentlyCreated ? null : $account->getOriginal('status'),
+                'to_status' => $account->status,
+                'from_mrr' => $account->wasRecentlyCreated ? 0 : (float) $account->getOriginal('mrr'),
+                'to_mrr' => (float) $account->mrr,
+                'occurred_at' => now(),
+            ]);
+        });
+    }
+
+    public function events(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProductAccountEvent::class);
     }
 
     public function integration(): BelongsTo

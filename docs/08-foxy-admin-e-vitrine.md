@@ -28,6 +28,7 @@ Mesmo login da equipe Foxy do console (`/console/login`). Telas:
 |---|---|
 | **Painel** | Por produto: contas ativas, em teste, canceladas e faturamento mensal (MRR); IA: perguntas, créditos e custo do mês; promoções ativas e créditos dados de brinde no mês. |
 | **Contas** | Todas as contas dos produtos (o que cada produto envia), com plano, situação, MRR e uso de IA do mês. |
+| **Métricas** | MRR e pagantes mês a mês, conversão de teste em pagante, churn, ativação em 7 dias e turmas por mês de cadastro (seção 3.5). |
 | **Promoções de IA** | Campanhas controláveis de perguntas extras (seção 4). |
 
 ### Como o Admin conhece as contas de cada produto
@@ -61,6 +62,27 @@ Pedido do responsável: centralizar no Foxy Admin tudo o que der antes do Commer
 - **Ficam no produto** (atalho no menu do Admin): planos e preços, site/termos, parcerias universitárias, conexão do
   WhatsApp e "acessar como" (precisa do login do próprio produto).
 - O Studio envia o retrato a cada 10 minutos e logo depois de executar comandos.
+
+### 3.5 Métricas (2026-11-26)
+
+Tela `/admin/metricas` (filtro por produto e período de 6, 12 ou 24 meses; exporta planilha e PDF). Só lê o que
+os produtos enviam ao Core (`App\Admin\Metrics\ProductMetrics`):
+
+- **Histórico** (`product_account_events`): conta nova e cada mudança de situação ou de MRR viram um registro,
+  gravado sozinho ao salvar a `ProductAccount` — vale para o retrato do Studio, para as lojas do Commerce e as
+  carteiras do Finanças (inclusive a conta que some do retrato e vira "removida"). As contas que já existiam
+  ganharam no deploy um registro de **início do histórico** (`baseline`), que não conta como "virou pagante".
+- **Fechamento do dia** (`product_metric_days`, comando `foxy:metricas` de hora em hora; a última gravação do dia
+  fica): contas, em uso, em teste, pagantes e MRR por produto. É de onde saem os pagantes do início e do fim de cada mês.
+- **Ativação** (`activated_at` da conta): o 1º uso de verdade — Studio: 1º agendamento (campo `activated_at` no
+  retrato); Commerce: 1º pedido; Finanças: 1º lançamento.
+- **Regras:** pagante = MRR > 0; em uso = ativa, grátis, em teste ou Parceiro Fundador. Churn do mês = pagantes
+  que passaram a MRR 0 no mês ÷ pagantes no fechamento do mês anterior. Conversão = turmas do período que viraram
+  pagantes ÷ as que já decidiram (quem ainda está no teste sem pagar fica de fora). "Em uso após N meses" olha a
+  situação de cada conta na data do cadastro + N meses; conta que já tinha saído quando o histórico começou e
+  cuja data cai antes dele aparece como "sem histórico" (não entra na porcentagem).
+- **Limite:** antes do deploy das métricas só se sabe o cadastro e a ativação; churn e pagantes do mês valem a
+  partir daí.
 
 ## 4. Promoções de IA
 

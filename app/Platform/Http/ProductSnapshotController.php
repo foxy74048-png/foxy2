@@ -34,6 +34,8 @@ class ProductSnapshotController
             'accounts.*.signed_up_at' => ['nullable', 'date'],
             'accounts.*.trial_ends_at' => ['nullable', 'date'],
             'accounts.*.last_activity_at' => ['nullable', 'date'],
+            // 1º uso de verdade (no Studio, o 1º agendamento): ativação nas métricas do Admin.
+            'accounts.*.activated_at' => ['nullable', 'date'],
             // Contato do dono da conta, para os comunicados (o descadastro fica só no Core).
             'accounts.*.contact_name' => ['nullable', 'string', 'max:255'],
             'accounts.*.email' => ['nullable', 'string', 'max:255'],
@@ -78,6 +80,7 @@ class ProductSnapshotController
                         'signed_up_at' => $account['signed_up_at'] ?? null,
                         'trial_ends_at' => $account['trial_ends_at'] ?? null,
                         'last_activity_at' => $account['last_activity_at'] ?? null,
+                        'activated_at' => $account['activated_at'] ?? null,
                         'contact_name' => $account['contact_name'] ?? null,
                         'email' => filter_var($account['email'] ?? '', FILTER_VALIDATE_EMAIL) ?: null,
                         'whatsapp' => $account['whatsapp'] ?? null,
@@ -91,11 +94,11 @@ class ProductSnapshotController
                 );
             }
 
-            // Lista completa: o que não veio saiu do produto.
+            // Lista completa: o que não veio saiu do produto. Uma a uma, para a saída entrar no histórico das métricas.
             ProductAccount::where('integration_id', $integrationId)
                 ->whereNotIn('external_ref', $refs)
                 ->where('status', '!=', 'removed')
-                ->update(['status' => 'removed', 'mrr' => 0]);
+                ->get()->each->update(['status' => 'removed', 'mrr' => 0]);
 
             $accountIds = ProductAccount::where('integration_id', $integrationId)->pluck('id', 'external_ref');
             foreach ($data['tickets'] ?? [] as $ticket) {

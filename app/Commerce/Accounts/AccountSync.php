@@ -21,6 +21,8 @@ class AccountSync
             ->with('user')->oldest()->first()?->user;
         $team = Membership::active()->where('organization_id', $organization->getKey())->count();
         $subscription = Plans::subscription($organization);
+        // 1º pedido = quando a loja ativou (métricas do Foxy Admin).
+        $firstOrder = \App\Commerce\Orders\Order::withoutGlobalScopes()->where('organization_id', $organization->getKey())->min('created_at');
 
         [$status, $plan, $mrr] = match (true) {
             $organization->status === 'suspended' => ['suspended', Plans::name($subscription?->plan), 0],
@@ -46,6 +48,7 @@ class AccountSync
                 'mrr' => $mrr,
                 'signed_up_at' => $organization->created_at,
                 'trial_ends_at' => $subscription?->trial_ends_at,
+                'activated_at' => $firstOrder,
                 'contact_name' => $owner?->name,
                 'email' => $owner?->email,
                 'whatsapp' => $store?->whatsapp,
