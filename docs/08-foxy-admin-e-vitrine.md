@@ -26,7 +26,7 @@ Mesmo login da equipe Foxy do console (`/console/login`). Telas:
 
 | Tela | O que mostra / faz |
 |---|---|
-| **Painel** | Por produto: contas ativas, em teste, canceladas e faturamento mensal (MRR); IA: perguntas, créditos e custo do mês; promoções ativas e créditos dados de brinde no mês. |
+| **Painel** | Por produto: contas ativas, em teste, canceladas e faturamento mensal (MRR); resumo de crescimento dos últimos 12 meses (conversão, churn do mês e ativação em 7 dias, com link para Métricas); IA: perguntas, créditos e custo do mês; promoções ativas e créditos dados de brinde no mês. |
 | **Contas** | Todas as contas dos produtos (o que cada produto envia), com plano, situação, MRR e uso de IA do mês; exporta planilha e PDF com os mesmos filtros (a planilha leva também ativação, saúde e contato). |
 | **Métricas** | MRR e pagantes mês a mês, conversão de teste em pagante, churn, ativação em 7 dias e turmas por mês de cadastro (seção 3.5). |
 | **Promoções de IA** | Campanhas controláveis de perguntas extras (seção 4). |

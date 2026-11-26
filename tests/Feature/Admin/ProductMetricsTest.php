@@ -155,6 +155,7 @@ class ProductMetricsTest extends TestCase
         $this->get('/admin/metricas?produto='.$this->integration.'&meses=6')->assertOk()
             ->assertSee('Mar/2030')->assertDontSee('R$ 99,00')->assertSee('100,0%');
         $this->get('/admin')->assertSee(route('admin.metrics'));
+        $this->get('/admin')->assertOk()->assertSee('Crescimento (12 meses)')->assertSee('Conversão de teste em pagante')->assertSee('Churn deste mês');
 
         $csv = $this->get('/admin/metricas?produto='.$this->integration.'&exportar=planilha')->assertOk()->streamedContent();
         $this->assertStringContainsString('Mês a mês', $csv);

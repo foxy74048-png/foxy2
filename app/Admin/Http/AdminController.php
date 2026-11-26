@@ -64,6 +64,8 @@ class AdminController
                 'clients' => AiPromotionGrant::where('created_at', '>=', now()->startOfMonth())->distinct('organization_id')->count('organization_id'),
             ],
             'month' => $month,
+            // Resumo das Métricas (últimos 12 meses, todos os produtos); o detalhe fica em /admin/metricas.
+            'growth' => (new \App\Admin\Metrics\ProductMetrics(null, 12))->summary(),
             'health' => Health::latest(),
             'attention' => [
                 'problems' => ProductAccount::where('status', '!=', 'removed')->whereNotNull('problems')->get()->filter(fn ($a) => ! empty($a->problems))->take(8),

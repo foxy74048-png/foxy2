@@ -11,7 +11,18 @@
         <div class="card"><div class="muted">Promoções de IA valendo</div><h2>{{ $promotions['running'] }}</h2><div class="helper">{{ $n($promotions['granted']) }} perguntas de brinde para {{ $promotions['clients'] }} cliente(s) neste mês</div></div>
     </div>
 
-    @php($healthStale = ! $health || \Illuminate\Support\Carbon::parse($health['checked_at'])->lt(now()->subMinutes(30)))
+    @php($pct = fn ($v) => $v === null ? '—' : number_format((float) $v, 1, ',', '.').'%')
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:24px;">
+        <h3 style="margin:0;">Crescimento (12 meses)</h3>
+        <a href="{{ route('admin.metrics') }}">Ver as Métricas →</a>
+    </div>
+    <div class="grid cards" style="margin-top:12px;">
+        <a class="card" href="{{ route('admin.metrics') }}" style="text-decoration:none;"><div class="muted">Conversão de teste em pagante</div><h2>{{ $pct($growth['conversion']) }}</h2><div class="helper">{{ $growth['paying'] }} pagante(s) · {{ $growth['trial'] }} em teste agora</div></a>
+        <a class="card" href="{{ route('admin.metrics') }}" style="text-decoration:none;"><div class="muted">Churn deste mês</div><h2>{{ $pct($growth['churn']) }}</h2><div class="helper">{{ $growth['lost_this_month'] }} pagante(s) saíram</div></a>
+        <a class="card" href="{{ route('admin.metrics') }}" style="text-decoration:none;"><div class="muted">Ativação em 7 dias</div><h2>{{ $pct($growth['activation']) }}</h2><div class="helper">de {{ $growth['signups'] }} cadastro(s) em 12 meses</div></a>
+    </div>
+
+    @php($healthStale =! $health || \Illuminate\Support\Carbon::parse($health['checked_at'])->lt(now()->subMinutes(30)))
     <h3 style="margin-top:24px;">Saúde do sistema</h3>
     <div class="card">
         @if (! $health)
