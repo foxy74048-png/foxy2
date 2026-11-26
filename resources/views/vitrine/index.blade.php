@@ -1,5 +1,14 @@
 @php
     $studio = rtrim(config('foxy.products.studio_url'), '/');
+    $founderCode = config('foxy.products.founder_code');
+    // Preços dos planos do Foxy Studio. Fonte: Admin do Studio → Planos (o Core não lê o banco do Studio):
+    // mudou lá, mudar aqui. Conferido em 26/11/2026.
+    $plans = [
+        ['name' => 'Essencial', 'price' => '29,90', 'who' => 'Para quem está começando sozinha', 'items' => ['350 clientes e 600 agendamentos por mês', 'Agenda online e lembrete no WhatsApp (300/mês)', 'Anamnese, formulários e financeiro']],
+        ['name' => 'Profissional', 'price' => '39,90', 'who' => 'O mais escolhido por autônomas', 'items' => ['Clientes e agendamentos sem limite', 'WhatsApp: 600 mensagens/mês', 'Tudo do Essencial + cobranças recorrentes e pacotes'], 'featured' => true],
+        ['name' => 'Crescimento', 'price' => '59,90', 'who' => 'Para quem divide o espaço', 'items' => ['Até 2 pessoas na equipe, já no preço', 'Tudo sem limite: serviços, fichas, formulários', 'WhatsApp: 1.000 mensagens/mês']],
+        ['name' => 'Equipe', 'price' => '139,90', 'who' => 'Clínica e studio com equipe', 'items' => ['Até 5 pessoas na equipe, já no preço', 'Turmas e aulas com vagas (pilates, yoga)', 'WhatsApp: 3.000 mensagens/mês']],
+    ];
     $foxes = [
         ['id' => 'lud', 'name' => 'Lud', 'jeito' => 'Acolhedora e paciente', 'fala' => 'Vamos juntos: abra a Agenda, clique no atendimento e escolha "Remarcar".'],
         ['id' => 'chico', 'name' => 'Chico', 'jeito' => 'Objetivo e direto', 'fala' => 'Hoje: 6 atendimentos. Primeiro às 9h, com a Ana.'],
@@ -100,6 +109,8 @@
         <div class="wrap">
             <a class="brand" href="/"><img src="/core/brand/logo.png" alt="">FOXY</a>
             <nav class="links" aria-label="Seções">
+                <a href="#para-voce">Para você</a>
+                <a href="#precos">Preços</a>
                 <a href="#produtos">Produtos</a>
                 <a href="#raposa">A raposa</a>
                 <a href="#porque">Por que a Foxy</a>
@@ -131,6 +142,89 @@
                     <img class="fox" src="/core/assistants/facetas/chico.svg" alt="" style="right:-4%; top:2%;">
                     <img class="fox" src="/core/assistants/facetas/ayla.svg" alt="" style="left:2%; bottom:0;">
                     <img class="fox" src="/core/assistants/facetas/lobinho.svg" alt="" style="right:0; bottom:4%;">
+                </div>
+            </div>
+        </section>
+
+        <section id="para-voce" class="alt">
+            <div class="wrap">
+                <div class="head">
+                    <div class="eyebrow">Para você</div>
+                    <h2>Feito para o seu tipo de atendimento</h2>
+                    <p class="muted">A cliente responde a ficha pelo link, já marca o horário e recebe o lembrete no WhatsApp. Quando ela chega, a ficha está aberta no atendimento.</p>
+                </div>
+                <div class="grid3">
+                    <article class="card">
+                        <div class="product-icon">✨</div>
+                        <h3>Estética</h3>
+                        <ul>
+                            <li>Anamnese e termo de consentimento com assinatura, pelo celular da cliente</li>
+                            <li>Fotos de antes e depois e evolução de cada sessão</li>
+                            <li>Pacotes de sessões, orçamento e intervalo de preparo entre atendimentos</li>
+                        </ul>
+                    </article>
+                    <article class="card">
+                        <div class="product-icon">💅</div>
+                        <h3>Unhas e beleza</h3>
+                        <ul>
+                            <li>Link de agendar no Instagram e no WhatsApp, com os horários livres à vista</li>
+                            <li>Lembrete e confirmação automáticos: menos falta e menos mensagem para responder</li>
+                            <li>Quanto entrou no dia e no mês, e quem ainda está devendo</li>
+                        </ul>
+                    </article>
+                    <article class="card">
+                        <div class="product-icon">🌿</div>
+                        <h3>Terapias, pilates e yoga</h3>
+                        <ul>
+                            <li>Ficha de evolução e diário de cada sessão, só para quem você liberar</li>
+                            <li>Turmas e aulas com vagas, que a aluna marca sozinha</li>
+                            <li>Formulário de acolhimento antes da primeira sessão, já ligado ao atendimento</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="precos">
+            <div class="wrap">
+                <div class="head">
+                    <div class="eyebrow">Preços</div>
+                    <h2>Preço claro, sem surpresa</h2>
+                    <p class="muted">16 dias grátis para testar tudo. Sem fidelidade e sem multa para cancelar. A equipe já vem no plano: não cobramos por profissional até o limite de cada um.</p>
+                </div>
+                @if ($founderCode)
+                    <div class="card" style="border:2px solid var(--primary); margin-bottom:20px; display:flex; gap:16px; align-items:center; flex-wrap:wrap; justify-content:space-between;">
+                        <div>
+                            <span class="tag">Parceira Fundadora</span>
+                            <h3 style="margin:8px 0 4px;">As primeiras 20 assinantes pagam o Profissional por R$ 29,90 por mês, para sempre</h3>
+                            <p class="muted" style="margin:0;">Use o código <strong>{{ $founderCode }}</strong> ao assinar. Em troca, só pedimos sua opinião: uma conversa rápida por mês para o Foxy Studio ficar do seu jeito.</p>
+                        </div>
+                        <a class="btn" href="{{ $studio }}/cadastro">Quero ser Fundadora</a>
+                    </div>
+                @endif
+                <div class="grid4">
+                    @foreach ($plans as $plan)
+                        <article class="card" @if (! empty($plan['featured'])) style="border:2px solid var(--primary);" @endif>
+                            @if (! empty($plan['featured']))<span class="tag">Mais escolhido</span>@endif
+                            <h3 style="margin:6px 0 0;">{{ $plan['name'] }}</h3>
+                            <div class="muted" style="font-size:14px;">{{ $plan['who'] }}</div>
+                            <div style="font-size:30px; font-weight:800; margin:10px 0;">R$ {{ $plan['price'] }}<span class="muted" style="font-size:14px; font-weight:500;">/mês</span></div>
+                            <ul>
+                                @foreach ($plan['items'] as $item)<li>{{ $item }}</li>@endforeach
+                            </ul>
+                            <div class="actions"><a class="btn {{ empty($plan['featured']) ? 'ghost' : '' }}" href="{{ $studio }}/cadastro">Testar grátis</a></div>
+                        </article>
+                    @endforeach
+                </div>
+                <p class="muted" style="margin-top:14px; font-size:14px;">Também temos o <strong>Entrada</strong> (R$ 12,90, para começar bem pequeno) e o <strong>Clínica</strong> (R$ 239,90, até 12 pessoas na equipe). Todos com a raposa, a assistente de IA da Foxy.</p>
+
+                <div class="card" style="margin-top:20px; display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                    <div class="product-icon" style="margin:0;">🚚</div>
+                    <div style="flex:1; min-width:240px;">
+                        <h3 style="margin:0 0 4px;">Já usa outro sistema? A gente faz a mudança para você</h3>
+                        <p class="muted" style="margin:0;">Trazemos sua agenda, seus clientes e suas fichas da planilha ou do sistema antigo, sem custo. Você não perde nada e não precisa digitar de novo.</p>
+                    </div>
+                    <a class="btn ghost" href="{{ $studio }}/cadastro">Começar e pedir a mudança</a>
                 </div>
             </div>
         </section>

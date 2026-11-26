@@ -16,10 +16,16 @@ Painel para acompanhar: **Foxy Admin → Métricas** (cadastros, ativação em 7
 2. **Escolher a oferta de lançamento** e não mudar por 90 dias. Sugestão:
    - **Parceira Fundadora:** os primeiros 20 pagam o plano **Profissional (R$ 39,90) por R$ 29,90 para sempre**,
      enquanto a assinatura estiver ativa, em troca de um depoimento e de uma conversa de 20 minutos por mês.
+     **Como ligar (sem programar):** o checkout do Studio já aceita código promocional. No Stripe:
+     (1) Produtos → cupom de **R$ 10,00 de desconto**, duração **para sempre**, limitado ao produto do plano
+     Profissional e a **20 resgates**; (2) criar o **código promocional** `FUNDADORA` para esse cupom;
+     (3) no servidor do foxy2, `FOXY_FOUNDER_CODE=FUNDADORA` no `.env` (sem `sed -i`) e `config:cache` — a oferta
+     aparece em foxy.net.br → Preços. Esgotou: tirar a linha do `.env` e `config:cache`.
    - **Migração grátis:** "eu passo sua agenda, clientes e fichas do sistema antigo para cá".
    - Teste grátis como já está no sistema.
 3. **Página de vendas (foxy.net.br)** com um bloco por público (estética, unhas, terapias), o preço à vista,
-   "sem cobrar por profissional" e "migração grátis". Um botão só: começar o teste.
+   "a equipe já vem no plano" e "migração grátis". Um botão só: começar o teste. ✔ Feito em 26/11 (seções
+   "Para você" e "Preços"; a oferta aparece quando `FOXY_FOUNDER_CODE` estiver preenchido).
 4. **Roteiro de demonstração de 15 minutos** em vídeo (tela gravada), na ordem que vende:
    cliente preenche a anamnese → agenda pelo link → lembrete no WhatsApp → ficha aberta no atendimento → financeiro do dia.
 5. **Lista de 100 nomes** de profissionais que você conhece ou acha no Instagram da sua cidade, em planilha

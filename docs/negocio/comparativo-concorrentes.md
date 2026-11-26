@@ -1,14 +1,13 @@
 # Comparativo: Foxy Studio × Trinks × AgendaPro × iClinic
 
 Pesquisa de 26/11/2026. Preço de concorrente muda e nem sempre está público: **confirmar no site de cada um antes
-de usar numa conversa de venda**. Os preços do Foxy Studio são os do cadastro de planos (seeder); conferir em
-Admin do Studio → Planos, que é o que vale em produção.
+de usar numa conversa de venda**. Os preços do Foxy Studio foram conferidos em produção (Admin do Studio → Planos) em 26/11/2026.
 
 ## 1. Preço
 
 | | Entrada | Faixa do meio | Com equipe | Como cobra |
 |---|---|---|---|---|
-| **Foxy Studio** | R$ 12,90 (Entrada) | R$ 29,90 (Essencial) · R$ 39,90 (Profissional) · R$ 59,90 (Crescimento, até 2 pessoas na equipe) | R$ 139,90 (Equipe) | Preço fixo por conta |
+| **Foxy Studio** | R$ 12,90 (Entrada) | R$ 29,90 (Essencial) · R$ 39,90 (Profissional) · R$ 59,90 (Crescimento, até 2 pessoas na equipe) | R$ 139,90 (Equipe, até 5) · R$ 239,90 (Clínica, até 12) | Preço por conta, com a equipe incluída até o limite do plano; pessoa extra é opcional (R$ 14,90 a R$ 29,90) |
 | **Trinks** | R$ 110/mês mensal ou R$ 76/mês no anual (1 a 2 profissionais, set/2026); em out/2026 a página passou a "sob consulta" | — | Sob consulta (3+ profissionais) | Por faixa de equipe; WhatsApp, lembretes, fidelidade e nota fiscal à parte; multa de 50% ao cancelar plano semestral/anual antes do fim |
 | **AgendaPro** | US$ 9/mês (Individual, 1 profissional) na página `/br/planes` | US$ 29 (Básico) · US$ 59 (Premium) | US$ 199 (Pro) | Em dólar na página oficial; há vários sites com nome parecido e preços diferentes (não são a AgendaPro) |
 | **iClinic** | R$ 99/mês por profissional (Starter, sem lembrete por WhatsApp) | R$ 129 (Plus) · R$ 169 (Pro) | R$ 299 (Premium) — **por profissional** | Por profissional; 3 profissionais no Starter ≈ R$ 297/mês; teleconsulta à parte nos planos menores |
@@ -39,7 +38,7 @@ fraco. Na venda, mostrar o que vem incluso (seção 2) antes do preço.
 ## 3. Onde a Foxy ganha e onde perde
 
 **Ganha (usar na venda):**
-1. **Preço fixo, sem cobrar por profissional** e sem multa de cancelamento.
+1. **Preço por conta, com a equipe incluída** até o limite do plano (2, 5 ou 12 pessoas), e sem multa de cancelamento.
 2. **Tudo incluso no mesmo lugar:** agenda, ficha/anamnese com assinatura, formulários, contratos, financeiro,
    orçamento e site. Concorrentes vendem parte disso como adicional.
 3. **Troca sem dor:** importamos a agenda e as fichas do sistema antigo. É a resposta para "dá trabalho mudar".
@@ -59,7 +58,7 @@ fraco. Na venda, mostrar o que vem incluso (seção 2) antes do preço.
 ## 4. Frases prontas para a conversa de venda
 
 - "No Trinks a mensagem do WhatsApp é cobrada à parte; aqui já vem no plano."
-- "No iClinic você paga por profissional. Aqui o preço é da conta: colocou mais uma pessoa na equipe, não muda."
+- "No iClinic você paga por profissional. Aqui a equipe já vem no plano: no Equipe são 5 pessoas por R$ 139,90."
 - "Eu mesma passo sua agenda e suas fichas do sistema antigo para cá. Você não perde nada."
 - "A cliente responde a anamnese pelo link e já marca o horário. Quando ela chega, a ficha está aberta no atendimento."
 

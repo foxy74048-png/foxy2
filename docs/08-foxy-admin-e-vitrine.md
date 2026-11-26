@@ -19,6 +19,11 @@
   Studio continua atendendo no endereço antigo (o Stripe não segue redirecionamento; a assinatura inclui o host).
 - Conteúdo: a proposta da marca, os produtos (Studio, AI, Commerce "em breve"), as raposas, por que a Foxy,
   segurança/LGPD e chamadas para começar grátis no Studio. Sem depoimentos inventados.
+- **Para você** (estética, unhas e beleza, terapias/pilates/yoga) e **Preços** (2026-11-26, plano comercial de 90 dias):
+  os planos do Studio com preço à vista (lista no topo da view — o Core não lê o banco do Studio: mudou o preço em
+  Planos do Studio, mudar ali), 16 dias grátis, sem fidelidade, equipe incluída até o limite, e a "mudança grátis"
+  do sistema antigo. A oferta **Parceira Fundadora** só aparece com `FOXY_FOUNDER_CODE` (o código promocional
+  precisa existir no Stripe do Studio; passo a passo em `docs/negocio/plano-comercial-90-dias.md`).
 
 ## 3. Foxy Admin (admin.foxy.net.br)
 

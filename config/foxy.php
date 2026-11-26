@@ -66,6 +66,9 @@ return [
     'products' => [
         'studio_url' => env('FOXY_STUDIO_URL', 'https://studio.foxy.net.br'),
         'vitrine_url' => env('FOXY_VITRINE_URL', 'https://foxy.net.br'),
+        // Oferta Parceira Fundadora na vitrine (plano comercial de 90 dias): só aparece com o código preenchido,
+        // e o código precisa existir como "código promocional" no Stripe do Studio (o checkout já aceita).
+        'founder_code' => env('FOXY_FOUNDER_CODE'),
     ],
 
     /*

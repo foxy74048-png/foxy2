@@ -52,6 +52,24 @@ class FoxyAdminTest extends TestCase
         return (int) AiCreditGrant::withoutGlobalScopes()->where('organization_id', $org->id)->where('period', now()->format('Y-m'))->sum('credits');
     }
 
+    public function test_vitrine_shows_audiences_prices_and_moving_help_and_the_founder_offer_only_with_a_code(): void
+    {
+        config(['foxy.products.founder_code' => null]);
+        $this->get('http://foxy.net.br/')->assertOk()
+            ->assertSee('Feito para o seu tipo de atendimento')
+            ->assertSee('Estética')->assertSee('Unhas e beleza')->assertSee('Terapias, pilates e yoga')
+            ->assertSee('Preço claro, sem surpresa')->assertSee('R$ 39,90')->assertSee('R$ 139,90')
+            ->assertSee('16 dias grátis')
+            ->assertSee('A gente faz a mudança para você')
+            ->assertSee('href="#precos"', false)
+            ->assertDontSee('Parceira Fundadora');
+
+        config(['foxy.products.founder_code' => 'FUNDADORA']);
+        $this->get('http://foxy.net.br/')->assertOk()
+            ->assertSee('Parceira Fundadora')
+            ->assertSee('<strong>FUNDADORA</strong>', false);
+    }
+
     public function test_home_depends_on_the_address(): void
     {
         $this->get('http://foxy.net.br/')->assertOk()->assertSee('A Foxy cuida do resto')->assertSee('Foxy Studio')->assertSee('https://studio.foxy.net.br/cadastro');
