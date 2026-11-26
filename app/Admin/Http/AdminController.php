@@ -116,9 +116,17 @@ class AdminController
         ]);
     }
 
-    public function promotions(): View
+    public function promotions(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $promotions = AiPromotion::with('integration')->withCount('grants')->withSum('grants', 'credits')->latest()->get();
+
+        if ($format = \App\Platform\Exports\Export::requested($request)) {
+            return (new \App\Platform\Exports\Export('Promoções de IA'))
+                ->section(null, ['Promoção' => 'text', 'Produto' => 'text', 'Quem ganha' => 'text', 'Perguntas' => 'int', 'Repetição' => 'text', 'Começa' => 'date', 'Termina' => 'date', 'Entregas' => 'int', 'Perguntas entregues' => 'int', 'Situação' => 'text', 'Observação' => 'text:planilha'],
+                    $promotions->map(fn (AiPromotion $p) => [$p->name, $p->integration?->name ?? 'Todos os produtos', AiPromotion::AUDIENCES[$p->audience] ?? $p->audience, $p->credits, AiPromotion::RECURRENCES[$p->recurrence] ?? $p->recurrence,
+                        $p->starts_at, $p->ends_at, $p->grants_count, (int) $p->grants_sum_credits, $p->isRunning() ? 'Valendo' : (AiPromotion::STATUSES[$p->status] ?? $p->status), $p->note]))
+                ->download($format);
+        }
 
         return view('admin.promotions', [
             'promotions' => $promotions,

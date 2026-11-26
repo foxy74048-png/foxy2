@@ -20,15 +20,24 @@ class AnnouncementController
 {
     public function __construct(private AnnouncementService $service) {}
 
-    public function index(): View
+    public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
+        $announcements = Announcement::withCount([
+            'deliveries',
+            'deliveries as sent_count' => fn ($q) => $q->where('status', 'enviado'),
+            'deliveries as failed_count' => fn ($q) => $q->where('status', 'falhou'),
+            'deliveries as pending_count' => fn ($q) => $q->where('status', 'pendente'),
+        ])->latest()->get();
+
+        if ($format = \App\Platform\Exports\Export::requested($request)) {
+            return (new \App\Platform\Exports\Export('Comunicados'))
+                ->section(null, ['Comunicado' => 'text', 'Canal' => 'text', 'Situação' => 'text', 'Destinatários' => 'int', 'Enviados' => 'int', 'Na fila' => 'int', 'Falharam' => 'int', 'Criado' => 'datetime'],
+                    $announcements->map(fn (Announcement $a) => [$a->title, Announcement::CHANNELS[$a->channel] ?? $a->channel, Announcement::STATUSES[$a->status] ?? $a->status, $a->deliveries_count, $a->sent_count, $a->pending_count, $a->failed_count, $a->created_at->timezone('America/Sao_Paulo')]))
+                ->download($format);
+        }
+
         return view('admin.announcements', [
-            'announcements' => Announcement::withCount([
-                'deliveries',
-                'deliveries as sent_count' => fn ($q) => $q->where('status', 'enviado'),
-                'deliveries as failed_count' => fn ($q) => $q->where('status', 'falhou'),
-                'deliveries as pending_count' => fn ($q) => $q->where('status', 'pendente'),
-            ])->latest()->get(),
+            'announcements' => $announcements,
             'integrations' => Integration::orderBy('name')->get(),
             'plans' => ProductAccount::whereNotNull('plan')->distinct()->orderBy('plan')->pluck('plan'),
             'optOuts' => ['email' => ProductAccount::whereNotNull('email_opt_out_at')->count(), 'whatsapp' => ProductAccount::whereNotNull('whatsapp_opt_out_at')->count()],

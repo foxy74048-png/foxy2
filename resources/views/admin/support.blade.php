@@ -1,5 +1,6 @@
 <x-core::layout title="Suporte" product="Foxy Admin" subtitle="Administrativo da Foxy">
     <x-slot:nav>@include('admin.nav')</x-slot:nav>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:12px;">@include('commerce.export.buttons')</div>
     @php $tz = 'America/Sao_Paulo'; @endphp
 
     @if (session('status'))<div class="alert success">{{ session('status') }}</div>@endif

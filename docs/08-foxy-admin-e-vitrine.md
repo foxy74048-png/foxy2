@@ -31,6 +31,9 @@ Mesmo login da equipe Foxy do console (`/console/login`). Telas:
 | **Métricas** | MRR e pagantes mês a mês, conversão de teste em pagante, churn, ativação em 7 dias e turmas por mês de cadastro (seção 3.5). |
 | **Promoções de IA** | Campanhas controláveis de perguntas extras (seção 4). |
 
+Toda lista do Admin (Contas, Métricas, Suporte, Promoções de IA, Comunicados, Ideias e dúvidas) tem os botões
+**Planilha** e **PDF**: exportam a lista inteira com os mesmos filtros da tela (`App\Platform\Exports\Export`).
+
 ### Como o Admin conhece as contas de cada produto
 
 Cada produto **envia** ao Core um retrato das suas contas (`POST /api/v1/product-snapshot`, chave do sistema):
