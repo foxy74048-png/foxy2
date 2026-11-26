@@ -71,6 +71,25 @@ class FoxyAdminTest extends TestCase
         $this->get('/admin/promocoes')->assertOk()->assertSee('Nova promoção');
     }
 
+    public function test_accounts_list_exports_everything_with_the_same_filters(): void
+    {
+        $this->snapshot([
+            $this->account('ws-1', 'active', ['name' => 'Studio Pago', 'email' => 'dona@pago.test']),
+            $this->account('ws-2', 'trial', ['name' => 'Studio Teste']),
+        ])->assertOk();
+        $this->actingAs(User::factory()->staff()->create());
+
+        $this->get('/admin/contas')->assertOk()->assertSee('exportar=planilha', false);
+
+        $csv = $this->get('/admin/contas?situacao=active&exportar=planilha')->assertOk()->streamedContent();
+        $this->assertStringContainsString('Studio Pago', $csv);
+        $this->assertStringContainsString('dona@pago.test', $csv);
+        $this->assertStringContainsString('59,90', $csv);
+        $this->assertStringNotContainsString('Studio Teste', $csv);
+
+        $this->get('/admin/contas?exportar=pdf')->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    }
+
     public function test_product_sends_its_accounts_and_missing_ones_become_removed(): void
     {
         $this->snapshot([$this->account('ws-1'), $this->account('ws-2', 'trial')])->assertOk()->assertJsonPath('accounts', 2);

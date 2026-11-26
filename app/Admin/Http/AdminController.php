@@ -75,7 +75,7 @@ class AdminController
         ]);
     }
 
-    public function accounts(Request $request): View
+    public function accounts(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $filters = $request->validate([
             'produto' => ['nullable', 'string', 'max:40'],
@@ -83,12 +83,30 @@ class AdminController
             'busca' => ['nullable', 'string', 'max:80'],
         ]);
 
-        $accounts = ProductAccount::with('integration')
+        $query = ProductAccount::with('integration')
             ->when($filters['produto'] ?? null, fn ($q, $id) => $q->where('integration_id', $id))
             ->when($filters['situacao'] ?? null, fn ($q, $s) => $q->where('status', $s), fn ($q) => $q->where('status', '!=', 'removed'))
             ->when($filters['busca'] ?? null, fn ($q, $term) => $q->where('name', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%'))
-            ->orderByDesc('mrr')->orderBy('name')
-            ->paginate(50)->withQueryString();
+            ->orderByDesc('mrr')->orderBy('name');
+
+        // Planilha/PDF: a lista inteira com os mesmos filtros (não só a página da tela).
+        if ($format = \App\Platform\Exports\Export::requested($request)) {
+            $all = $query->get();
+            $credits = $this->aiCreditsFor($all);
+            $integrations = Integration::orderBy('name')->get();
+
+            return (new \App\Platform\Exports\Export('Contas da Foxy'))
+                ->filters([
+                    'Produto' => $integrations->firstWhere('id', $filters['produto'] ?? null)?->name,
+                    'Situação' => isset($filters['situacao']) ? ProductAccount::STATUSES[$filters['situacao']] : 'Todas (menos removidas)',
+                    'Nome' => $filters['busca'] ?? null,
+                ])
+                ->section(null, ['Conta' => 'text', 'Produto' => 'text', 'Plano' => 'text', 'Situação' => 'text', 'MRR' => 'decimal', 'Cadastro' => 'date', 'Ativou' => 'date:planilha', 'Última atividade' => 'date', 'Uso' => 'text:planilha', 'Contato' => 'text:planilha', 'E-mail' => 'text:planilha', 'WhatsApp' => 'text:planilha', 'Raposa (créditos no mês)' => 'decimal'],
+                    $all->map(fn (ProductAccount $a) => [$a->name, $a->integration?->name, $a->plan, $a->statusLabel(), (float) $a->mrr, $a->signed_up_at, $a->activated_at, $a->last_activity_at, $a->healthLabel(), $a->contact_name, $a->email, $a->whatsapp, $credits[$a->id] ?? null]))
+                ->download($format);
+        }
+
+        $accounts = $query->paginate(50)->withQueryString();
 
         return view('admin.accounts', [
             'accounts' => $accounts,

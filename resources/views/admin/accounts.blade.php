@@ -20,7 +20,12 @@
             <label for="busca">Nome</label>
             <input id="busca" name="busca" value="{{ $filters['busca'] ?? '' }}" placeholder="Buscar conta">
         </div>
-        <div><button type="submit">Filtrar</button></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="submit">Filtrar</button>
+            @php($exportQuery = array_filter(request()->only(['produto', 'situacao', 'busca'])))
+            <a class="button secondary" href="{{ route('admin.accounts', $exportQuery + ['exportar' => 'planilha']) }}" title="Baixar planilha (abre no Excel)">Planilha</a>
+            <a class="button secondary" href="{{ route('admin.accounts', $exportQuery + ['exportar' => 'pdf']) }}" title="Baixar PDF">PDF</a>
+        </div>
     </form>
 
     <div class="card" style="margin-top:16px;">
